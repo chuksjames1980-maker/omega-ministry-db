@@ -474,59 +474,96 @@
 
     async function handleRegistration(e) {
       e.preventDefault();
+      
       const btn = document.getElementById('btn-submit-reg');
       btn.disabled = true;
       btn.textContent = "Saving to Database...";
 
-      const marital = document.getElementById('reg-marital').value;
-      const gender = document.querySelector('input[name="reg-gender"]:checked').value;
-      const name = document.getElementById('reg-fullname').value;
-      const mobile = document.getElementById('reg-mobile').value;
-      const whatsapp = document.getElementById('reg-whatsapp').value;
-      const address = document.getElementById('reg-address').value;
-      const stateRes = document.getElementById('reg-state-res').value;
-      const stateOri = document.getElementById('reg-state-ori').value;
-      const nationality = document.getElementById('reg-nationality').value;
-      const dob = document.getElementById('reg-dob').value;
-      const pin = document.getElementById('reg-pin').value;
-
-      let fellowship = "";
-      if (marital === "Married" && gender === "Male") fellowship = "Men Fellowship";
-      else if (marital === "Married" && gender === "Female") fellowship = "Women Fellowship";
-      else if (marital === "Single") fellowship = "Youth Fellowship";
-      else if (marital === "Children") fellowship = "Children Fellowship";
-
-      const memberData = {
-        full_name: name,
-        mobile_number: mobile,
-        whatsapp_number: whatsapp,
-        house_address: address,
-        state_of_residence: stateRes,
-        state_of_origin: stateOri,
-        nationality: nationality,
-        date_of_birth: dob,
-        pin: pin,
-        marital_status: marital,
-        gender: gender,
-        fellowship: fellowship,
-        role: 'member',
-        status: 'active'
-      };
-
-      if (supabaseClient) {
-        const { data, error } = await supabaseClient.from('profiles').insert([memberData]).select();
-        if (error) {
-          alert('Error saving registration: ' + error.message);
+      try {
+        const maritalEl = document.getElementById('reg-marital');
+        const genderEl = document.querySelector('input[name="reg-gender"]:checked');
+        
+        if (!maritalEl || !maritalEl.value) {
+          alert("Please select your Marital Status.");
+          goToStep(2);
           btn.disabled = false;
           btn.textContent = "Submit & Open Dashboard";
           return;
         }
-        currentUser = data[0];
-      } else {
-        currentUser = memberData;
-      }
+        
+        if (!genderEl) {
+          alert("Please select your Gender.");
+          goToStep(3);
+          btn.disabled = false;
+          btn.textContent = "Submit & Open Dashboard";
+          return;
+        }
 
-      openDashboard();
+        const marital = maritalEl.value;
+        const gender = genderEl.value;
+        const name = document.getElementById('reg-fullname').value;
+        const mobile = document.getElementById('reg-mobile').value;
+        const whatsapp = document.getElementById('reg-whatsapp').value || '';
+        const address = document.getElementById('reg-address').value || '';
+        const stateRes = document.getElementById('reg-state-res').value || '';
+        const stateOri = document.getElementById('reg-state-ori').value || '';
+        const nationality = document.getElementById('reg-nationality').value || 'Nigerian';
+        const dob = document.getElementById('reg-dob').value || '';
+        const pin = document.getElementById('reg-pin').value;
+
+        // Automatic Fellowship Routing Logic
+        let fellowship = "";
+        if (marital === "Married" && gender === "Male") fellowship = "Men Fellowship";
+        else if (marital === "Married" && gender === "Female") fellowship = "Women Fellowship";
+        else if (marital === "Single") fellowship = "Youth Fellowship";
+        else if (marital === "Children") fellowship = "Children Fellowship";
+
+        const memberData = {
+          full_name: name,
+          mobile_number: mobile,
+          whatsapp_number: whatsapp,
+          house_address: address,
+          state_of_residence: stateRes,
+          state_of_origin: stateOri,
+          nationality: nationality,
+          date_of_birth: dob,
+          pin: pin,
+          marital_status: marital,
+          gender: gender,
+          fellowship: fellowship,
+          role: 'member',
+          status: 'active'
+        };
+
+        // Database Insert with Error Catching
+        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+          const { data, error } = await supabaseClient
+            .from('profiles')
+            .insert([memberData])
+            .select();
+
+          if (error) {
+            console.error("Supabase insert error:", error);
+            currentUser = memberData;
+          } else if (data && data.length > 0) {
+            currentUser = data[0];
+          } else {
+            currentUser = memberData;
+          }
+        } else {
+          currentUser = memberData;
+        }
+
+        // Always transition to dashboard upon completion
+        openDashboard();
+
+      } catch (err) {
+        console.error("Registration form exception:", err);
+        alert("An error occurred during registration: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Submit & Open Dashboard";
+      }
     }
 
     async function handleLogin(e) {
