@@ -48,7 +48,7 @@
         <!-- Spinning Gear Outer Ring -->
         <svg class="w-32 h-32 text-amber-500 animate-spin-gear opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33-1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
         </svg>
 
         <!-- Book & Writing Pen Center Icon -->
@@ -418,9 +418,9 @@
   </div>
 
   <script>
-    // ⚠️ REPLACE THESE STRINGS WITH YOUR SUPABASE CREDENTIALS
-    const SUPABASE_URL = "YOUR_SUPABASE_URL_HERE";
-    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
+    // Supabase Live Credentials Configured
+    const SUPABASE_URL = "https://bugzrhjmedzubwwhvrql.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_3jzku7vSLCqz5Bw8BYO0uw_5FhrbAir";
 
     const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
@@ -513,7 +513,7 @@
         status: 'active'
       };
 
-      if (supabaseClient && SUPABASE_URL !== "YOUR_SUPABASE_URL_HERE") {
+      if (supabaseClient) {
         const { data, error } = await supabaseClient.from('profiles').insert([memberData]).select();
         if (error) {
           alert('Error saving registration: ' + error.message);
@@ -540,7 +540,7 @@
         return;
       }
 
-      if (supabaseClient && SUPABASE_URL !== "YOUR_SUPABASE_URL_HERE") {
+      if (supabaseClient) {
         const { data, error } = await supabaseClient.from('profiles').select('*').eq('mobile_number', mobile).eq('pin', pin).single();
         if (error || !data) {
           alert('Invalid Mobile Number or PIN.');
@@ -617,7 +617,7 @@
       const fileExt = file.name.split('.').pop();
       const fileName = `${currentUser.id || Date.now()}.${fileExt}`;
 
-      if (supabaseClient && SUPABASE_URL !== "YOUR_SUPABASE_URL_HERE") {
+      if (supabaseClient) {
         const { data, error } = await supabaseClient.storage.from('avatars').upload(fileName, file, { upsert: true });
         if (error) {
           alert('Upload failed: ' + error.message);
@@ -688,7 +688,7 @@
     }
 
     async function loadAdminDirectory() {
-      if (!supabaseClient || SUPABASE_URL === "YOUR_SUPABASE_URL_HERE") return;
+      if (!supabaseClient) return;
       const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
       if (error) return;
 
