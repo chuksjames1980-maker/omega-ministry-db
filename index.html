@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OMEGA CITY OF MERCY GLORIOUS MINISTRY DATABASE</title>
+  
+  <!-- PWA Manifest Integration -->
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIk9NRUdBIENJVFkgT0YgTUVSQ1kgR0xPUklPVVMgTUlOSVNUUlkgREFUQUJBU0UiLAogICJzaG9ydF9uYW1lIjogIk9tZWdhTWluaXN0cnkiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwZjE3MmEiLAogICJ0aGVtZV9jb2xvciI6ICIjZjVjNTE4Igp9">
+  <meta name="theme-color" content="#f5c518">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    @keyframes spin-slow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes write-pen {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(6px, -4px) rotate(-5deg); }
+      50% { transform: translate(12px, 0px) rotate(5deg); }
+      75% { transform: translate(18px, -4px) rotate(-5deg); }
+      100% { transform: translate(24px, 0px) rotate(0deg); }
+    }
+    .animate-spin-gear { animation: spin-slow 12s linear infinite; }
+    .animate-write { animation: write-pen 2s ease-in-out infinite alternate; }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen antialiased flex flex-col">
+
+  <!-- APP CONTAINER -->
+  <div id="app" class="flex-1 flex flex-col">
+
+    <!-- 1. LOADING SCREEN -->
+    <div id="screen-loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-center px-4">
+      <div class="relative mb-6 flex items-center justify-center">
+        <!-- Spinning Gear Outer Ring -->
+        <svg class="w-32 h-32 text-amber-500 animate-spin-gear opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+
+        <!-- Book & Writing Pen Center Icon -->
+        <div class="absolute flex items-center justify-center">
+          <div class="relative">
+            <!-- Open Book -->
+            <svg class="w-16 h-16 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+            <!-- Writing Pen -->
+            <svg class="w-8 h-8 text-white absolute top-1 left-2 animate-write" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <h1 class="text-2xl md:text-3xl font-extrabold tracking-wide text-amber-400 max-w-xl">
+        OMEGA CITY OF MERCY GLORIOUS MINISTRY DATABASE
+      </h1>
+      <p class="mt-3 text-slate-300 italic text-sm md:text-base">
+        "Keeping the financial record transparent"
+      </p>
+
+      <!-- Countdown Timer -->
+      <div class="mt-8 flex flex-col items-center gap-2">
+        <div class="w-48 bg-slate-800 h-2 rounded-full overflow-hidden">
+          <div id="progress-bar" class="bg-amber-500 h-full w-0 transition-all duration-1000 ease-linear"></div>
+        </div>
+        <span class="text-xs text-slate-400">Redirecting in <span id="countdown">10</span>s...</span>
+        <button onclick="skipLoading()" class="mt-2 text-xs text-amber-400 underline hover:text-amber-300">
+          Skip to Registration
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. MAIN REGISTRATION / LOGIN CONTAINER -->
+    <div id="screen-auth" class="hidden flex-1 flex flex-col items-center justify-center p-4">
+      <div class="w-full max-w-md glass-card rounded-2xl p-6 shadow-2xl border border-slate-800">
+        
+        <!-- Navigation Tabs (Register / Login) -->
+        <div class="flex border-b border-slate-700 mb-6">
+          <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 py-2 font-bold text-amber-400 border-b-2 border-amber-400">
+            Register Member
+          </button>
+          <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 py-2 font-bold text-slate-400 border-b-2 border-transparent">
+            Login
+          </button>
+        </div>
+
+        <!-- REGISTRATION FORM -->
+        <form id="form-register" onsubmit="handleRegistration(event)" class="space-y-4">
+          <!-- Step 1 Fields -->
+          <div id="reg-step-1" class="space-y-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Full Name</label>
+              <input type="text" id="reg-fullname" required placeholder="John Doe" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Mobile Number</label>
+                <input type="tel" id="reg-mobile" required placeholder="08012345678" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">WhatsApp Number</label>
+                <input type="tel" id="reg-whatsapp" placeholder="08012345678" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">House Address</label>
+              <input type="text" id="reg-address" required placeholder="123 Mercy St, Lagos" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">State of Residence</label>
+                <input type="text" id="reg-state-res" required placeholder="Lagos" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">State of Origin</label>
+                <input type="text" id="reg-state-ori" required placeholder="Enugu" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Nationality</label>
+                <input type="text" id="reg-nationality" required value="Nigerian" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Date of Birth</label>
+                <input type="date" id="reg-dob" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">4-Digit Security PIN</label>
+              <input type="password" maxlength="4" pattern="\d{4}" id="reg-pin" required placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-center tracking-widest focus:border-amber-400 outline-none">
+            </div>
+            <button type="button" onclick="goToStep(2)" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
+              Next (Marital Status)
+            </button>
+          </div>
+
+          <!-- Step 2 Fields -->
+          <div id="reg-step-2" class="hidden space-y-4">
+            <h3 class="text-sm font-semibold text-slate-300">Select Marital Status</h3>
+            <select id="reg-marital" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:border-amber-400 outline-none">
+              <option value="">-- Select Status --</option>
+              <option value="Married">Married</option>
+              <option value="Single">Single</option>
+              <option value="Children">Children</option>
+            </select>
+            <button type="button" onclick="goToStep(3)" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
+              Next (Gender Selection)
+            </button>
+          </div>
+
+          <!-- Step 3 Fields -->
+          <div id="reg-step-3" class="hidden space-y-4">
+            <h3 class="text-sm font-semibold text-slate-300">Select Gender</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <label class="flex items-center justify-center p-4 bg-slate-900 border border-slate-700 rounded-xl cursor-pointer hover:border-amber-400">
+                <input type="radio" name="reg-gender" value="Male" class="mr-2" required> Male
+              </label>
+              <label class="flex items-center justify-center p-4 bg-slate-900 border border-slate-700 rounded-xl cursor-pointer hover:border-amber-400">
+                <input type="radio" name="reg-gender" value="Female" class="mr-2"> Female
+              </label>
+            </div>
+            <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
+              Submit & Open Dashboard
+            </button>
+          </div>
+        </form>
+
+        <!-- LOGIN FORM -->
+        <form id="form-login" onsubmit="handleLogin(event)" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Enter Your Login PIN</label>
+            <input type="password" id="login-pin" maxlength="8" required placeholder="Enter PIN" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-center tracking-widest text-lg focus:border-amber-400 outline-none">
+            <p class="text-[10px] text-slate-500 mt-1 text-center">4 digits for Members | 8 digits for Admin (Demo: 12345678)</p>
+          </div>
+          <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
+            Access Dashboard
+          </button>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- 3. MEMBER / ADMIN DASHBOARD -->
+    <div id="screen-dashboard" class="hidden flex-1 flex flex-col">
+      <!-- HEADER -->
+      <header class="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between sticky top-0 z-30">
+        <div class="flex items-center gap-3">
+          <button onclick="toggleSidebar()" class="p-2 hover:bg-slate-800 rounded-lg text-slate-300">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+          </button>
+          <span class="font-bold text-amber-400 text-sm md:text-base tracking-wide">OMEGA MINISTRY</span>
+          <span id="header-president-badge" class="hidden bg-amber-500/20 text-amber-300 text-xs px-2 py-0.5 rounded border border-amber-500/40 font-semibold">PRESIDENT</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <i data-lucide="bell" class="w-5 h-5 text-slate-400 hover:text-white cursor-pointer"></i>
+          <div class="flex items-center gap-2">
+            <img id="header-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop" class="w-8 h-8 rounded-full border border-amber-400 object-cover" alt="Profile">
+            <span id="header-username" class="text-sm font-semibold text-slate-200">User</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- SIDEBAR -->
+      <div id="sidebar-overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"></div>
+      <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-slate-900 z-50 transform -translate-x-full transition-transform duration-300 flex flex-col p-6 border-r border-slate-800">
+        <h2 class="text-amber-400 font-bold text-lg mb-6">Ministry Navigation</h2>
+        <nav class="space-y-3 flex-1" id="sidebar-menu">
+          <!-- Dynamically populated menu -->
+        </nav>
+        <button onclick="logout()" class="flex items-center gap-2 text-rose-400 hover:text-rose-300 font-medium text-sm mt-auto">
+          <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+        </button>
+      </aside>
+
+      <!-- DASHBOARD MAIN CONTENT -->
+      <main class="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full">
+        <div class="mb-6 flex justify-between items-center">
+          <div>
+            <h2 id="dash-title" class="text-xl md:text-2xl font-bold text-white">Member Overview</h2>
+            <p id="dash-subtitle" class="text-xs md:text-sm text-slate-400">Fellowship: <span id="dash-fellowship" class="text-amber-400 font-semibold">Men Fellowship</span></p>
+          </div>
+        </div>
+
+        <!-- 2x2 MEMBER CARDS GRID -->
+        <div id="member-cards-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div onclick="openModal('Total Dues History', '2026 Monthly Dues: ₦50,000 paid across Jan - Oct.')" class="glass-card p-4 rounded-xl cursor-pointer hover:border-amber-400 transition">
+            <div class="flex justify-between items-start mb-2"><span class="text-xs text-slate-400">My Total Dues</span><i data-lucide="wallet" class="w-4 h-4 text-amber-400"></i></div>
+            <div class="text-lg md:text-2xl font-bold text-white">₦50,000</div>
+          </div>
+          <div onclick="openModal('Total Project History', 'Building Project: ₦20,000 paid. Balance: ₦5,000.')" class="glass-card p-4 rounded-xl cursor-pointer hover:border-amber-400 transition">
+            <div class="flex justify-between items-start mb-2"><span class="text-xs text-slate-400">Total Project</span><i data-lucide="building-2" class="w-4 h-4 text-amber-400"></i></div>
+            <div class="text-lg md:text-2xl font-bold text-white">₦20,000</div>
+          </div>
+          <div onclick="openModal('Old Dues History', '2025 Arrears Cleared: ₦10,000.')" class="glass-card p-4 rounded-xl cursor-pointer hover:border-amber-400 transition">
+            <div class="flex justify-between items-start mb-2"><span class="text-xs text-slate-400">My Old Dues</span><i data-lucide="history" class="w-4 h-4 text-amber-400"></i></div>
+            <div class="text-lg md:text-2xl font-bold text-white">₦10,000</div>
+          </div>
+          <div onclick="openModal('Attendance History', 'Present: 42 services | Absent: 4 services (91% Attendance Rate).')" class="glass-card p-4 rounded-xl cursor-pointer hover:border-amber-400 transition">
+            <div class="flex justify-between items-start mb-2"><span class="text-xs text-slate-400">My Attendance</span><i data-lucide="calendar" class="w-4 h-4 text-amber-400"></i></div>
+            <div class="text-lg md:text-2xl font-bold text-emerald-400">91%</div>
+          </div>
+          <div onclick="openModal('Meeting Minutes', 'Oct 2026 Minutes: Financial report approved. Annual Convention set for Dec.')" class="glass-card p-4 rounded-xl cursor-pointer hover:border-amber-400 transition">
+            <div class="flex justify-between items-start mb-2"><span class="text-xs text-slate-400">Minutes</span><i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i></div>
+            <div class="text-sm font-semibold text-slate-200">View Minutes</div>
+          </div>
+          <div onclick="openModal('Ministry Expenses', 'Church Sound Upgrade: ₦150,000 | Outreach: ₦80,000')" class="glass-card p-4 rounded-xl cursor-pointer hover:border-amber-400 transition">
+            <div class="flex justify-between items-start mb-2"><span class="text-xs text-slate-400">Expenses Log</span><i data-lucide="receipt" class="w-4 h-4 text-amber-400"></i></div>
+            <div class="text-lg md:text-2xl font-bold text-rose-400">₦230,000</div>
+          </div>
+          <div onclick="openModal('Dues Progressive Percentage', 'You have paid 85% of your annual total dues expectation.')" class="glass-card p-4 rounded-xl col-span-2 md:col-span-3 cursor-pointer hover:border-amber-400 transition">
+            <div class="flex justify-between items-start mb-2"><span class="text-xs text-slate-400">My Dues Percentage Paid</span><span class="text-xs font-bold text-amber-400">85%</span></div>
+            <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+              <div class="bg-amber-400 h-full w-[85%]"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADMIN CARDS GRID (Hidden for regular members) -->
+        <div id="admin-cards-grid" class="hidden grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="glass-card p-4 rounded-xl"><span class="text-xs text-slate-400">Total Dues</span><div class="text-xl font-bold text-white">₦2,500,000</div></div>
+          <div class="glass-card p-4 rounded-xl"><span class="text-xs text-slate-400">Old Dues</span><div class="text-xl font-bold text-white">₦450,000</div></div>
+          <div class="glass-card p-4 rounded-xl"><span class="text-xs text-slate-400">Project Paid</span><div class="text-xl font-bold text-emerald-400">₦1,200,000</div></div>
+          <div class="glass-card p-4 rounded-xl"><span class="text-xs text-slate-400">Project Unpaid</span><div class="text-xl font-bold text-rose-400">₦350,000</div></div>
+          <div class="glass-card p-4 rounded-xl"><span class="text-xs text-slate-400">Total Inflow</span><div class="text-xl font-bold text-amber-400">₦4,150,000</div></div>
+          <div class="glass-card p-4 rounded-xl"><span class="text-xs text-slate-400">Expenses</span><div class="text-xl font-bold text-rose-400">₦850,000</div></div>
+          <div class="glass-card p-4 rounded-xl col-span-2"><span class="text-xs text-slate-400">Total Balance</span><div class="text-2xl font-bold text-emerald-400">₦3,300,000</div></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- MODAL SYSTEM -->
+    <div id="modal-container" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-700">
+        <h3 id="modal-title" class="text-lg font-bold text-amber-400 mb-2">Detail View</h3>
+        <p id="modal-body" class="text-sm text-slate-300 mb-6">Information details...</p>
+        <button onclick="closeModal()" class="w-full bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-slate-200">
+          Close
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentUser = null;
+    let countdownVal = 10;
+    let timerInterval;
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // 10-Second Loading Screen Counter
+    window.addEventListener('DOMContentLoaded', () => {
+      const progressBar = document.getElementById('progress-bar');
+      const countdown = document.getElementById('countdown');
+
+      timerInterval = setInterval(() => {
+        countdownVal--;
+        countdown.textContent = countdownVal;
+        progressBar.style.width = ((10 - countdownVal) * 10) + '%';
+
+        if (countdownVal <= 0) {
+          skipLoading();
+        }
+      }, 1000);
+    });
+
+    function skipLoading() {
+      clearInterval(timerInterval);
+      document.getElementById('screen-loading').classList.add('hidden');
+      document.getElementById('screen-auth').classList.remove('hidden');
+    }
+
+    function switchAuthTab(tab) {
+      if (tab === 'register') {
+        document.getElementById('form-register').classList.remove('hidden');
+        document.getElementById('form-login').classList.add('hidden');
+        document.getElementById('tab-register').className = "flex-1 py-2 font-bold text-amber-400 border-b-2 border-amber-400";
+        document.getElementById('tab-login').className = "flex-1 py-2 font-bold text-slate-400 border-b-2 border-transparent";
+      } else {
+        document.getElementById('form-register').classList.add('hidden');
+        document.getElementById('form-login').classList.remove('hidden');
+        document.getElementById('tab-login').className = "flex-1 py-2 font-bold text-amber-400 border-b-2 border-amber-400";
+        document.getElementById('tab-register').className = "flex-1 py-2 font-bold text-slate-400 border-b-2 border-transparent";
+      }
+    }
+
+    function goToStep(step) {
+      document.getElementById('reg-step-1').classList.add('hidden');
+      document.getElementById('reg-step-2').classList.add('hidden');
+      document.getElementById('reg-step-3').classList.add('hidden');
+      document.getElementById(`reg-step-${step}`).classList.remove('hidden');
+    }
+
+    function handleRegistration(e) {
+      e.preventDefault();
+      const marital = document.getElementById('reg-marital').value;
+      const gender = document.querySelector('input[name="reg-gender"]:checked').value;
+      const name = document.getElementById('reg-fullname').value;
+
+      // Automatic Fellowship Categorization Logic
+      let fellowship = "";
+      if (marital === "Married" && gender === "Male") fellowship = "Men Fellowship";
+      else if (marital === "Married" && gender === "Female") fellowship = "Women Fellowship";
+      else if (marital === "Single") fellowship = "Youth Fellowship";
+      else if (marital === "Children") fellowship = "Children Fellowship";
+
+      currentUser = { name, fellowship, role: 'member' };
+      openDashboard();
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const pin = document.getElementById('login-pin').value;
+      if (pin === '12345678') {
+        currentUser = { name: 'System Admin', fellowship: 'All Fellowships', role: 'admin' };
+      } else {
+        currentUser = { name: 'Member User', fellowship: 'Men Fellowship', role: 'member' };
+      }
+      openDashboard();
+    }
+
+    function openDashboard() {
+      document.getElementById('screen-auth').classList.add('hidden');
+      document.getElementById('screen-dashboard').classList.remove('hidden');
+
+      document.getElementById('header-username').textContent = currentUser.name;
+      document.getElementById('dash-fellowship').textContent = currentUser.fellowship;
+
+      const sidebarMenu = document.getElementById('sidebar-menu');
+      if (currentUser.role === 'admin') {
+        document.getElementById('dash-title').textContent = "Admin Executive Dashboard";
+        document.getElementById('member-cards-grid').classList.add('hidden');
+        document.getElementById('admin-cards-grid').classList.remove('hidden');
+        sidebarMenu.innerHTML = `
+          <a href="#" class="block py-2 text-slate-200 hover:text-amber-400 font-semibold">Home</a>
+          <a href="#" class="block py-2 text-slate-200 hover:text-amber-400 font-semibold">View All Members</a>
+          <a href="#" class="block py-2 text-slate-200 hover:text-amber-400 font-semibold">Assign Group Leaders</a>
+          <a href="#" class="block py-2 text-slate-200 hover:text-amber-400 font-semibold">Bank Save</a>
+          <a href="#" class="block py-2 text-slate-200 hover:text-amber-400 font-semibold">Settings</a>
+        `;
+      } else {
+        document.getElementById('dash-title').textContent = "Member Dashboard";
+        document.getElementById('member-cards-grid').classList.remove('hidden');
+        document.getElementById('admin-cards-grid').classList.add('hidden');
+        sidebarMenu.innerHTML = `
+          <a href="#" class="block py-2 text-slate-200 hover:text-amber-400 font-semibold">Home</a>
+          <a href="#" class="block py-2 text-slate-200 hover:text-amber-400 font-semibold">Profile</a>
+          <a href="#" class="block py-2 text-slate-200 hover:text-amber-400 font-semibold">Settings</a>
+        `;
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    }
+
+    function logout() {
+      location.reload();
+    }
+
+    function openModal(title, body) {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-body').textContent = body;
+      document.getElementById('modal-container').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-container').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
