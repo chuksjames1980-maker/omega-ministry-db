@@ -166,7 +166,7 @@
             </button>
           </div>
 
-          <!-- Step 3 Fields -->
+          <!-- Step 3 Fields (Gender -> Continue -> Worker Popup -> Department / Submit) -->
           <div id="reg-step-3" class="hidden space-y-4">
             <h3 class="text-sm font-semibold text-slate-300">Select Gender</h3>
             <div class="grid grid-cols-2 gap-4">
@@ -177,7 +177,27 @@
                 <input type="radio" name="reg-gender" value="Female" class="mr-2"> Female
               </label>
             </div>
-            <button type="submit" id="btn-submit-reg" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
+
+            <!-- Continue Button (Triggers "Are you a worker?" popup) -->
+            <button type="button" id="btn-step3-continue" onclick="promptWorkerStatus()" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
+              Continue
+            </button>
+
+            <!-- Department Dropdown (Shown only if member selects YES to "Are you a worker?") -->
+            <div id="reg-department-box" class="hidden space-y-2 pt-2 border-t border-slate-800">
+              <label class="block text-sm font-semibold text-amber-400">Select Your Department</label>
+              <select id="reg-department" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:border-amber-400 outline-none">
+                <option value="">-- Select Department --</option>
+                <option value="Security">Security</option>
+                <option value="Usher">Usher</option>
+                <option value="Technical">Technical</option>
+                <option value="Teachers">Teachers</option>
+                <option value="Sanitation">Sanitation</option>
+              </select>
+            </div>
+
+            <!-- Final Submit Button (Shown after answering Yes/No) -->
+            <button type="submit" id="btn-submit-reg" class="hidden w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
               Submit & Open Dashboard
             </button>
           </div>
@@ -245,7 +265,10 @@
           <div class="mb-6 flex justify-between items-center">
             <div>
               <h2 id="dash-title" class="text-xl md:text-2xl font-bold text-white">Member Overview</h2>
-              <p id="dash-subtitle" class="text-xs md:text-sm text-slate-400">Fellowship: <span id="dash-fellowship" class="text-amber-400 font-semibold">Men Fellowship</span></p>
+              <p id="dash-subtitle" class="text-xs md:text-sm text-slate-400">
+                Fellowship: <span id="dash-fellowship" class="text-amber-400 font-semibold">Men Fellowship</span>
+                <span id="dash-dept-badge" class="hidden ml-2 bg-slate-800 text-amber-300 px-2 py-0.5 rounded text-xs border border-amber-500/30"></span>
+              </p>
             </div>
           </div>
 
@@ -305,6 +328,7 @@
                       <th class="p-3">Name</th>
                       <th class="p-3">Mobile</th>
                       <th class="p-3">Fellowship</th>
+                      <th class="p-3">Department</th>
                       <th class="p-3">Status</th>
                       <th class="p-3">Role</th>
                     </tr>
@@ -350,9 +374,15 @@
                 <label class="block text-xs text-slate-400">Full Name (Read-Only)</label>
                 <input type="text" id="prof-name" readonly class="w-full bg-slate-900/50 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-400">
               </div>
-              <div>
-                <label class="block text-xs text-slate-400">Fellowship Category (Read-Only)</label>
-                <input type="text" id="prof-fellowship" readonly class="w-full bg-slate-900/50 border border-slate-800 rounded-lg p-2.5 text-sm text-amber-400 font-semibold">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-xs text-slate-400">Fellowship Category</label>
+                  <input type="text" id="prof-fellowship" readonly class="w-full bg-slate-900/50 border border-slate-800 rounded-lg p-2.5 text-sm text-amber-400 font-semibold">
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-400">Worker Department</label>
+                  <input type="text" id="prof-department" readonly class="w-full bg-slate-900/50 border border-slate-800 rounded-lg p-2.5 text-sm text-emerald-400 font-semibold">
+                </div>
               </div>
               <div>
                 <label class="block text-xs text-slate-400">House Address (Editable)</label>
@@ -436,6 +466,25 @@
       </div>
     </div>
 
+    <!-- WORKER QUESTION POPUP MODAL ("Are you a worker?") -->
+    <div id="worker-prompt-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div class="glass-card max-w-sm w-full rounded-2xl p-6 border border-amber-500/40 text-center shadow-2xl">
+        <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-3">
+          <i data-lucide="briefcase" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-lg font-bold text-amber-400 mb-2">Are you a worker?</h3>
+        <p class="text-xs text-slate-300 mb-6">Select whether you serve in any ministry department.</p>
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button" onclick="handleWorkerChoice(false)" class="w-full bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-slate-200 transition">
+            No
+          </button>
+          <button type="button" onclick="handleWorkerChoice(true)" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-2.5 rounded-lg text-slate-950 transition">
+            Yes
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -446,6 +495,7 @@
     const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     let currentUser = null;
+    let isWorker = false;
     let countdownVal = 10;
     let timerInterval;
 
@@ -520,10 +570,43 @@
       document.getElementById('reg-step-3').classList.remove('hidden');
     }
 
+    // Triggered when member clicks "Continue" after selecting Gender
+    function promptWorkerStatus() {
+      const genderEl = document.querySelector('input[name="reg-gender"]:checked');
+      if (!genderEl) {
+        openModal("Gender Required", "Please select your Gender before clicking Continue.");
+        return;
+      }
+      document.getElementById('worker-prompt-modal').classList.remove('hidden');
+    }
+
+    // Handles YES or NO from the "Are you a worker?" popup
+    function handleWorkerChoice(answer) {
+      document.getElementById('worker-prompt-modal').classList.add('hidden');
+      document.getElementById('btn-step3-continue').classList.add('hidden');
+
+      const deptBox = document.getElementById('reg-department-box');
+      const submitBtn = document.getElementById('btn-submit-reg');
+
+      if (answer === true) {
+        isWorker = true;
+        deptBox.classList.remove('hidden');
+        submitBtn.textContent = "Submit";
+        submitBtn.classList.remove('hidden');
+      } else {
+        isWorker = false;
+        deptBox.classList.add('hidden');
+        document.getElementById('reg-department').value = '';
+        submitBtn.textContent = "Submit & Open Dashboard";
+        submitBtn.classList.remove('hidden');
+      }
+    }
+
     async function handleRegistration(e) {
       e.preventDefault();
       
       const btn = document.getElementById('btn-submit-reg');
+      const originalBtnText = btn.textContent;
       btn.disabled = true;
       btn.textContent = "Saving to Database...";
 
@@ -534,8 +617,19 @@
         if (!genderEl) {
           openModal("Gender Required", "Please select your Gender.");
           btn.disabled = false;
-          btn.textContent = "Submit & Open Dashboard";
+          btn.textContent = originalBtnText;
           return;
+        }
+
+        let selectedDepartment = 'None';
+        if (isWorker) {
+          selectedDepartment = document.getElementById('reg-department').value;
+          if (!selectedDepartment) {
+            openModal("Department Required", "Please select your department (Security, Usher, Technical, Teachers, or Sanitation).");
+            btn.disabled = false;
+            btn.textContent = originalBtnText;
+            return;
+          }
         }
 
         const marital = maritalEl.value;
@@ -569,10 +663,12 @@
           marital_status: marital,
           gender: gender,
           fellowship: fellowship,
+          department: selectedDepartment,
           role: 'member',
           status: 'active'
         };
 
+        // Save to Supabase profiles table
         if (supabaseClient) {
           const { data, error } = await supabaseClient
             .from('profiles')
@@ -581,24 +677,48 @@
 
           if (error) {
             console.error("Supabase insert error:", error);
-            currentUser = memberData;
-          } else if (data && data.length > 0) {
-            currentUser = data[0];
-          } else {
-            currentUser = memberData;
           }
-        } else {
-          currentUser = memberData;
         }
 
-        openDashboard();
+        // Also save department assignment locally by exact department bucket (Security, Usher, Technical, Teachers, Sanitation)
+        if (isWorker && selectedDepartment !== 'None') {
+          const deptKey = `omega_dept_${selectedDepartment.toLowerCase()}`;
+          const existingDeptList = JSON.parse(localStorage.getItem(deptKey) || '[]');
+          existingDeptList.push({
+            full_name: name,
+            mobile_number: mobile,
+            fellowship: fellowship,
+            department: selectedDepartment,
+            registered_at: new Date().toLocaleDateString()
+          });
+          localStorage.setItem(deptKey, JSON.stringify(existingDeptList));
+        }
+
+        // Save fallback locally in case Supabase RLS blocks or offline
+        localStorage.setItem(`omega_member_${mobile}`, JSON.stringify(memberData));
+
+        // Reset registration steps & open Login tab with mobile number pre-filled
+        document.getElementById('form-register').reset();
+        document.getElementById('reg-step-3').classList.add('hidden');
+        document.getElementById('reg-step-2').classList.add('hidden');
+        document.getElementById('reg-step-1').classList.remove('hidden');
+        document.getElementById('reg-department-box').classList.add('hidden');
+        document.getElementById('btn-submit-reg').classList.add('hidden');
+        document.getElementById('btn-step3-continue').classList.remove('hidden');
+        isWorker = false;
+
+        document.getElementById('login-mobile').value = mobile;
+        switchAuthTab('login');
+
+        const deptMsg = selectedDepartment !== 'None' ? ` under ${selectedDepartment} Department` : '';
+        openModal("Registration Successful", `Account saved${deptMsg}. Please enter your 4-digit PIN on the Login screen to open your dashboard.`);
 
       } catch (err) {
         console.error("Registration form exception:", err);
         openModal("Registration Error", err.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = "Submit & Open Dashboard";
+        btn.textContent = originalBtnText;
       }
     }
 
@@ -608,27 +728,33 @@
       const pin = document.getElementById('login-pin').value;
 
       if (pin === '12345678') {
-        currentUser = { full_name: 'System Admin', mobile_number: mobile, fellowship: 'All Fellowships', role: 'admin' };
+        currentUser = { full_name: 'System Admin', mobile_number: mobile, fellowship: 'All Fellowships', department: 'Administration', role: 'admin' };
         openDashboard();
         return;
       }
 
       if (supabaseClient) {
         const { data, error } = await supabaseClient.from('profiles').select('*').eq('mobile_number', mobile).eq('pin', pin).single();
-        if (error || !data) {
-          openModal("Login Failed", "Invalid Mobile Number or PIN.");
+        if (data) {
+          if (data.status === 'blocked') {
+            openModal("Account Blocked", "Your account is blocked by Admin.");
+            return;
+          }
+          currentUser = data;
+          openDashboard();
           return;
         }
-        if (data.status === 'blocked') {
-          openModal("Account Blocked", "Your account is blocked by Admin.");
-          return;
-        }
-        currentUser = data;
-      } else {
-        currentUser = { full_name: 'Member User', mobile_number: mobile, fellowship: 'Men Fellowship', role: 'member' };
       }
 
-      openDashboard();
+      // Check local storage fallback if registered recently
+      const localMember = JSON.parse(localStorage.getItem(`omega_member_${mobile}`) || 'null');
+      if (localMember && localMember.pin === pin) {
+        currentUser = localMember;
+        openDashboard();
+        return;
+      }
+
+      openModal("Login Failed", "Invalid Mobile Number or PIN.");
     }
 
     function bufferDecode(value) {
@@ -736,20 +862,25 @@
               .eq('mobile_number', targetMobile)
               .single();
 
-            if (error || !data) {
-              openModal("Account Not Found", "Fingerprint verified, but no member record matched " + targetMobile + ".");
+            if (data) {
+              if (data.status === 'blocked') {
+                openModal("Account Blocked", "Your account is blocked by Admin.");
+                return;
+              }
+              currentUser = data;
+              openDashboard();
               return;
             }
-            if (data.status === 'blocked') {
-              openModal("Account Blocked", "Your account is blocked by Admin.");
-              return;
-            }
-            currentUser = data;
-          } else {
-            currentUser = { full_name: 'Member User', mobile_number: targetMobile, fellowship: 'Men Fellowship', role: 'member' };
           }
 
-          openDashboard();
+          const localMember = JSON.parse(localStorage.getItem(`omega_member_${targetMobile}`) || 'null');
+          if (localMember) {
+            currentUser = localMember;
+            openDashboard();
+            return;
+          }
+
+          openModal("Account Not Found", "Fingerprint verified, but no member record matched " + targetMobile + ".");
         }
       } catch (err) {
         console.error("Fingerprint login error:", err);
@@ -763,6 +894,15 @@
 
       document.getElementById('header-username').textContent = currentUser.full_name || currentUser.name;
       document.getElementById('dash-fellowship').textContent = currentUser.fellowship;
+
+      const deptBadge = document.getElementById('dash-dept-badge');
+      if (currentUser.department && currentUser.department !== 'None') {
+        deptBadge.textContent = `Worker: ${currentUser.department}`;
+        deptBadge.classList.remove('hidden');
+      } else {
+        deptBadge.classList.add('hidden');
+      }
+
       if (currentUser.avatar_url) {
         document.getElementById('header-avatar').src = currentUser.avatar_url;
       }
@@ -794,7 +934,7 @@
             <button onclick="openAdminModule('Department Message', 'Send internal notices to church departments')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
               Department Message
             </button>
-            <button onclick="openAdminModule('Department', 'Create and manage ministry departments')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
+            <button onclick="openAdminModule('Department', 'View workers registered in Security, Usher, Technical, Teachers & Sanitation')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
               Department
             </button>
             <button onclick="openAdminModule('Service Record', 'Log weekly attendance, offerings, and service summaries')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
@@ -855,7 +995,7 @@
       icon.classList.toggle('rotate-180');
     }
 
-    function openAdminModule(title, subtitle) {
+    async function openAdminModule(title, subtitle) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
       document.getElementById('view-admin-module').classList.remove('hidden');
 
@@ -863,19 +1003,39 @@
       document.getElementById('module-subtitle').textContent = subtitle;
 
       const contentBox = document.getElementById('module-content');
-      contentBox.innerHTML = `
-        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4">
-          <div class="flex flex-col md:flex-row gap-3">
-            <input type="text" id="module-input-title" placeholder="Enter ${title} entry or note..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
-            <button onclick="saveModuleEntry('${title}')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-5 py-2.5 rounded-lg text-sm transition">
-              Save Entry
-            </button>
+
+      // If Admin opens "Department", show workers grouped by Security, Usher, Technical, Teachers, Sanitation
+      if (title === 'Department') {
+        const depts = ['Security', 'Usher', 'Technical', 'Teachers', 'Sanitation'];
+        let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+        for (const dept of depts) {
+          const localWorkers = JSON.parse(localStorage.getItem(`omega_dept_${dept.toLowerCase()}`) || '[]');
+          html += `
+            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+              <h4 class="text-sm font-bold text-amber-400 mb-2">${dept} Department (${localWorkers.length})</h4>
+              <div class="space-y-1 text-xs text-slate-300">
+                ${localWorkers.length ? localWorkers.map(w => `<div class="p-2 bg-slate-950 rounded border border-slate-800 flex justify-between"><span>${w.full_name}</span><span class="text-slate-400">${w.mobile_number}</span></div>`).join('') : '<p class="text-slate-500 italic">No workers registered yet.</p>'}
+              </div>
+            </div>
+          `;
+        }
+        html += `</div>`;
+        contentBox.innerHTML = html;
+      } else {
+        contentBox.innerHTML = `
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4">
+            <div class="flex flex-col md:flex-row gap-3">
+              <input type="text" id="module-input-title" placeholder="Enter ${title} entry or note..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
+              <button onclick="saveModuleEntry('${title}')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-5 py-2.5 rounded-lg text-sm transition">
+                Save Entry
+              </button>
+            </div>
+            <div id="module-entries-list" class="text-xs text-slate-400 pt-2 border-t border-slate-800">
+              Ready to record new ${title} data.
+            </div>
           </div>
-          <div id="module-entries-list" class="text-xs text-slate-400 pt-2 border-t border-slate-800">
-            Ready to record new ${title} data.
-          </div>
-        </div>
-      `;
+        `;
+      }
 
       const sidebar = document.getElementById('sidebar');
       if (!sidebar.classList.contains('-translate-x-full')) {
@@ -902,6 +1062,7 @@
       if (viewName === 'profile' && currentUser) {
         document.getElementById('prof-name').value = currentUser.full_name || currentUser.name;
         document.getElementById('prof-fellowship').value = currentUser.fellowship;
+        document.getElementById('prof-department').value = currentUser.department || 'None';
         document.getElementById('prof-address').value = currentUser.house_address || '';
         if (currentUser.avatar_url) {
           document.getElementById('profile-page-avatar').src = currentUser.avatar_url;
@@ -945,85 +1106,3 @@
 
     async function saveAddress() {
       const newAddress = document.getElementById('prof-address').value;
-      if (supabaseClient && currentUser.id) {
-        await supabaseClient.from('profiles').update({ house_address: newAddress }).eq('id', currentUser.id);
-      }
-      openModal("Success", "Address updated successfully!");
-    }
-
-    async function changePIN(e) {
-      e.preventDefault();
-      const oldPin = document.getElementById('pin-old').value;
-      const newPin = document.getElementById('pin-new').value;
-      const confirmPin = document.getElementById('pin-confirm').value;
-
-      if (currentUser.pin && oldPin !== currentUser.pin) {
-        openModal("Error", "Incorrect Old PIN.");
-        return;
-      }
-      if (newPin !== confirmPin) {
-        openModal("Error", "New PIN and Confirm PIN do not match.");
-        return;
-      }
-
-      if (supabaseClient && currentUser.id) {
-        await supabaseClient.from('profiles').update({ pin: newPin }).eq('id', currentUser.id);
-      }
-      currentUser.pin = newPin;
-      openModal("Success", "Security PIN changed successfully!");
-    }
-
-    function playSelectedSound() {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-      gain.gain.setValueAtTime(0.5, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.8);
-    }
-
-    async function loadAdminDirectory() {
-      if (!supabaseClient) return;
-      const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
-      if (error) return;
-
-      const tbody = document.getElementById('admin-members-list');
-      tbody.innerHTML = data.map(m => `
-        <tr class="border-b border-slate-800 hover:bg-slate-900/50">
-          <td class="p-3 font-semibold text-white">${m.full_name}</td>
-          <td class="p-3 text-slate-400">${m.mobile_number}</td>
-          <td class="p-3 text-amber-400">${m.fellowship}</td>
-          <td class="p-3"><span class="px-2 py-1 text-xs rounded ${m.status === 'active' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${m.status}</span></td>
-          <td class="p-3 text-slate-300 capitalize">${m.role}</td>
-        </tr>
-      `).join('');
-    }
-
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebar-overlay');
-      sidebar.classList.toggle('-translate-x-full');
-      overlay.classList.toggle('hidden');
-    }
-
-    function logout() {
-      location.reload();
-    }
-
-    function openModal(title, body) {
-      document.getElementById('modal-title').textContent = title;
-      document.getElementById('modal-body').textContent = body;
-      document.getElementById('modal-container').classList.remove('hidden');
-    }
-
-    function closeModal() {
-      document.getElementById('modal-container').classList.add('hidden');
-    }
-  </script>
-</body>
-</html>
