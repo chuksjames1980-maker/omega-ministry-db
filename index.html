@@ -48,7 +48,7 @@
         <!-- Spinning Gear Outer Ring -->
         <svg class="w-32 h-32 text-amber-500 animate-spin-gear opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33-1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
         </svg>
 
         <!-- Book & Writing Pen Center Icon -->
@@ -147,7 +147,7 @@
               <label class="block text-xs text-slate-400 mb-1">4-Digit Security PIN</label>
               <input type="password" maxlength="4" pattern="\d{4}" id="reg-pin" required placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-center tracking-widest focus:border-amber-400 outline-none">
             </div>
-            <button type="button" onclick="goToStep(2)" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
+            <button type="button" onclick="validateStep1()" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
               Next (Marital Status)
             </button>
           </div>
@@ -155,13 +155,13 @@
           <!-- Step 2 Fields -->
           <div id="reg-step-2" class="hidden space-y-4">
             <h3 class="text-sm font-semibold text-slate-300">Select Marital Status</h3>
-            <select id="reg-marital" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:border-amber-400 outline-none">
+            <select id="reg-marital" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:border-amber-400 outline-none">
               <option value="">-- Select Status --</option>
               <option value="Married">Married</option>
               <option value="Single">Single</option>
               <option value="Children">Children</option>
             </select>
-            <button type="button" onclick="goToStep(3)" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
+            <button type="button" onclick="validateStep2()" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-3 rounded-lg text-slate-950 transition">
               Next (Gender Selection)
             </button>
           </div>
@@ -171,7 +171,7 @@
             <h3 class="text-sm font-semibold text-slate-300">Select Gender</h3>
             <div class="grid grid-cols-2 gap-4">
               <label class="flex items-center justify-center p-4 bg-slate-900 border border-slate-700 rounded-xl cursor-pointer hover:border-amber-400">
-                <input type="radio" name="reg-gender" value="Male" class="mr-2" required> Male
+                <input type="radio" name="reg-gender" value="Male" class="mr-2"> Male
               </label>
               <label class="flex items-center justify-center p-4 bg-slate-900 border border-slate-700 rounded-xl cursor-pointer hover:border-amber-400">
                 <input type="radio" name="reg-gender" value="Female" class="mr-2"> Female
@@ -465,11 +465,33 @@
       }
     }
 
-    function goToStep(step) {
+    function validateStep1() {
+      const name = document.getElementById('reg-fullname').value;
+      const mobile = document.getElementById('reg-mobile').value;
+      const address = document.getElementById('reg-address').value;
+      const stateRes = document.getElementById('reg-state-res').value;
+      const stateOri = document.getElementById('reg-state-ori').value;
+      const dob = document.getElementById('reg-dob').value;
+      const pin = document.getElementById('reg-pin').value;
+
+      if (!name || !mobile || !address || !stateRes || !stateOri || !dob || !pin) {
+        alert("Please fill in all required fields in Step 1 before proceeding.");
+        return;
+      }
+
       document.getElementById('reg-step-1').classList.add('hidden');
+      document.getElementById('reg-step-2').classList.remove('hidden');
+    }
+
+    function validateStep2() {
+      const marital = document.getElementById('reg-marital').value;
+      if (!marital) {
+        alert("Please select your Marital Status.");
+        return;
+      }
+
       document.getElementById('reg-step-2').classList.add('hidden');
-      document.getElementById('reg-step-3').classList.add('hidden');
-      document.getElementById(`reg-step-${step}`).classList.remove('hidden');
+      document.getElementById('reg-step-3').classList.remove('hidden');
     }
 
     async function handleRegistration(e) {
@@ -483,17 +505,8 @@
         const maritalEl = document.getElementById('reg-marital');
         const genderEl = document.querySelector('input[name="reg-gender"]:checked');
         
-        if (!maritalEl || !maritalEl.value) {
-          alert("Please select your Marital Status.");
-          goToStep(2);
-          btn.disabled = false;
-          btn.textContent = "Submit & Open Dashboard";
-          return;
-        }
-        
         if (!genderEl) {
           alert("Please select your Gender.");
-          goToStep(3);
           btn.disabled = false;
           btn.textContent = "Submit & Open Dashboard";
           return;
@@ -554,7 +567,6 @@
           currentUser = memberData;
         }
 
-        // Always transition to dashboard upon completion
         openDashboard();
 
       } catch (err) {
