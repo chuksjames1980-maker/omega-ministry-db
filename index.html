@@ -48,7 +48,7 @@
         <!-- Spinning Gear Outer Ring -->
         <svg class="w-32 h-32 text-amber-500 animate-spin-gear opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33-1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
         </svg>
 
         <!-- Book & Writing Pen Center Icon -->
@@ -404,13 +404,13 @@
       </main>
     </div>
 
-    <!-- MODAL SYSTEM -->
+    <!-- CUSTOM APP MODAL SYSTEM (Replaces browser alert boxes) -->
     <div id="modal-container" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-700">
-        <h3 id="modal-title" class="text-lg font-bold text-amber-400 mb-2">Detail View</h3>
+      <div class="glass-card max-w-md w-full rounded-2xl p-6 border border-slate-700 text-center">
+        <h3 id="modal-title" class="text-lg font-bold text-amber-400 mb-2">Notification</h3>
         <p id="modal-body" class="text-sm text-slate-300 mb-6">Information details...</p>
-        <button onclick="closeModal()" class="w-full bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-slate-200">
-          Close
+        <button onclick="closeModal()" class="w-full bg-amber-500 hover:bg-amber-600 font-bold py-2.5 rounded-lg text-slate-950 transition">
+          OK
         </button>
       </div>
     </div>
@@ -475,7 +475,7 @@
       const pin = document.getElementById('reg-pin').value;
 
       if (!name || !mobile || !address || !stateRes || !stateOri || !dob || !pin) {
-        alert("Please fill in all required fields in Step 1 before proceeding.");
+        openModal("Required Fields", "Please fill in all required fields in Step 1 before proceeding.");
         return;
       }
 
@@ -486,7 +486,7 @@
     function validateStep2() {
       const marital = document.getElementById('reg-marital').value;
       if (!marital) {
-        alert("Please select your Marital Status.");
+        openModal("Marital Status Required", "Please select your Marital Status.");
         return;
       }
 
@@ -506,7 +506,7 @@
         const genderEl = document.querySelector('input[name="reg-gender"]:checked');
         
         if (!genderEl) {
-          alert("Please select your Gender.");
+          openModal("Gender Required", "Please select your Gender.");
           btn.disabled = false;
           btn.textContent = "Submit & Open Dashboard";
           return;
@@ -524,7 +524,6 @@
         const dob = document.getElementById('reg-dob').value || '';
         const pin = document.getElementById('reg-pin').value;
 
-        // Automatic Fellowship Routing Logic
         let fellowship = "";
         if (marital === "Married" && gender === "Male") fellowship = "Men Fellowship";
         else if (marital === "Married" && gender === "Female") fellowship = "Women Fellowship";
@@ -548,8 +547,7 @@
           status: 'active'
         };
 
-        // Database Insert with Error Catching
-        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        if (supabaseClient) {
           const { data, error } = await supabaseClient
             .from('profiles')
             .insert([memberData])
@@ -571,7 +569,7 @@
 
       } catch (err) {
         console.error("Registration form exception:", err);
-        alert("An error occurred during registration: " + err.message);
+        openModal("Registration Error", err.message);
       } finally {
         btn.disabled = false;
         btn.textContent = "Submit & Open Dashboard";
@@ -592,11 +590,11 @@
       if (supabaseClient) {
         const { data, error } = await supabaseClient.from('profiles').select('*').eq('mobile_number', mobile).eq('pin', pin).single();
         if (error || !data) {
-          alert('Invalid Mobile Number or PIN.');
+          openModal("Login Failed", "Invalid Mobile Number or PIN.");
           return;
         }
         if (data.status === 'blocked') {
-          alert('Your account is blocked by Admin.');
+          openModal("Account Blocked", "Your account is blocked by Admin.");
           return;
         }
         currentUser = data;
@@ -669,7 +667,7 @@
       if (supabaseClient) {
         const { data, error } = await supabaseClient.storage.from('avatars').upload(fileName, file, { upsert: true });
         if (error) {
-          alert('Upload failed: ' + error.message);
+          openModal("Upload Failed", error.message);
           return;
         }
         const { data: publicUrlData } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
@@ -679,12 +677,12 @@
         currentUser.avatar_url = avatarUrl;
         document.getElementById('header-avatar').src = avatarUrl;
         document.getElementById('profile-page-avatar').src = avatarUrl;
-        alert('Profile picture updated successfully!');
+        openModal("Success", "Profile picture updated successfully!");
       } else {
         const localUrl = URL.createObjectURL(file);
         document.getElementById('header-avatar').src = localUrl;
         document.getElementById('profile-page-avatar').src = localUrl;
-        alert('Profile picture updated!');
+        openModal("Success", "Profile picture updated!");
       }
     }
 
@@ -693,7 +691,7 @@
       if (supabaseClient && currentUser.id) {
         await supabaseClient.from('profiles').update({ house_address: newAddress }).eq('id', currentUser.id);
       }
-      alert('Address updated successfully!');
+      openModal("Success", "Address updated successfully!");
     }
 
     async function changePIN(e) {
@@ -703,11 +701,11 @@
       const confirmPin = document.getElementById('pin-confirm').value;
 
       if (currentUser.pin && oldPin !== currentUser.pin) {
-        alert('Incorrect Old PIN.');
+        openModal("Error", "Incorrect Old PIN.");
         return;
       }
       if (newPin !== confirmPin) {
-        alert('New PIN and Confirm PIN do not match.');
+        openModal("Error", "New PIN and Confirm PIN do not match.");
         return;
       }
 
@@ -715,7 +713,7 @@
         await supabaseClient.from('profiles').update({ pin: newPin }).eq('id', currentUser.id);
       }
       currentUser.pin = newPin;
-      alert('Security PIN changed successfully!');
+      openModal("Success", "Security PIN changed successfully!");
     }
 
     function playSelectedSound() {
@@ -733,7 +731,7 @@
     }
 
     function registerFingerprint() {
-      alert('Biometric Fingerprint registered successfully for this device!');
+      openModal("Biometrics", "Biometric Fingerprint registered successfully for this device!");
     }
 
     async function loadAdminDirectory() {
