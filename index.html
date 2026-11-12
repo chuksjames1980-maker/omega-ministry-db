@@ -48,7 +48,7 @@
         <!-- Spinning Gear Outer Ring -->
         <svg class="w-32 h-32 text-amber-500 animate-spin-gear opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l-.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33-1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33-1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
         </svg>
 
         <!-- Book & Writing Pen Center Icon -->
@@ -439,6 +439,12 @@
       const progressBar = document.getElementById('progress-bar');
       const countdown = document.getElementById('countdown');
 
+      // Pre-fill mobile number if biometric passkey was saved on this phone
+      const savedBioMobile = localStorage.getItem('omega_bio_mobile');
+      if (savedBioMobile) {
+        document.getElementById('login-mobile').value = savedBioMobile;
+      }
+
       timerInterval = setInterval(() => {
         countdownVal--;
         countdown.textContent = countdownVal;
@@ -520,7 +526,7 @@
         const marital = maritalEl.value;
         const gender = genderEl.value;
         const name = document.getElementById('reg-fullname').value;
-        const mobile = document.getElementById('reg-mobile').value;
+        const mobile = document.getElementById('reg-mobile').value.trim();
         const whatsapp = document.getElementById('reg-whatsapp').value || '';
         const address = document.getElementById('reg-address').value || '';
         const stateRes = document.getElementById('reg-state-res').value || '';
@@ -583,11 +589,11 @@
 
     async function handleLogin(e) {
       e.preventDefault();
-      const mobile = document.getElementById('login-mobile').value;
+      const mobile = document.getElementById('login-mobile').value.trim();
       const pin = document.getElementById('login-pin').value;
 
       if (pin === '12345678') {
-        currentUser = { full_name: 'System Admin', fellowship: 'All Fellowships', role: 'admin' };
+        currentUser = { full_name: 'System Admin', mobile_number: mobile, fellowship: 'All Fellowships', role: 'admin' };
         openDashboard();
         return;
       }
@@ -604,62 +610,143 @@
         }
         currentUser = data;
       } else {
-        currentUser = { full_name: 'Member User', fellowship: 'Men Fellowship', role: 'member' };
+        currentUser = { full_name: 'Member User', mobile_number: mobile, fellowship: 'Men Fellowship', role: 'member' };
       }
 
       openDashboard();
     }
 
-    // FINGERPRINT LOGIN HANDLER
-    async function loginWithFingerprint() {
-      const mobile = document.getElementById('login-mobile').value;
-      if (!mobile) {
-        openModal("Mobile Number Required", "Please enter your registered mobile number first before using fingerprint login.");
+    // Helper: Convert Base64URL to Uint8Array for WebAuthn
+    function bufferDecode(value) {
+      const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+      const pad = base64.length % 4;
+      const padded = pad ? base64 + '='.repeat(4 - pad) : base64;
+      const raw = window.atob(padded);
+      const buffer = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) buffer[i] = raw.charCodeAt(i);
+      return buffer;
+    }
+
+    // Helper: Convert ArrayBuffer to Base64URL
+    function bufferEncode(value) {
+      const bytes = new Uint8Array(value);
+      let str = '';
+      for (const byte of bytes) str += String.fromCharCode(byte);
+      return window.btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    // STEP A: REGISTER REAL DEVICE FINGERPRINT (Inside Settings)
+    async function registerFingerprint() {
+      if (!currentUser || !currentUser.mobile_number) {
+        openModal("Error", "Please ensure your profile has a registered mobile number first.");
+        return;
+      }
+
+      if (!window.PublicKeyCredential) {
+        openModal("Not Supported", "Your browser does not support biometric fingerprint registration.");
         return;
       }
 
       try {
-        // Check if device supports WebAuthn Biometrics
-        if (window.PublicKeyCredential) {
-          const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-          if (available) {
-            // Trigger device biometric prompt (FaceID / TouchID / Fingerprint)
-            const credential = await navigator.credentials.get({
-              publicKey: {
-                challenge: new Uint8Array([1,2,3,4,5,6,7,8]),
-                timeout: 60000,
-                userVerification: "required"
-              }
-            });
-            if (credential) {
-              // Fetch user profile from Supabase by mobile number
-              if (supabaseClient) {
-                const { data, error } = await supabaseClient.from('profiles').select('*').eq('mobile_number', mobile).single();
-                if (error || !data) {
-                  openModal("Fingerprint Login Failed", "No account found with this mobile number.");
-                  return;
-                }
-                currentUser = data;
-                openDashboard();
-                return;
-              }
-            }
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        const userId = new TextEncoder().encode(currentUser.mobile_number);
+
+        const credential = await navigator.credentials.create({
+          publicKey: {
+            challenge: challenge,
+            rp: {
+              name: "Omega City of Mercy Ministry",
+              id: window.location.hostname
+            },
+            user: {
+              id: userId,
+              name: currentUser.mobile_number,
+              displayName: currentUser.full_name || "Ministry Member"
+            },
+            pubKeyCredParams: [
+              { type: "public-key", alg: -7 },  // ES256
+              { type: "public-key", alg: -257 } // RS256
+            ],
+            authenticatorSelection: {
+              authenticatorAttachment: "platform", // Forces built-in fingerprint/FaceID
+              userVerification: "required"
+            },
+            timeout: 60000
           }
+        });
+
+        if (credential) {
+          // Save credential ID and mobile number on this phone
+          localStorage.setItem('omega_bio_cred_id', bufferEncode(credential.rawId));
+          localStorage.setItem('omega_bio_mobile', currentUser.mobile_number);
+          openModal("Fingerprint Registered", "Your device fingerprint is now linked! Next time, simply tap 'Login with Fingerprint' on the login screen.");
         }
-        // Fallback simulation if browser biometrics aren't configured on local testing
-        if (supabaseClient) {
-          const { data } = await supabaseClient.from('profiles').select('*').eq('mobile_number', mobile).single();
-          if (data) {
-            currentUser = data;
-            openDashboard();
-            return;
-          }
-        }
-        openModal("Biometric Verified", "Fingerprint verified successfully! Opening dashboard...");
-        currentUser = { full_name: 'Biometric Member', fellowship: 'Men Fellowship', role: 'member' };
-        openDashboard();
       } catch (err) {
-        openModal("Biometric Notice", "Fingerprint login was cancelled or not set up on this device. Please use your 4-digit PIN.");
+        console.error("Biometric registration error:", err);
+        openModal("Registration Cancelled", "Fingerprint scan was cancelled or not configured on your device settings.");
+      }
+    }
+
+    // STEP B: REAL FINGERPRINT SCAN & DASHBOARD REDIRECT (On Login Screen)
+    async function loginWithFingerprint() {
+      const savedCredId = localStorage.getItem('omega_bio_cred_id');
+      const savedMobile = localStorage.getItem('omega_bio_mobile');
+      const inputMobile = document.getElementById('login-mobile').value.trim();
+      const targetMobile = inputMobile || savedMobile;
+
+      if (!savedCredId || !targetMobile) {
+        openModal("Fingerprint Not Set Up", "No fingerprint has been registered on this phone yet. Please log in once with your Mobile Number & PIN, go to Settings, and tap 'Register Device Fingerprint'.");
+        return;
+      }
+
+      try {
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+
+        // Triggers your phone's real native fingerprint prompt
+        const assertion = await navigator.credentials.get({
+          publicKey: {
+            challenge: challenge,
+            rpId: window.location.hostname,
+            allowCredentials: [{
+              id: bufferDecode(savedCredId),
+              type: "public-key",
+              transports: ["internal"]
+            }],
+            userVerification: "required",
+            timeout: 60000
+          }
+        });
+
+        if (assertion) {
+          // Fingerprint matched! Fetch member data and open dashboard immediately
+          if (supabaseClient) {
+            const { data, error } = await supabaseClient
+              .from('profiles')
+              .select('*')
+              .eq('mobile_number', targetMobile)
+              .single();
+
+            if (error || !data) {
+              openModal("Account Not Found", "Fingerprint verified, but no member record matched " + targetMobile + ".");
+              return;
+            }
+            if (data.status === 'blocked') {
+              openModal("Account Blocked", "Your account is blocked by Admin.");
+              return;
+            }
+            currentUser = data;
+          } else {
+            currentUser = { full_name: 'Member User', mobile_number: targetMobile, fellowship: 'Men Fellowship', role: 'member' };
+          }
+
+          // Redirect straight to Dashboard without blocking modal
+          openDashboard();
+        }
+      } catch (err) {
+        console.error("Fingerprint login error:", err);
+        openModal("Fingerprint Failed", "Fingerprint scan failed or was cancelled. Please try again or use your 4-digit PIN.");
       }
     }
 
@@ -669,6 +756,9 @@
 
       document.getElementById('header-username').textContent = currentUser.full_name || currentUser.name;
       document.getElementById('dash-fellowship').textContent = currentUser.fellowship;
+      if (currentUser.avatar_url) {
+        document.getElementById('header-avatar').src = currentUser.avatar_url;
+      }
 
       const sidebarMenu = document.getElementById('sidebar-menu');
       if (currentUser.role === 'admin') {
@@ -786,10 +876,6 @@
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
       osc.start();
       osc.stop(ctx.currentTime + 0.8);
-    }
-
-    function registerFingerprint() {
-      openModal("Biometrics", "Biometric Fingerprint registered successfully for this device!");
     }
 
     async function loadAdminDirectory() {
