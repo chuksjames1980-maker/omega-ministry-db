@@ -48,7 +48,7 @@
         <!-- Spinning Gear Outer Ring -->
         <svg class="w-32 h-32 text-amber-500 animate-spin-gear opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33-1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
         </svg>
 
         <!-- Book & Writing Pen Center Icon -->
@@ -227,12 +227,12 @@
 
       <!-- SIDEBAR -->
       <div id="sidebar-overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"></div>
-      <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-slate-900 z-50 transform -translate-x-full transition-transform duration-300 flex flex-col p-6 border-r border-slate-800">
+      <aside id="sidebar" class="fixed top-0 left-0 h-full w-72 bg-slate-900 z-50 transform -translate-x-full transition-transform duration-300 flex flex-col p-6 border-r border-slate-800 overflow-y-auto">
         <h2 class="text-amber-400 font-bold text-lg mb-6">Ministry Navigation</h2>
-        <nav class="space-y-3 flex-1" id="sidebar-menu">
+        <nav class="space-y-1.5 flex-1" id="sidebar-menu">
           <!-- Dynamically populated -->
         </nav>
-        <button onclick="logout()" class="flex items-center gap-2 text-rose-400 hover:text-rose-300 font-medium text-sm mt-auto">
+        <button onclick="logout()" class="flex items-center gap-2 text-rose-400 hover:text-rose-300 font-medium text-sm mt-6 pt-4 border-t border-slate-800">
           <i data-lucide="log-out" class="w-4 h-4"></i> Logout
         </button>
       </aside>
@@ -241,7 +241,7 @@
       <main class="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full">
         
         <!-- VIEW 1: DASHBOARD HOME -->
-        <div id="view-home">
+        <div id="view-home" class="view-section">
           <div class="mb-6 flex justify-between items-center">
             <div>
               <h2 id="dash-title" class="text-xl md:text-2xl font-bold text-white">Member Overview</h2>
@@ -316,8 +316,24 @@
           </div>
         </div>
 
+        <!-- VIEW: DYNAMIC ADMIN MODULE WORKSPACE -->
+        <div id="view-admin-module" class="view-section hidden space-y-6">
+          <div class="glass-card p-6 rounded-2xl border border-slate-800">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
+              <div>
+                <h2 id="module-title" class="text-xl md:text-2xl font-bold text-amber-400">Module Title</h2>
+                <p id="module-subtitle" class="text-xs text-slate-400 mt-1">Manage ministry records and assignments</p>
+              </div>
+              <button onclick="showView('home')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg transition">
+                Back to Home
+              </button>
+            </div>
+            <div id="module-content" class="space-y-4"></div>
+          </div>
+        </div>
+
         <!-- VIEW 2: PROFILE PAGE -->
-        <div id="view-profile" class="hidden max-w-xl mx-auto space-y-6">
+        <div id="view-profile" class="view-section hidden max-w-xl mx-auto space-y-6">
           <div class="glass-card p-6 rounded-2xl space-y-4">
             <h2 class="text-xl font-bold text-amber-400 border-b border-slate-800 pb-2">Member Profile</h2>
             
@@ -350,7 +366,7 @@
         </div>
 
         <!-- VIEW 3: SETTINGS PAGE -->
-        <div id="view-settings" class="hidden max-w-xl mx-auto space-y-6">
+        <div id="view-settings" class="view-section hidden max-w-xl mx-auto space-y-6">
           <div class="glass-card p-6 rounded-2xl space-y-6">
             <h2 class="text-xl font-bold text-amber-400 border-b border-slate-800 pb-2">Account Settings</h2>
             
@@ -439,7 +455,6 @@
       const progressBar = document.getElementById('progress-bar');
       const countdown = document.getElementById('countdown');
 
-      // Pre-fill mobile number if biometric passkey was saved on this phone
       const savedBioMobile = localStorage.getItem('omega_bio_mobile');
       if (savedBioMobile) {
         document.getElementById('login-mobile').value = savedBioMobile;
@@ -616,7 +631,6 @@
       openDashboard();
     }
 
-    // Helper: Convert Base64URL to Uint8Array for WebAuthn
     function bufferDecode(value) {
       const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
       const pad = base64.length % 4;
@@ -627,7 +641,6 @@
       return buffer;
     }
 
-    // Helper: Convert ArrayBuffer to Base64URL
     function bufferEncode(value) {
       const bytes = new Uint8Array(value);
       let str = '';
@@ -635,7 +648,6 @@
       return window.btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     }
 
-    // STEP A: REGISTER REAL DEVICE FINGERPRINT (Inside Settings)
     async function registerFingerprint() {
       if (!currentUser || !currentUser.mobile_number) {
         openModal("Error", "Please ensure your profile has a registered mobile number first.");
@@ -665,11 +677,11 @@
               displayName: currentUser.full_name || "Ministry Member"
             },
             pubKeyCredParams: [
-              { type: "public-key", alg: -7 },  // ES256
-              { type: "public-key", alg: -257 } // RS256
+              { type: "public-key", alg: -7 },
+              { type: "public-key", alg: -257 }
             ],
             authenticatorSelection: {
-              authenticatorAttachment: "platform", // Forces built-in fingerprint/FaceID
+              authenticatorAttachment: "platform",
               userVerification: "required"
             },
             timeout: 60000
@@ -677,7 +689,6 @@
         });
 
         if (credential) {
-          // Save credential ID and mobile number on this phone
           localStorage.setItem('omega_bio_cred_id', bufferEncode(credential.rawId));
           localStorage.setItem('omega_bio_mobile', currentUser.mobile_number);
           openModal("Fingerprint Registered", "Your device fingerprint is now linked! Next time, simply tap 'Login with Fingerprint' on the login screen.");
@@ -688,7 +699,6 @@
       }
     }
 
-    // STEP B: REAL FINGERPRINT SCAN & DASHBOARD REDIRECT (On Login Screen)
     async function loginWithFingerprint() {
       const savedCredId = localStorage.getItem('omega_bio_cred_id');
       const savedMobile = localStorage.getItem('omega_bio_mobile');
@@ -704,7 +714,6 @@
         const challenge = new Uint8Array(32);
         window.crypto.getRandomValues(challenge);
 
-        // Triggers your phone's real native fingerprint prompt
         const assertion = await navigator.credentials.get({
           publicKey: {
             challenge: challenge,
@@ -720,7 +729,6 @@
         });
 
         if (assertion) {
-          // Fingerprint matched! Fetch member data and open dashboard immediately
           if (supabaseClient) {
             const { data, error } = await supabaseClient
               .from('profiles')
@@ -741,7 +749,6 @@
             currentUser = { full_name: 'Member User', mobile_number: targetMobile, fellowship: 'Men Fellowship', role: 'member' };
           }
 
-          // Redirect straight to Dashboard without blocking modal
           openDashboard();
         }
       } catch (err) {
@@ -765,11 +772,69 @@
         document.getElementById('dash-title').textContent = "Admin Executive Dashboard";
         document.getElementById('member-cards-grid').classList.add('hidden');
         document.getElementById('admin-cards-grid').classList.remove('hidden');
+        
         sidebarMenu.innerHTML = `
-          <button onclick="showView('home')" class="w-full text-left py-2 text-slate-200 hover:text-amber-400 font-semibold">Home</button>
-          <button onclick="showView('home')" class="w-full text-left py-2 text-slate-200 hover:text-amber-400 font-semibold">View All Members</button>
-          <button onclick="showView('settings')" class="w-full text-left py-2 text-slate-200 hover:text-amber-400 font-semibold">Settings</button>
+          <button onclick="showView('home')" class="w-full text-left py-2 px-2 rounded-lg text-amber-400 bg-slate-800/60 font-bold flex items-center gap-2">
+            <i data-lucide="home" class="w-4 h-4"></i> Home
+          </button>
+          
+          <div class="pl-3 space-y-1 border-l border-slate-800 ml-2 my-1">
+            <button onclick="openAdminModule('Assign Leaders', 'Assign Fellowship Presidents and Group Leaders')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
+              Assign Leaders
+            </button>
+            <button onclick="openAdminModule('Group Fellowship', 'Manage Men, Women, Youth & Children Fellowships')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
+              Group Fellowship
+            </button>
+            <button onclick="openAdminModule('Fellowship Bank', 'View and verify fellowship bank accounts & balances')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
+              Fellowship Bank
+            </button>
+            <button onclick="openAdminModule('Group Message', 'Send announcements to specific fellowships')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
+              Group Message
+            </button>
+            <button onclick="openAdminModule('Department Message', 'Send internal notices to church departments')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
+              Department Message
+            </button>
+            <button onclick="openAdminModule('Department', 'Create and manage ministry departments')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
+              Department
+            </button>
+            <button onclick="openAdminModule('Service Record', 'Log weekly attendance, offerings, and service summaries')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
+              Service Record
+            </button>
+            <button onclick="openAdminModule('Assign Department Leaders', 'Appoint heads for Security, Ushering, Technical, Choir & Ministers')" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition">
+              Assign Department Leaders
+            </button>
+
+            <!-- DEPARTMENT RECORDS DROPDOWN -->
+            <div>
+              <button onclick="toggleDeptDropdown()" class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 transition flex items-center justify-between">
+                <span>Department Records</span>
+                <i id="dept-dropdown-icon" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform"></i>
+              </button>
+              <div id="dept-records-submenu" class="hidden pl-3 space-y-1 mt-1 border-l border-amber-500/30 ml-2">
+                <button onclick="openAdminModule('Security Report', 'View and log weekly Security Department reports')" class="w-full text-left py-1 px-2 rounded text-[11px] text-slate-400 hover:text-amber-300 hover:bg-slate-800/40">
+                  • Security Report
+                </button>
+                <button onclick="openAdminModule('Usher Report', 'View headcounts and Usher Department service logs')" class="w-full text-left py-1 px-2 rounded text-[11px] text-slate-400 hover:text-amber-300 hover:bg-slate-800/40">
+                  • Usher Report
+                </button>
+                <button onclick="openAdminModule('Technical Report', 'View sound, media, and equipment status reports')" class="w-full text-left py-1 px-2 rounded text-[11px] text-slate-400 hover:text-amber-300 hover:bg-slate-800/40">
+                  • Technical Report
+                </button>
+                <button onclick="openAdminModule('Choir Report', 'View Choir rehearsal attendance and ministration logs')" class="w-full text-left py-1 px-2 rounded text-[11px] text-slate-400 hover:text-amber-300 hover:bg-slate-800/40">
+                  • Choir Report
+                </button>
+                <button onclick="openAdminModule('Ministers Report', 'View pastoral and Ministers Department service reports')" class="w-full text-left py-1 px-2 rounded text-[11px] text-slate-400 hover:text-amber-300 hover:bg-slate-800/40">
+                  • Ministers Report
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="showView('settings')" class="w-full text-left py-2 px-2 rounded-lg text-slate-200 hover:text-amber-400 font-semibold flex items-center gap-2 mt-2">
+            <i data-lucide="settings" class="w-4 h-4"></i> Settings
+          </button>
         `;
+        lucide.createIcons();
         loadAdminDirectory();
       } else {
         document.getElementById('dash-title').textContent = "Member Dashboard";
@@ -783,11 +848,55 @@
       }
     }
 
-    function showView(viewName) {
-      document.getElementById('view-home').classList.add('hidden');
-      document.getElementById('view-profile').classList.add('hidden');
-      document.getElementById('view-settings').classList.add('hidden');
+    function toggleDeptDropdown() {
+      const submenu = document.getElementById('dept-records-submenu');
+      const icon = document.getElementById('dept-dropdown-icon');
+      submenu.classList.toggle('hidden');
+      icon.classList.toggle('rotate-180');
+    }
 
+    function openAdminModule(title, subtitle) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+      document.getElementById('view-admin-module').classList.remove('hidden');
+
+      document.getElementById('module-title').textContent = title;
+      document.getElementById('module-subtitle').textContent = subtitle;
+
+      const contentBox = document.getElementById('module-content');
+      contentBox.innerHTML = `
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4">
+          <div class="flex flex-col md:flex-row gap-3">
+            <input type="text" id="module-input-title" placeholder="Enter ${title} entry or note..." class="flex-1 bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-400 outline-none">
+            <button onclick="saveModuleEntry('${title}')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-5 py-2.5 rounded-lg text-sm transition">
+              Save Entry
+            </button>
+          </div>
+          <div id="module-entries-list" class="text-xs text-slate-400 pt-2 border-t border-slate-800">
+            Ready to record new ${title} data.
+          </div>
+        </div>
+      `;
+
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar.classList.contains('-translate-x-full')) {
+        toggleSidebar();
+      }
+    }
+
+    function saveModuleEntry(moduleName) {
+      const val = document.getElementById('module-input-title').value.trim();
+      if (!val) {
+        openModal("Input Required", "Please enter details before saving.");
+        return;
+      }
+      const list = document.getElementById('module-entries-list');
+      list.innerHTML = `<div class="p-2.5 bg-slate-950 rounded-lg border border-amber-500/30 text-slate-200 mb-2"><strong>[${new Date().toLocaleDateString()}]</strong> ${val}</div>` + list.innerHTML;
+      document.getElementById('module-input-title').value = '';
+      openModal("Saved", `${moduleName} entry has been recorded.`);
+    }
+
+    function showView(viewName) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
       document.getElementById(`view-${viewName}`).classList.remove('hidden');
       
       if (viewName === 'profile' && currentUser) {
