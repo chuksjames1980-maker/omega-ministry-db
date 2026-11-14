@@ -433,6 +433,28 @@
         .history-row { display: flex; justify-content: space-between; align-items: center; }
         .history-date { font-size: 0.68rem; color: var(--subtext-color); }
         .history-title { font-size: 0.85rem; font-weight: 700; color: var(--text-color); }
+        .history-amount { font-size: 0.85rem; font-weight: 800; }
+
+        .profile-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            padding: 3px 0;
+        }
+        .profile-key { color: var(--subtext-color); }
+        .profile-val { color: var(--text-color); font-weight: 600; }
+
+        .status-badge, .levy-badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+        .status-present, .badge-paid { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+        .status-absent, .badge-unpaid { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .status-excused, .badge-partial { background: rgba(234, 179, 8, 0.2); color: #fde047; }
+        .badge-overpaid { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
 
         .notif-actions-bar {
             display: flex;
@@ -911,7 +933,7 @@
         <!-- ADMIN DASHBOARD SECTION -->
         <div id="admin-dashboard-section" style="display: none;">
             
-            <!-- ADMIN NOTIFICATIONS SECTION (READ-ONLY, NO DELETE, TRACKS DELIVERY RECIPIENTS) -->
+            <!-- ADMIN NOTIFICATIONS SECTION -->
             <div id="sec-admin-notifications" class="card-box" style="display: none;">
                 <h3 style="font-size: 0.95rem; color:var(--accent-color); margin-bottom: 12px;">🔔 Admin Notifications Ledger (View Only)</h3>
                 <div id="admin-notifications-container">
@@ -2164,7 +2186,7 @@
             if ("Notification" in window && Notification.permission === "granted") {
                 new Notification(title, {
                     body: message,
-                    icon: '/icon.png'
+                    icon: '/launchericon-192x192.png'
                 });
             }
         }
@@ -2358,11 +2380,8 @@
             }
 
             if (currentUser.admin_pin && pinPrompt.trim() === currentUser.admin_pin && pinPrompt.trim().length === 8) {
-                alert("Manager Authentication Successful!");
-                openDashboardAsManagerAdmin(currentUser, 'manager');
-            } else if (currentUser.admin_pin && pinPrompt.trim() === currentUser.admin_pin && currentUser.role === 'admin' && pinPrompt.trim().length === 8) {
-                alert("Admin Authentication Successful!");
-                openDashboardAsManagerAdmin(currentUser, 'admin');
+                alert("Manager/Admin Authentication Successful!");
+                openDashboardAsManagerAdmin(currentUser, currentUser.role);
             } else {
                 alert("Invalid 8-Digit Admin PIN.");
             }
@@ -2413,6 +2432,7 @@
             showAdminSection(sectionToShow);
             document.getElementById('handover-outgoing-name').value = `${user.full_name} (${user.phone_number})`;
             calculateAdminFinancialSummary();
+            if (sectionToShow === 'sec-admin-money-records') fetchAdminHandoverHistory();
         }
 
         document.getElementById('register-form').addEventListener('submit', async (e) => {
@@ -3572,3 +3592,1183 @@
 
                 const endYear = Math.max(currentYear, maxPaidYear, 2035);
 
+                let allMonthsSequence = [];
+                let globalIndex = 0;
+
+                for (let yr = startYear; yr <= endYear; yr++) {
+                    const mStart = (yr === startYear) ? startMonth : 0;
+                    for (let m = mStart; m < 12; m++) {
+                        const isPaid = (globalIndex < totalMonthsPaidCount);
+                        
+                        if (!isPaid && (yr > currentYear || (yr === currentYear && m > now.getMonth()))) {
+                            globalIndex++;
+                            continue;
+                        }
+
+                        allMonthsSequence.push({
+                            year: yr,
+                            monthIndex: m,
+                            monthName: MONTH_NAMES[m],
+                            isPaid: isPaid
+                        });
+                        globalIndex++;
+                    }
+                }
+
+                let displayList = allMonthsSequence.filter(item => {
+                    if (filterYear !== 'ALL' && item.year !== Number(filterYear)) return false;
+                    if (filterMonth !== 'ALL' && item.monthIndex !== Number(filterMonth)) return false;
+                    return true;
+                });
+
+                if (displayList.length === 0) {
+                    container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">No months found for selected filter.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                displayList.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'track-item';
+                    div.style.borderColor = item.isPaid ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+                    div.style.background = item.isPaid ? 'rgba(34, 197, 94, 0.05)' : 'rgba(239, 68, 68, 0.05)';
+
+                    div.innerHTML = `
+                        <div class="history-row">
+                            <div class="history-title">${item.monthName} ${item.year}</div>
+                            <div>
+                                ${item.isPaid 
+                                    ? '<span style="color:#86efac; font-weight:800; font-size:0.85rem;">✅ Paid ₦500</span>' 
+                                    : '<span style="color:#fca5a5; font-weight:800; font-size:0.85rem;">❌ Unpaid (Arrears)</span>'}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+
+            } catch (err) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:#ef4444; text-align:center;">Error tracking member dues.</p>';
+            }
+        }
+
+        document.getElementById('admin-dues-year-select').addEventListener('change', fetchAdminMembersDuesTable);
+        document.getElementById('admin-dues-month-select').addEventListener('change', fetchAdminMembersDuesTable);
+        
+        document.getElementById('admin-single-year-filter').addEventListener('change', () => {
+            if (selectedMemberForDuesTable) {
+                fetchAdminSingleMemberDuesHistory(selectedMemberForDuesTable.member_id, selectedMemberForDuesTable.full_name);
+            }
+        });
+
+        document.getElementById('admin-single-month-filter').addEventListener('change', () => {
+            if (selectedMemberForDuesTable) {
+                fetchAdminSingleMemberDuesHistory(selectedMemberForDuesTable.member_id, selectedMemberForDuesTable.full_name);
+            }
+        });
+
+        async function fetchAdminAttendanceHistory(searchQuery = '') {
+            const container = document.getElementById('admin-view-att-container');
+            container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">Loading attendance records...</p>';
+
+            try {
+                let query = _supabase.from('attendance').select('*').order('meeting_date', { ascending: false });
+                if (searchQuery.trim().length > 0) {
+                    query = query.ilike('member_name', `%${searchQuery.trim()}%`);
+                }
+
+                const { data } = await query;
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">No attendance records found.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.forEach(item => {
+                    const dateFormatted = new Date(item.meeting_date).toLocaleDateString('en-GB', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                    });
+
+                    let statusBadge = item.status === 'Present' 
+                        ? '<span class="status-badge status-present">Present</span>' 
+                        : (item.status === 'Absent' ? '<span class="status-badge status-absent">Absent</span>' : '<span class="status-badge status-excused">Excused</span>');
+
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.innerHTML = `
+                        <div class="history-row">
+                            <div class="history-title">${item.member_name}</div>
+                            ${statusBadge}
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--accent-color); font-weight:600; margin-top:2px;">${item.meeting_title}</div>
+                        <div class="history-date" style="margin-top:4px;">Date: ${dateFormatted} • Marked by: ${item.recorded_by || 'Admin'}</div>
+                    `;
+                    container.appendChild(div);
+                });
+
+            } catch (err) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:#ef4444; text-align:center;">Network error.</p>';
+            }
+        }
+
+        document.getElementById('admin-view-att-search').addEventListener('input', (e) => {
+            fetchAdminAttendanceHistory(e.target.value);
+        });
+
+        async function fetchAdminMembersList(searchQuery = '') {
+            const container = document.getElementById('admin-members-list-container');
+            if (!container) return;
+            container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">Loading members...</p>';
+
+            try {
+                let query = _supabase.from('members').select('*').order('full_name', { ascending: true });
+                if (searchQuery.trim().length > 0) {
+                    query = query.ilike('full_name', `%${searchQuery.trim()}%`);
+                }
+
+                const { data, error } = await query;
+
+                if (error) {
+                    container.innerHTML = `<p style="font-size:0.75rem; color:#ef4444; text-align:center; padding:10px;">Database Error: ${error.message}</p>`;
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">No members found.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.forEach(m => {
+                    const isMgr = m.role === 'manager';
+                    const isAdm = m.role === 'admin';
+                    const defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>";
+
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+                            <img src="${m.passport_url || defaultAvatar}" class="passport-preview" style="width:55px; height:55px; border-width:2px;" alt="Passport">
+                            <div style="flex:1;">
+                                <div class="history-title">${m.full_name || 'Member'}</div>
+                                <div style="font-size:0.7rem; color:var(--subtext-color);">${m.email || 'No Email'}</div>
+                            </div>
+                            <span class="status-badge ${isAdm ? 'status-present' : (isMgr ? 'badge-partial' : 'status-excused')}">
+                                ${(m.role || 'member').toUpperCase()}
+                            </span>
+                        </div>
+
+                        <div class="profile-row"><span class="profile-key">Phone:</span><span class="profile-val">${m.phone_number || 'N/A'}</span></div>
+                        <div class="profile-row"><span class="profile-key">WhatsApp:</span><span class="profile-val">${m.whatsapp_number || 'N/A'}</span></div>
+                        <div class="profile-row"><span class="profile-key">Year of Birth:</span><span class="profile-val">${m.year_of_birth || 'N/A'}</span></div>
+                        <div class="profile-row"><span class="profile-key">State of Residence:</span><span class="profile-val">${m.state_of_residence || 'N/A'}</span></div>
+                        <div class="profile-row"><span class="profile-key">Residence Address:</span><span class="profile-val">${m.residence_address || 'N/A'}</span></div>
+                        <div class="profile-row"><span class="profile-key">State of Origin:</span><span class="profile-val">${m.state_of_origin || 'N/A'}</span></div>
+                        <div class="profile-row"><span class="profile-key">Nationality:</span><span class="profile-val">${m.nationality || 'Nigerian'}</span></div>
+
+                        ${!isAdm ? `
+                            <button class="btn-primary btn-make-mgr" data-id="${m.id}" data-role="${m.role || 'member'}" style="margin-top:8px; padding:8px; font-size:0.75rem; background:${isMgr ? '#ef4444' : '#0284c7'};">
+                                ${isMgr ? 'Demote to Member' : 'Make Manager'}
+                            </button>
+                        ` : ''}
+                    `;
+                    container.appendChild(div);
+                });
+
+                document.querySelectorAll('.btn-make-mgr').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const targetId = e.target.getAttribute('data-id');
+                        const currentRole = e.target.getAttribute('data-role');
+                        const newRole = currentRole === 'manager' ? 'member' : 'manager';
+
+                        const { error } = await _supabase.from('members').update({ role: newRole }).eq('id', targetId);
+                        if (error) alert('Error updating role: ' + error.message);
+                        else {
+                            alert(`Member role updated to ${newRole}!`);
+                            fetchAdminMembersList(document.getElementById('admin-members-list-search').value);
+                        }
+                    });
+                });
+
+            } catch (err) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:#ef4444; text-align:center;">Network error loading members list.</p>';
+            }
+        }
+
+        document.getElementById('admin-members-list-search').addEventListener('input', (e) => {
+            fetchAdminMembersList(e.target.value);
+        });
+
+        async function fetchAdminManagersList(searchQuery = '') {
+            const container = document.getElementById('admin-managers-list-container');
+            container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">Loading managers...</p>';
+
+            try {
+                let query = _supabase.from('members').select('*').eq('role', 'manager').order('full_name', { ascending: true });
+                if (searchQuery.trim().length > 0) {
+                    query = query.ilike('full_name', `%${searchQuery.trim()}%`);
+                }
+
+                const { data } = await query;
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">No managers found.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.forEach(m => {
+                    const rolesArr = m.assigned_roles || [];
+                    const div = document.createElement('div');
+                    div.className = 'search-item';
+                    div.innerHTML = `
+                        <div class="history-row">
+                            <div>
+                                <div style="font-size:0.85rem; font-weight:700; color:var(--text-color);">${m.full_name}</div>
+                                <div style="font-size:0.7rem; color:var(--subtext-color);">${m.phone_number}</div>
+                            </div>
+                            <span style="font-size:0.75rem; color:#38bdf8; font-weight:700;">Manage</span>
+                        </div>
+                        <div style="font-size:0.7rem; color:var(--subtext-color); margin-top:4px;">
+                            Active Roles: ${rolesArr.length > 0 ? rolesArr.join(', ') : 'None assigned'}
+                        </div>
+                    `;
+                    div.addEventListener('click', () => {
+                        selectedManagerObj = m;
+                        document.getElementById('selected-manager-title').textContent = `Selected Manager: ${m.full_name} (${m.phone_number})`;
+                        document.getElementById('admin-manager-action-card').style.display = 'block';
+
+                        document.querySelectorAll('.role-chk').forEach(chk => {
+                            chk.checked = rolesArr.includes(chk.value);
+                        });
+                    });
+                    container.appendChild(div);
+                });
+
+            } catch (err) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:#ef4444; text-align:center;">Network error.</p>';
+            }
+        }
+
+        document.getElementById('admin-managers-search').addEventListener('input', (e) => {
+            fetchAdminManagersList(e.target.value);
+        });
+
+        document.getElementById('btn-save-mgr-pin').addEventListener('click', async () => {
+            if (!selectedManagerObj) return;
+
+            const newPin = document.getElementById('mgr-pin-input').value.trim();
+            if (newPin.length !== 8 || isNaN(newPin)) {
+                alert('Admin PIN must be exactly 8 digits.');
+                return;
+            }
+
+            const { error } = await _supabase.from('members').update({ admin_pin: newPin }).eq('id', selectedManagerObj.id);
+            if (error) alert('Failed to update PIN: ' + error.message);
+            else {
+                alert(`8-Digit Admin PIN updated for ${selectedManagerObj.full_name}!`);
+                document.getElementById('mgr-pin-input').value = '';
+            }
+        });
+
+        document.getElementById('btn-save-mgr-roles').addEventListener('click', async () => {
+            if (!selectedManagerObj) return;
+
+            const checkedRoles = Array.from(document.querySelectorAll('.role-chk:checked')).map(c => c.value);
+
+            const { error } = await _supabase.from('members').update({ assigned_roles: checkedRoles }).eq('id', selectedManagerObj.id);
+            if (error) alert('Failed to update roles: ' + error.message);
+            else {
+                alert(`Roles updated successfully for ${selectedManagerObj.full_name}!`);
+                fetchAdminManagersList(document.getElementById('admin-managers-search').value);
+            }
+        });
+
+        document.getElementById('btn-remove-manager').addEventListener('click', async () => {
+            if (!selectedManagerObj) return;
+
+            if (!confirm(`Are you sure you want to remove Manager status from ${selectedManagerObj.full_name}?`)) return;
+
+            const { error } = await _supabase.from('members').update({ role: 'member', assigned_roles: [], admin_pin: null }).eq('id', selectedManagerObj.id);
+            if (error) alert('Failed to remove manager status: ' + error.message);
+            else {
+                alert(`${selectedManagerObj.full_name} is now a regular Member.`);
+                document.getElementById('admin-manager-action-card').style.display = 'none';
+                selectedManagerObj = null;
+                fetchAdminManagersList();
+            }
+        });
+
+        document.getElementById('admin-handover-search-incoming').addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            const resultsContainer = document.getElementById('admin-handover-incoming-results');
+
+            if (query.length < 2) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            const { data } = await _supabase.from('members').select('*').ilike('full_name', `%${query}%`);
+            if (!data || data.length === 0) {
+                resultsContainer.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); margin-top:8px;">No member matched.</p>';
+                return;
+            }
+
+            resultsContainer.innerHTML = '';
+            data.forEach(m => {
+                if (m.phone_number === currentUser.phone_number) return;
+
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.8rem; font-weight:700; color:var(--text-color);">${m.full_name}</div>
+                            <div style="font-size:0.68rem; color:var(--subtext-color);">${m.phone_number}</div>
+                        </div>
+                        <span style="font-size:0.75rem; color:#10b981; font-weight:600;">Select Incoming</span>
+                    </div>
+                `;
+                div.addEventListener('click', () => {
+                    selectedIncomingAdmin = m;
+                    document.getElementById('lbl-incoming-admin-display').textContent = `Selected Incoming Admin: ${m.full_name} (${m.phone_number})`;
+                    document.getElementById('admin-handover-form').style.display = 'block';
+                    resultsContainer.innerHTML = '';
+                    document.getElementById('admin-handover-search-incoming').value = m.full_name;
+                });
+                resultsContainer.appendChild(div);
+            });
+        });
+
+        document.getElementById('btn-save-handover').addEventListener('click', async () => {
+            if (!selectedIncomingAdmin) {
+                alert('Please search and select an incoming admin.');
+                return;
+            }
+
+            const releasedAmt = Number(document.getElementById('handover-released-amount').value);
+            const receivedAmt = Number(document.getElementById('handover-received-amount').value);
+            const incomingMemberPin = document.getElementById('incoming-admin-member-pin').value.trim();
+            const saveBtn = document.getElementById('btn-save-handover');
+
+            if (!releasedAmt || !receivedAmt || releasedAmt <= 0 || receivedAmt <= 0) {
+                alert('Please enter valid amounts for both released and received.');
+                return;
+            }
+
+            if (!incomingMemberPin || incomingMemberPin.length !== 6 || isNaN(incomingMemberPin)) {
+                alert('Incoming admin must enter their valid 6-digit member PIN to verify identity.');
+                return;
+            }
+
+            if (incomingMemberPin !== selectedIncomingAdmin.pin_hash) {
+                alert('Incorrect 6-digit member PIN for incoming admin. Access denied.');
+                return;
+            }
+
+            let outgoingAdminPinPrompt = prompt("Outgoing Admin: Enter your 8-digit admin PIN to confirm handover:");
+            if (!outgoingAdminPinPrompt || outgoingAdminPinPrompt.trim().length !== 8) {
+                alert("Please enter a valid 8-digit login PIN.");
+                return;
+            }
+
+            if (outgoingAdminPinPrompt.trim() !== currentUser.admin_pin) {
+                alert("Incorrect 8-digit admin PIN.");
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving Handover...';
+
+            try {
+                const newAdminPin = Math.floor(10000000 + Math.random() * 90000000).toString();
+
+                const { error: hErr } = await _supabase.from('handover_records').insert([{
+                    outgoing_admin_id: currentUser.member_id,
+                    outgoing_admin_name: currentUser.full_name,
+                    outgoing_admin_phone: currentUser.phone_number,
+                    amount_released: releasedAmt,
+                    incoming_admin_id: selectedIncomingAdmin.member_id,
+                    incoming_admin_name: selectedIncomingAdmin.full_name,
+                    incoming_admin_phone: selectedIncomingAdmin.phone_number,
+                    amount_received: receivedAmt,
+                    new_admin_pin: newAdminPin
+                }]);
+
+                if (hErr) {
+                    alert('Error saving handover record: ' + hErr.message);
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Handover & Deliver PIN to Member Notification';
+                    return;
+                }
+
+                await _supabase.from('members').update({ is_active_admin: false, role: 'member' }).eq('id', currentUser.id);
+
+                await _supabase.from('members').update({ admin_pin: newAdminPin, role: 'admin', is_active_admin: true }).eq('id', selectedIncomingAdmin.id);
+
+                alert(`Handover saved successfully!\n\nOutgoing Admin: ${currentUser.full_name} (Deactivated)\nIncoming Admin: ${selectedIncomingAdmin.full_name}\n\nThe new 8-digit admin PIN has been delivered directly to ${selectedIncomingAdmin.full_name}'s member notification panel.`);
+
+                document.getElementById('admin-handover-search-incoming').value = '';
+                document.getElementById('handover-released-amount').value = '';
+                document.getElementById('handover-received-amount').value = '';
+                document.getElementById('incoming-admin-member-pin').value = '';
+                document.getElementById('admin-handover-form').style.display = 'none';
+                selectedIncomingAdmin = null;
+
+                localStorage.clear();
+                window.location.reload();
+
+            } catch (err) {
+                alert('Network error during handover.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Handover & Deliver PIN to Member Notification';
+            }
+        });
+
+        async function fetchAdminHandoverHistory() {
+            const container = document.getElementById('admin-handover-history-container');
+            container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center;">Loading handover history...</p>';
+
+            try {
+                const { data, error } = await _supabase.from('handover_records').select('*').order('created_at', { ascending: false });
+
+                if (error || !data || data.length === 0) {
+                    container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">No handover records found.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.forEach(h => {
+                    const dateFormatted = new Date(h.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.innerHTML = `
+                        <div class="history-row">
+                            <div class="history-title" style="color:var(--accent-color);">Handover Record</div>
+                            <span class="history-date">${dateFormatted}</span>
+                        </div>
+                        <div class="profile-row" style="margin-top:6px;"><span class="profile-key">Outgoing Admin:</span><span class="profile-val">${h.outgoing_admin_name} (${h.outgoing_admin_phone})</span></div>
+                        <div class="profile-row"><span class="profile-key">Amount Released:</span><span class="profile-val" style="color:#fde047;">₦${Number(h.amount_released).toLocaleString()}</span></div>
+                        <div class="profile-row"><span class="profile-key">Incoming Admin:</span><span class="profile-val">${h.incoming_admin_name} (${h.incoming_admin_phone})</span></div>
+                        <div class="profile-row"><span class="profile-key">Amount Received:</span><span class="profile-val" style="color:#10b981;">₦${Number(h.amount_received).toLocaleString()}</span></div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:#ef4444; text-align:center;">Network error.</p>';
+            }
+        }
+
+        document.getElementById('btn-save-levy').addEventListener('click', async () => {
+            const title = document.getElementById('admin-levy-title').value.trim();
+            const amount = Number(document.getElementById('admin-levy-amount').value);
+            const details = document.getElementById('admin-levy-details').value.trim();
+            const saveBtn = document.getElementById('btn-save-levy');
+
+            if (!title || !amount || amount <= 0) {
+                alert('Please enter a valid levy title and target amount.');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving Levy...';
+
+            try {
+                const { error } = await _supabase.from('project_levies').insert([{
+                    title: title,
+                    fixed_amount: amount,
+                    details: details,
+                    created_by: currentUser.full_name
+                }]);
+
+                if (error) alert('Error creating levy: ' + error.message);
+                else {
+                    alert(`Project Levy "${title}" created successfully!`);
+                    document.getElementById('admin-levy-title').value = '';
+                    document.getElementById('admin-levy-amount').value = '';
+                    document.getElementById('admin-levy-details').value = '';
+                }
+            } catch (err) {
+                alert('Network error.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Project Levy';
+            }
+        });
+
+        async function loadLevyDropdown() {
+            const select = document.getElementById('admin-levy-select');
+            select.innerHTML = '<option value="">Loading levies...</option>';
+
+            try {
+                const { data } = await _supabase.from('project_levies').select('*').order('created_at', { ascending: false });
+
+                if (!data || data.length === 0) {
+                    select.innerHTML = '<option value="">No levies created yet</option>';
+                    return;
+                }
+
+                select.innerHTML = '<option value="">-- Select Project Levy --</option>';
+                data.forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.title;
+                    opt.textContent = `${l.title} (Target: ₦${Number(l.fixed_amount).toLocaleString()})`;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                select.innerHTML = '<option value="">Error loading levies</option>';
+            }
+        }
+
+        document.getElementById('admin-levy-pay-search').addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            const container = document.getElementById('admin-levy-pay-results');
+
+            if (query.length < 2) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const { data } = await _supabase
+                .from('members')
+                .select('*')
+                .ilike('full_name', `%${query}%`);
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); margin-top:8px;">No member matched.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            data.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.8rem; font-weight:700; color:var(--text-color);">${m.full_name}</div>
+                            <div style="font-size:0.68rem; color:var(--subtext-color);">${m.phone_number}</div>
+                        </div>
+                        <span style="font-size:0.75rem; color:#10b981; font-weight:600;">Select</span>
+                    </div>
+                `;
+                div.addEventListener('click', () => {
+                    selectedMemberForLevyPay = m;
+                    document.getElementById('selected-levy-member-title').textContent = `Selected Member: ${m.full_name} (${m.phone_number})`;
+                    document.getElementById('admin-levy-pay-form').style.display = 'block';
+                });
+                container.appendChild(div);
+            });
+        });
+
+        document.getElementById('btn-save-levy-payment').addEventListener('click', async () => {
+            if (!selectedMemberForLevyPay) return;
+
+            const levyTitle = document.getElementById('admin-levy-select').value;
+            const amount = Number(document.getElementById('admin-levy-payment-amount').value);
+            const saveBtn = document.getElementById('btn-save-levy-payment');
+
+            if (!levyTitle) {
+                alert('Please select a project levy.');
+                return;
+            }
+
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid amount.');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving Levy Payment...';
+
+            try {
+                const { error } = await _supabase
+                    .from('levy_payments')
+                    .insert([{
+                        member_id: selectedMemberForLevyPay.member_id,
+                        member_name: selectedMemberForLevyPay.full_name,
+                        levy_title: levyTitle,
+                        amount: amount,
+                        recorded_by: currentUser.full_name
+                    }]);
+
+                if (error) {
+                    alert('Failed to save levy payment: ' + error.message);
+                } else {
+                    alert(`Levy payment of ₦${amount.toLocaleString()} recorded for ${selectedMemberForLevyPay.full_name}!`);
+                    document.getElementById('admin-levy-pay-search').value = '';
+                    document.getElementById('admin-levy-pay-results').innerHTML = '';
+                    document.getElementById('admin-levy-payment-amount').value = '';
+                    document.getElementById('admin-levy-pay-form').style.display = 'none';
+                    selectedMemberForLevyPay = null;
+                    calculateAdminFinancialSummary();
+                }
+            } catch (err) {
+                alert('Network error.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Levy Payment';
+            }
+        });
+
+        async function fetchAdminLevyHistory(searchQuery = '') {
+            const container = document.getElementById('admin-levy-history-container');
+            container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">Loading members levy history...</p>';
+
+            try {
+                let memberQuery = _supabase.from('members').select('*');
+                if (searchQuery.trim().length > 0) {
+                    memberQuery = memberQuery.ilike('full_name', `%${searchQuery.trim()}%`);
+                }
+
+                const { data: members } = await memberQuery;
+                const { data: levies } = await _supabase.from('project_levies').select('*');
+                const { data: allLevyPayments } = await _supabase.from('levy_payments').select('*');
+
+                if (!members || members.length === 0 || !levies || levies.length === 0) {
+                    container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">No levy history records found.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                members.forEach(member => {
+                    levies.forEach(levy => {
+                        const target = Number(levy.fixed_amount);
+                        const userPayments = allLevyPayments ? allLevyPayments.filter(p => p.member_id === member.member_id && p.levy_title === levy.title) : [];
+                        const totalPaid = userPayments.reduce((s, p) => s + Number(p.amount), 0);
+
+                        let badgeHtml = '';
+                        let balanceText = '';
+
+                        if (totalPaid > target) {
+                            const overpaid = totalPaid - target;
+                            badgeHtml = '<span class="levy-badge badge-overpaid">Overpaid</span>';
+                            balanceText = `<span style="color:#c084fc;">+₦${overpaid.toLocaleString()} (Overpaid)</span>`;
+                        } else if (totalPaid === target && target > 0) {
+                            badgeHtml = '<span class="levy-badge badge-paid">Fully Paid</span>';
+                            balanceText = `<span style="color:#10b981;">₦0 (Fully Paid)</span>`;
+                        } else {
+                            const balance = target - totalPaid;
+                            badgeHtml = totalPaid > 0 
+                                ? '<span class="levy-badge badge-partial">Partially Paid</span>' 
+                                : '<span class="levy-badge badge-unpaid">Not Paid</span>';
+                            balanceText = `<span style="color:#ef4444;">₦${balance.toLocaleString()} to balance</span>`;
+                        }
+
+                        const div = document.createElement('div');
+                        div.className = 'history-item';
+                        div.innerHTML = `
+                            <div class="history-row">
+                                <div class="history-title">${member.full_name}</div>
+                                ${badgeHtml}
+                            </div>
+                            <div style="font-size:0.75rem; color:var(--accent-color); font-weight:600; margin-top:2px;">${levy.title}</div>
+                            <div class="profile-row" style="margin-top:6px;"><span class="profile-key">Levy Amount:</span><span class="profile-val">₦${target.toLocaleString()}</span></div>
+                            <div class="profile-row"><span class="profile-key">Amount Paid:</span><span class="profile-val" style="color:#10b981;">₦${totalPaid.toLocaleString()}</span></div>
+                            <div class="profile-row"><span class="profile-key">Status/Balance:</span><span class="profile-val">${balanceText}</span></div>
+                        `;
+                        container.appendChild(div);
+                    });
+                });
+
+            } catch (err) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:#ef4444; text-align:center;">Network error.</p>';
+            }
+        }
+
+        document.getElementById('admin-levy-history-search').addEventListener('input', (e) => {
+            fetchAdminLevyHistory(e.target.value);
+        });
+
+        async function calculateAdminFinancialSummary() {
+            try {
+                const { data: payments } = await _supabase.from('dues_payments').select('amount');
+                const duesTotal = payments ? payments.reduce((sum, item) => sum + Number(item.amount), 0) : 0;
+
+                const { data: oldDues } = await _supabase.from('old_dues').select('amount');
+                const oldDuesTotal = oldDues ? oldDues.reduce((sum, item) => sum + Number(item.amount), 0) : 0;
+
+                const { data: handover } = await _supabase.from('handover_records').select('amount_received');
+                const handoverTotal = handover ? handover.reduce((sum, item) => sum + Number(item.amount_received), 0) : 0;
+
+                const { data: levyPayments } = await _supabase.from('levy_payments').select('amount');
+                const levyTotal = levyPayments ? levyPayments.reduce((sum, item) => sum + Number(item.amount), 0) : 0;
+
+                const totalInflow = duesTotal + oldDuesTotal + handoverTotal + levyTotal;
+
+                const { data: expenses } = await _supabase.from('expenses').select('amount');
+                const totalExpenses = expenses ? expenses.reduce((sum, item) => sum + Number(item.amount), 0) : 0;
+
+                const totalBalance = totalInflow - totalExpenses;
+
+                document.getElementById('admin-total-dues').textContent = '₦' + duesTotal.toLocaleString();
+                document.getElementById('admin-total-levy').textContent = '₦' + levyTotal.toLocaleString();
+                document.getElementById('admin-total-old-dues').textContent = '₦' + oldDuesTotal.toLocaleString();
+                document.getElementById('admin-total-handover').textContent = '₦' + handoverTotal.toLocaleString();
+                document.getElementById('admin-total-inflow').textContent = '₦' + totalInflow.toLocaleString();
+                document.getElementById('admin-total-expenses').textContent = '₦' + totalExpenses.toLocaleString();
+                document.getElementById('admin-total-balance').textContent = '₦' + totalBalance.toLocaleString();
+
+            } catch (err) {
+                console.log(err);
+            }
+        }
+
+        document.getElementById('btn-save-expense').addEventListener('click', async () => {
+            const title = document.getElementById('expense-title-input').value.trim();
+            const date = document.getElementById('expense-date-input').value;
+            const details = document.getElementById('expense-details-input').value.trim();
+            const amount = Number(document.getElementById('expense-amount-input').value);
+            const saveBtn = document.getElementById('btn-save-expense');
+
+            if (!title || !date || !amount || amount <= 0) {
+                alert('Please fill in Expense Title, Date, and a valid Amount.');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving Expense...';
+
+            try {
+                const { error } = await _supabase.from('expenses').insert([{
+                    title: title,
+                    expense_date: date,
+                    details: details,
+                    amount: amount,
+                    recorded_by: currentUser.full_name
+                }]);
+
+                if (error) {
+                    alert('Failed to save expense: ' + error.message);
+                } else {
+                    alert(`Expense "${title}" of ₦${amount.toLocaleString()} saved!`);
+                    document.getElementById('expense-title-input').value = '';
+                    document.getElementById('expense-details-input').value = '';
+                    document.getElementById('expense-amount-input').value = '';
+
+                    const { data: dailyData } = await _supabase
+                        .from('expenses')
+                        .select('amount')
+                        .eq('expense_date', date);
+
+                    const dailySum = dailyData ? dailyData.reduce((s, i) => s + Number(i.amount), 0) : 0;
+                    
+                    const dailyBox = document.getElementById('daily-expense-summary');
+                    const dailyText = document.getElementById('daily-expense-text');
+                    dailyText.textContent = `Total Expenses for ${date}: ₦${dailySum.toLocaleString()}`;
+                    dailyBox.style.display = 'block';
+
+                    calculateAdminFinancialSummary();
+                }
+            } catch (err) {
+                alert('Network error.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Enter Expense';
+            }
+        });
+
+        async function fetchMemberExpensesHistory() {
+            const container = document.getElementById('member-expenses-container');
+            container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">Loading expenses history...</p>';
+
+            try {
+                const { data, error } = await _supabase
+                    .from('expenses')
+                    .select('*')
+                    .order('expense_date', { ascending: false });
+
+                if (error || !data || data.length === 0) {
+                    container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">No expenses recorded yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.forEach(item => {
+                    const dateFormatted = new Date(item.expense_date).toLocaleDateString('en-GB', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                    });
+
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    div.innerHTML = `
+                        <div class="history-row">
+                            <div class="history-title" style="color:#fca5a5;">${item.title}</div>
+                            <div class="history-amount" style="color:#ef4444;">-₦${Number(item.amount).toLocaleString()}</div>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--subtext-color); margin-top:2px;">${item.details || 'No details specified.'}</div>
+                        <div class="history-date" style="margin-top:4px;">Date: ${dateFormatted} • Approved by: ${item.recorded_by || 'Admin'}</div>
+                    `;
+                    container.appendChild(div);
+                });
+
+            } catch (err) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:#ef4444; text-align:center;">Network error.</p>';
+            }
+        }
+
+        async function fetchAdminExpensesHistory() {
+            const container = document.getElementById('admin-expenses-history-container');
+            container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">Loading expenses history...</p>';
+
+            try {
+                const { data, error } = await _supabase
+                    .from('expenses')
+                    .select('*')
+                    .order('expense_date', { ascending: false });
+
+                if (error || !data || data.length === 0) {
+                    container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); text-align:center; padding:10px;">No expenses recorded yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.forEach(item => {
+                    const dateFormatted = new Date(item.expense_date).toLocaleDateString('en-GB', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                    });
+
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    div.innerHTML = `
+                        <div class="history-row">
+                            <div class="history-title" style="color:#fca5a5;">${item.title}</div>
+                            <div class="history-amount" style="color:#ef4444;">-₦${Number(item.amount).toLocaleString()}</div>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--subtext-color); margin-top:2px;">${item.details || 'No details specified.'}</div>
+                        <div class="history-date" style="margin-top:4px;">Date: ${dateFormatted} • Recorded by: ${item.recorded_by || 'Admin'}</div>
+                    `;
+                    container.appendChild(div);
+                });
+
+            } catch (err) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:#ef4444; text-align:center;">Network error.</p>';
+            }
+        }
+
+        document.getElementById('admin-search-input').addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            const resultsContainer = document.getElementById('admin-search-results');
+            
+            if (query.length < 2) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            const { data } = await _supabase
+                .from('members')
+                .select('*')
+                .ilike('full_name', `%${query}%`);
+
+            if (!data || data.length === 0) {
+                resultsContainer.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); margin-top:8px;">No member matched.</p>';
+                return;
+            }
+
+            resultsContainer.innerHTML = '';
+            data.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.8rem; font-weight:700; color:var(--text-color);">${m.full_name}</div>
+                            <div style="font-size:0.68rem; color:var(--subtext-color);">${m.phone_number}</div>
+                        </div>
+                        <span style="font-size:0.75rem; color:var(--accent-color); font-weight:600;">Select</span>
+                    </div>
+                `;
+                div.addEventListener('click', () => {
+                    selectedMemberForDues = m;
+                    document.getElementById('selected-member-title').textContent = `Selected Member: ${m.full_name} (${m.phone_number})`;
+                    
+                    const startYr = (m.dues_start_year !== undefined && m.dues_start_year !== null) ? m.dues_start_year : 2025;
+                    const startMo = (m.dues_start_month !== undefined && m.dues_start_month !== null) ? m.dues_start_month : 0;
+                    document.getElementById('member-start-display').textContent = `${MONTH_NAMES[startMo]} ${startYr}`;
+
+                    document.getElementById('admin-payment-form').style.display = 'block';
+                    resultsContainer.innerHTML = '';
+                    document.getElementById('admin-search-input').value = m.full_name;
+                });
+                resultsContainer.appendChild(div);
+            });
+        });
+
+        document.getElementById('btn-save-dues').addEventListener('click', async () => {
+            if (!selectedMemberForDues) return;
+
+            const amount = Number(document.getElementById('admin-amount-select').value);
+            const saveBtn = document.getElementById('btn-save-dues');
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving Record...';
+
+            try {
+                const { error } = await _supabase
+                    .from('dues_payments')
+                    .insert([{
+                        member_id: selectedMemberForDues.member_id,
+                        member_name: selectedMemberForDues.full_name,
+                        amount: amount,
+                        payment_type: 'compulsory_dues',
+                        recorded_by: currentUser.full_name
+                    }]);
+
+                if (error) {
+                    alert('Failed to save record: ' + error.message);
+                } else {
+                    alert(`Dues payment of ₦${amount.toLocaleString()} recorded!`);
+                    document.getElementById('admin-search-input').value = '';
+                    document.getElementById('admin-search-results').innerHTML = '';
+                    document.getElementById('admin-payment-form').style.display = 'none';
+                    selectedMemberForDues = null;
+                    calculateAdminFinancialSummary();
+                }
+            } catch (err) {
+                alert('Network error.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Dues Record';
+            }
+        });
+
+        document.getElementById('admin-old-dues-search').addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            const container = document.getElementById('admin-old-dues-results');
+
+            if (query.length < 2) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const { data } = await _supabase
+                .from('members')
+                .select('*')
+                .ilike('full_name', `%${query}%`);
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); margin-top:8px;">No member matched.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            data.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.8rem; font-weight:700; color:var(--text-color);">${m.full_name}</div>
+                            <div style="font-size:0.68rem; color:var(--subtext-color);">${m.phone_number}</div>
+                        </div>
+                        <span style="font-size:0.75rem; color:#fde047; font-weight:600;">Select</span>
+                    </div>
+                `;
+                div.addEventListener('click', () => {
+                    selectedMemberForOldDues = m;
+                    document.getElementById('selected-old-member-title').textContent = `Selected Member: ${m.full_name} (${m.phone_number})`;
+                    document.getElementById('admin-old-dues-form').style.display = 'block';
+                });
+                container.appendChild(div);
+            });
+        });
+
+        document.getElementById('btn-save-old-dues').addEventListener('click', async () => {
+            if (!selectedMemberForOldDues) return;
+
+            const amount = Number(document.getElementById('admin-old-dues-amount').value);
+            const saveBtn = document.getElementById('btn-save-old-dues');
+
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid amount.');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving Old Dues...';
+
+            try {
+                const { error } = await _supabase
+                    .from('old_dues')
+                    .insert([{
+                        member_id: selectedMemberForOldDues.member_id,
+                        member_name: selectedMemberForOldDues.full_name,
+                        amount: amount,
+                        recorded_by: currentUser.full_name
+                    }]);
+
+                if (error) {
+                    alert('Failed to save old dues: ' + error.message);
+                } else {
+                    alert(`Old Dues of ₦${amount.toLocaleString()} saved for ${selectedMemberForOldDues.full_name}!`);
+                    document.getElementById('admin-old-dues-search').value = '';
+                    document.getElementById('admin-old-dues-results').innerHTML = '';
+                    document.getElementById('admin-old-dues-amount').value = '';
+                    document.getElementById('admin-old-dues-form').style.display = 'none';
+                    selectedMemberForOldDues = null;
+                    calculateAdminFinancialSummary();
+                }
+            } catch (err) {
+                alert('Network error.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Old Dues Record';
+            }
+        });
+
+        document.getElementById('admin-att-search').addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            const container = document.getElementById('admin-att-results');
+
+            if (query.length < 2) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const { data } = await _supabase
+                .from('members')
+                .select('*')
+                .ilike('full_name', `%${query}%`);
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p style="font-size:0.75rem; color:var(--subtext-color); margin-top:8px;">No member matched.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            data.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'search-item';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.8rem; font-weight:700; color:var(--text-color);">${m.full_name}</div>
+                            <div style="font-size:0.68rem; color:var(--subtext-color);">${m.phone_number}</div>
+                        </div>
+                        <span style="font-size:0.75rem; color:var(--accent-color); font-weight:600;">Select</span>
+                    </div>
+                `;
+                div.addEventListener('click', () => {
+                    selectedMemberForAtt = m;
+                    document.getElementById('att-member-title').textContent = `Selected Member: ${m.full_name} (${m.phone_number})`;
+                    document.getElementById('admin-att-form').style.display = 'block';
+                });
+                container.appendChild(div);
+            });
+        });
+
+        document.getElementById('btn-save-attendance').addEventListener('click', async () => {
+            if (!selectedMemberForAtt) return;
+
+            const title = document.getElementById('att-meeting-title').value.trim();
+            const date = document.getElementById('att-meeting-date').value;
+            const status = document.getElementById('att-status').value;
+            const btn = document.getElementById('btn-save-attendance');
+
+            if (!date) {
+                alert('Please select a meeting date.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Saving Attendance...';
+
+            try {
+                const { error } = await _supabase
+                    .from('attendance')
+                    .insert([{
+                        member_id: selectedMemberForAtt.member_id,
+                        member_name: selectedMemberForAtt.full_name,
+                        meeting_title: title || 'General Meeting',
+                        meeting_date: date,
+                        status: status,
+                        recorded_by: currentUser.full_name
+                    }]);
+
+                if (error) {
+                    alert('Error saving attendance: ' + error.message);
+                } else {
+                    alert(`Attendance marked as "${status}" for ${selectedMemberForAtt.full_name}!`);
+                    document.getElementById('admin-att-search').value = '';
+                    document.getElementById('admin-att-results').innerHTML = '';
+                    document.getElementById('admin-att-form').style.display = 'none';
+                    selectedMemberForAtt = null;
+                }
+            } catch (err) {
+                alert('Network error.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Attendance';
+            }
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((reg) => console.log('Service Worker registered!'))
+                    .catch((err) => console.log('Service Worker registration failed: ', err));
+            });
+        }
+
+        document.getElementById('forgot-admin-pin-link').addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            let phone = prompt("Enter your registered admin phone number:");
+            if (!phone) return;
+            
+            let yob = prompt("Enter your year of birth:");
+            if (!yob) return;
+
+            try {
+                let { data: adminUser, error } = await _supabase
+                    .from('members')
+                    .select('*')
+                    .eq('phone_number', phone.trim())
+                    .single();
+
+                if (error || !adminUser || (adminUser.role !== 'admin' && adminUser.role !== 'manager')) {
+                    alert("Admin account not found with this phone number.");
+                    return;
+                }
+
+                let yobDb = String(adminUser.year_of_birth || '').trim();
+                if (yobDb !== String(yob).trim()) {
+                    alert("Incorrect Year of Birth verification failed.");
+                    return;
+                }
+
+                let newPin = prompt("Enter new 8-digit admin PIN:");
+                if (!newPin || newPin.length !== 8 || isNaN(newPin)) {
+                    alert("Admin PIN must be exactly 8 digits.");
+                    return;
+                }
+                
+                let confirmPin = prompt("Confirm new 8-digit admin PIN:");
+                if (newPin !== confirmPin) {
+                    alert("PINs do not match. Please try again.");
+                    return;
+                }
+
+                let { error: updateError } = await _supabase
+                    .from('members')
+                    .update({ admin_pin: newPin })
+                    .eq('id', adminUser.id);
+
+                if (updateError) {
+                    alert("Failed to update PIN: " + updateError.message);
+                } else {
+                    alert("8-Digit Admin PIN successfully reset! You can now log in with your new 8-digit PIN.");
+                }
+
+            } catch (err) {
+                alert("Network error during PIN reset verification.");
+            }
+        });
+    </script>
+</body>
+</html>
