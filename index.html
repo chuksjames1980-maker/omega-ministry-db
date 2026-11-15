@@ -4,9 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>City of Mercy - Member & Admin Portal</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     @keyframes pulse-slow {
@@ -23,9 +21,7 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
 
-  <!-- ==========================================
-       1. 10-SECOND LOADING / SPLASH SCREEN
-  =========================================== -->
+  <!-- 10-SECOND LOADING SCREEN -->
   <div id="splash-screen" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-50 px-4 text-center">
     <div class="w-24 h-24 rounded-full bg-blue-600/20 border-2 border-blue-500 flex items-center justify-center mb-6 animate-splash">
       <span class="text-3xl font-bold text-blue-400">COM</span>
@@ -38,9 +34,7 @@
     <p id="splash-timer-text" class="text-xs text-slate-400">Initializing secure connection... (10s)</p>
   </div>
 
-  <!-- ==========================================
-       2. AUTHENTICATION CONTAINER (LOGIN / ADMIN / REGISTER)
-  =========================================== -->
+  <!-- AUTHENTICATION CONTAINER -->
   <div id="auth-container" class="hidden-section min-h-screen flex flex-col items-center justify-center p-4">
     <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 md:p-8">
       
@@ -60,7 +54,7 @@
         </button>
       </div>
 
-      <!-- MEMBER LOGIN VIEW -->
+      <!-- MEMBER LOGIN -->
       <form id="member-login-form" onsubmit="handleMemberLogin(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Mobile Number</label>
@@ -83,7 +77,7 @@
         </div>
       </form>
 
-      <!-- ADMIN LOGIN VIEW -->
+      <!-- ADMIN LOGIN -->
       <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="hidden-section space-y-4">
         <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-center">
           <p class="text-xs text-amber-300 font-medium">Restricted Area — Authorized Main Admin Only</p>
@@ -98,7 +92,7 @@
         </button>
       </form>
 
-      <!-- MEMBER REGISTRATION WIZARD -->
+      <!-- REGISTRATION WIZARD -->
       <div id="registration-wizard" class="hidden-section">
         <div class="flex items-center justify-between mb-4">
           <span id="step-indicator" class="text-xs font-bold uppercase tracking-wider text-blue-400">Step 1 of 5</span>
@@ -372,20 +366,14 @@
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
-    // SUPABASE CONFIGURATION
-    const SUPABASE_URL = 'https://your-project-id.supabase.co'; // Replace with your actual project URL if needed
+    // YOUR LIVE SUPABASE CREDENTIALS
+    const SUPABASE_URL = 'https://bugzrhjmedzubwwhvrql.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_3jzku7vSLCqz5Bw8BYO0uw_5FhrbAir';
 
-    let supabaseClient = null;
-    try {
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } catch (e) {
-      console.error("Supabase initialization error:", e);
-    }
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let allMembersData = [];
 
-    // 10-SECOND LOADING SCREEN TIMER (Guaranteed to finish even if network is slow)
     window.addEventListener('DOMContentLoaded', () => {
       let secondsLeft = 10;
       const progressEl = document.getElementById('splash-progress');
@@ -528,7 +516,18 @@
       else if (married === 'YES' && gender === 'MALE') assignedFellowship = 'Men Fellowship';
 
       const isWorker = document.getElementById('reg-worker').value;
-      let assignedDepartment = isWorker === 'YES' ? (document.getElementById('reg-department').value + ' Department') : 'None';
+      const rawDept = document.getElementById('reg-department').value;
+      let assignedDepartment = 'None';
+      if (isWorker === 'YES') {
+        const deptMap = {
+          'SECURITY': 'Security Department',
+          'USHER': 'Usher Department',
+          'TECHNICAL': 'Technical Department',
+          'SANITATION': 'Sanitation Department',
+          'CHILDREN TEACHER': 'Children Teacher Department'
+        };
+        assignedDepartment = deptMap[rawDept] || rawDept;
+      }
 
       const memberPayload = {
         full_name: document.getElementById('reg-fullname').value.trim(),
