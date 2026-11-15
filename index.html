@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>City of Mercy - Member & Admin Portal</title>
-  <!-- Tailwind CSS for clean, modern responsive UI -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -33,7 +33,7 @@
     <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2">CITY OF MERCY</h1>
     <p class="text-slate-400 text-sm md:text-base mb-8">Church Database & Fellowship Management Portal</p>
     <div class="w-64 bg-slate-800 rounded-full h-2.5 overflow-hidden mb-3">
-      <div id="splash-progress" class="bg-blue-500 h-2.5 rounded-full transition-all duration-1000" style="width: 10%"></div>
+      <div id="splash-progress" class="bg-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
     </div>
     <p id="splash-timer-text" class="text-xs text-slate-400">Initializing secure connection... (10s)</p>
   </div>
@@ -44,16 +44,13 @@
   <div id="auth-container" class="hidden-section min-h-screen flex flex-col items-center justify-center p-4">
     <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 md:p-8">
       
-      <!-- Header -->
       <div class="text-center mb-6">
         <h2 class="text-2xl font-bold text-white">City of Mercy Portal</h2>
         <p class="text-sm text-slate-400 mt-1">Welcome! Please sign in or register below.</p>
       </div>
 
-      <!-- Alert Banner -->
       <div id="auth-alert" class="hidden-section mb-4 p-3 rounded-lg text-sm font-medium text-center"></div>
 
-      <!-- Top Navigation Tabs (Member Login vs Admin Portal) -->
       <div id="login-tabs" class="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-xl mb-6 border border-slate-800">
         <button onclick="switchAuthTab('member-login')" id="tab-member" class="py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white transition">
           Member Login
@@ -63,7 +60,7 @@
         </button>
       </div>
 
-      <!-- A. MEMBER LOGIN VIEW -->
+      <!-- MEMBER LOGIN VIEW -->
       <form id="member-login-form" onsubmit="handleMemberLogin(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Mobile Number</label>
@@ -86,7 +83,7 @@
         </div>
       </form>
 
-      <!-- B. ADMIN LOGIN VIEW -->
+      <!-- ADMIN LOGIN VIEW -->
       <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="hidden-section space-y-4">
         <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-center">
           <p class="text-xs text-amber-300 font-medium">Restricted Area — Authorized Main Admin Only</p>
@@ -101,14 +98,14 @@
         </button>
       </form>
 
-      <!-- C. MULTI-STEP MEMBER REGISTRATION WIZARD -->
+      <!-- MEMBER REGISTRATION WIZARD -->
       <div id="registration-wizard" class="hidden-section">
         <div class="flex items-center justify-between mb-4">
           <span id="step-indicator" class="text-xs font-bold uppercase tracking-wider text-blue-400">Step 1 of 5</span>
           <button type="button" onclick="cancelRegistration()" class="text-xs text-slate-400 hover:text-white">← Back to Login</button>
         </div>
 
-        <!-- STEP 1: PERSONAL INFORMATION -->
+        <!-- STEP 1 -->
         <div id="reg-step-1" class="space-y-3">
           <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-2">Personal Information</h3>
           <div>
@@ -156,7 +153,7 @@
           </button>
         </div>
 
-        <!-- STEP 2: MARITAL STATUS & GENDER (FELLOWSHIP ROUTING) -->
+        <!-- STEP 2 -->
         <div id="reg-step-2" class="hidden-section space-y-4">
           <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-2">Marital Status & Gender</h3>
           <div>
@@ -181,7 +178,7 @@
           </div>
         </div>
 
-        <!-- STEP 3: WORKER STATUS & DEPARTMENT ROUTING -->
+        <!-- STEP 3 -->
         <div id="reg-step-3" class="hidden-section space-y-4">
           <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-2">Church Workforce</h3>
           <div>
@@ -209,7 +206,7 @@
           </div>
         </div>
 
-        <!-- STEP 4: MONTH & YEAR JOINED -->
+        <!-- STEP 4 -->
         <div id="reg-step-4" class="hidden-section space-y-4">
           <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-2">Membership History</h3>
           <div>
@@ -222,7 +219,7 @@
           </div>
         </div>
 
-        <!-- STEP 5: 4-DIGIT PIN SETUP & CONFIRMATION -->
+        <!-- STEP 5 -->
         <div id="reg-step-5" class="hidden-section space-y-4">
           <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-2">Create Security PIN</h3>
           <div>
@@ -249,9 +246,7 @@
     </div>
   </div>
 
-  <!-- ==========================================
-       3. MEMBER DASHBOARD VIEW
-  =========================================== -->
+  <!-- MEMBER DASHBOARD -->
   <div id="member-dashboard" class="hidden-section min-h-screen bg-slate-950 p-4 md:p-8">
     <div class="max-w-3xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
@@ -264,7 +259,6 @@
         </button>
       </div>
 
-      <!-- Auto-Assigned Fellowship & Department Badges -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div class="bg-blue-950/40 border border-blue-800/60 p-4 rounded-xl">
           <span class="text-xs uppercase font-bold text-blue-400">Assigned Fellowship</span>
@@ -276,7 +270,6 @@
         </div>
       </div>
 
-      <!-- Member Details Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-slate-950 p-4 rounded-xl border border-slate-800">
         <div><span class="text-slate-500 block text-xs">Mobile Number</span><span id="mem-dash-mobile" class="font-medium">--</span></div>
         <div><span class="text-slate-500 block text-xs">WhatsApp Number</span><span id="mem-dash-whatsapp" class="font-medium">--</span></div>
@@ -289,12 +282,8 @@
     </div>
   </div>
 
-  <!-- ==========================================
-       4. MAIN ADMIN DASHBOARD (WITH REAL-TIME & DEPARTMENTS SIDEBAR)
-  =========================================== -->
+  <!-- ADMIN DASHBOARD -->
   <div id="admin-dashboard" class="hidden-section min-h-screen flex flex-col md:flex-row bg-slate-950">
-    
-    <!-- Sidebar -->
     <aside class="w-full md:w-64 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-4 flex flex-col justify-between">
       <div>
         <div class="flex items-center gap-2 px-2 py-3 border-b border-slate-800 mb-4">
@@ -321,10 +310,7 @@
       </button>
     </aside>
 
-    <!-- Main Admin Content Area -->
     <main class="flex-1 p-4 md:p-8 overflow-y-auto">
-      
-      <!-- Stats Summary Bar -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
           <span class="text-xs text-slate-400">Total Members</span>
@@ -344,7 +330,6 @@
         </div>
       </div>
 
-      <!-- VIEW A: ALL MEMBERS TABLE -->
       <div id="admin-view-overview" class="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-x-auto">
         <h3 class="text-lg font-bold text-white mb-4">Registered Church Members (Real-Time)</h3>
         <table class="w-full text-left border-collapse text-sm">
@@ -358,19 +343,15 @@
               <th class="py-3 px-2">Joined</th>
             </tr>
           </thead>
-          <tbody id="admin-members-tbody" class="divide-y divide-slate-800">
-            <!-- Populated dynamically via Supabase -->
-          </tbody>
+          <tbody id="admin-members-tbody" class="divide-y divide-slate-800"></tbody>
         </table>
       </div>
 
-      <!-- VIEW B: FELLOWSHIPS BREAKDOWN -->
       <div id="admin-view-fellowships" class="hidden-section space-y-6">
         <h3 class="text-lg font-bold text-white">Fellowship Groups</h3>
         <div id="fellowships-container" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
       </div>
 
-      <!-- VIEW C: DEPARTMENTS BREAKDOWN (NEW SIDEBAR ITEM) -->
       <div id="admin-view-departments" class="hidden-section space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <h3 class="text-lg font-bold text-white">Church Departments</h3>
@@ -386,28 +367,25 @@
         </div>
         <div id="departments-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </div>
-
     </main>
   </div>
 
-  <!-- ==========================================
-       5. JAVASCRIPT APPLICATION & REAL-TIME LOGIC
-  =========================================== -->
+  <!-- JAVASCRIPT LOGIC -->
   <script>
-    // =========================================================
     // SUPABASE CONFIGURATION
-    // Paste your Project URL from Supabase Settings -> API below
-    // =========================================================
-    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_URL = 'https://your-project-id.supabase.co'; // Replace with your actual project URL if needed
     const SUPABASE_ANON_KEY = 'sb_publishable_3jzku7vSLCqz5Bw8BYO0uw_5FhrbAir';
 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let supabaseClient = null;
+    try {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (e) {
+      console.error("Supabase initialization error:", e);
+    }
 
     let allMembersData = [];
 
-    // ---------------------------------------------------------
-    // 1. 10-SECOND LOADING SCREEN TIMER
-    // ---------------------------------------------------------
+    // 10-SECOND LOADING SCREEN TIMER (Guaranteed to finish even if network is slow)
     window.addEventListener('DOMContentLoaded', () => {
       let secondsLeft = 10;
       const progressEl = document.getElementById('splash-progress');
@@ -427,9 +405,6 @@
       }, 1000);
     });
 
-    // ---------------------------------------------------------
-    // 2. NAVIGATION & AUTH TABS
-    // ---------------------------------------------------------
     function showAlert(message, isError = true) {
       const alertBox = document.getElementById('auth-alert');
       alertBox.textContent = message;
@@ -461,9 +436,6 @@
       }
     }
 
-    // ---------------------------------------------------------
-    // 3. MULTI-STEP REGISTRATION WIZARD LOGIC
-    // ---------------------------------------------------------
     function showRegistrationWizard() {
       hideAlert();
       document.getElementById('login-tabs').classList.add('hidden-section');
@@ -492,35 +464,25 @@
 
     function nextStep(currentStep) {
       if (currentStep === 1) {
-        const name = document.getElementById('reg-fullname').value.trim();
-        const mobile = document.getElementById('reg-mobile').value.trim();
-        const dob = document.getElementById('reg-dob').value;
-        const address = document.getElementById('reg-address').value.trim();
-        if (!name || !mobile || !dob || !address) {
+        if (!document.getElementById('reg-fullname').value.trim() || !document.getElementById('reg-mobile').value.trim() || !document.getElementById('reg-dob').value || !document.getElementById('reg-address').value.trim()) {
           return showAlert('Please fill in all required personal information fields.');
         }
         goToStep(2);
       } else if (currentStep === 2) {
-        const married = document.getElementById('reg-married').value;
-        const gender = document.getElementById('reg-gender').value;
-        if (!married || !gender) {
+        if (!document.getElementById('reg-married').value || !document.getElementById('reg-gender').value) {
           return showAlert('Please select both Marital Status and Gender.');
         }
         goToStep(3);
       } else if (currentStep === 3) {
         const isWorker = document.getElementById('reg-worker').value;
-        const dept = document.getElementById('reg-department').value;
-        if (!isWorker) {
-          return showAlert('Please select whether you are a worker.');
-        }
-        if (isWorker === 'YES' && !dept) {
+        if (!isWorker) return showAlert('Please select whether you are a worker.');
+        if (isWorker === 'YES' && !document.getElementById('reg-department').value) {
           return showAlert('Please select your department.');
         }
         goToStep(4);
       } else if (currentStep === 4) {
-        const joined = document.getElementById('reg-joined').value;
-        if (!joined) {
-          return showAlert('Please select the Month and Year you joined City of Mercy.');
+        if (!document.getElementById('reg-joined').value) {
+          return showAlert('Please select the Month and Year you joined.');
         }
         goToStep(5);
       }
@@ -557,38 +519,16 @@
       }
     }
 
-    // ---------------------------------------------------------
-    // 4. AUTO-ASSIGNMENT & FORM SUBMISSION
-    // ---------------------------------------------------------
     async function submitRegistration() {
       const married = document.getElementById('reg-married').value;
       const gender = document.getElementById('reg-gender').value;
 
-      // Auto-assign Fellowship
       let assignedFellowship = 'Youth Fellowship';
-      if (married === 'YES' && gender === 'FEMALE') {
-        assignedFellowship = 'Women Fellowship';
-      } else if (married === 'YES' && gender === 'MALE') {
-        assignedFellowship = 'Men Fellowship';
-      } else if (married === 'NO') {
-        assignedFellowship = 'Youth Fellowship';
-      }
+      if (married === 'YES' && gender === 'FEMALE') assignedFellowship = 'Women Fellowship';
+      else if (married === 'YES' && gender === 'MALE') assignedFellowship = 'Men Fellowship';
 
-      // Auto-assign Department
       const isWorker = document.getElementById('reg-worker').value;
-      const rawDept = document.getElementById('reg-department').value;
-      let assignedDepartment = 'None';
-
-      if (isWorker === 'YES') {
-        const deptMap = {
-          'SECURITY': 'Security Department',
-          'USHER': 'Usher Department',
-          'TECHNICAL': 'Technical Department',
-          'SANITATION': 'Sanitation Department',
-          'CHILDREN TEACHER': 'Children Teacher Department'
-        };
-        assignedDepartment = deptMap[rawDept] || rawDept;
-      }
+      let assignedDepartment = isWorker === 'YES' ? (document.getElementById('reg-department').value + ' Department') : 'None';
 
       const memberPayload = {
         full_name: document.getElementById('reg-fullname').value.trim(),
@@ -613,26 +553,17 @@
       submitBtn.disabled = true;
       submitBtn.textContent = 'Registering...';
 
-      const { data, error } = await supabaseClient
-        .from('members')
-        .insert([memberPayload]);
+      const { error } = await supabaseClient.from('members').insert([memberPayload]);
 
       submitBtn.disabled = false;
       submitBtn.textContent = 'SUBMIT & REGISTER';
 
-      if (error) {
-        console.error(error);
-        return showAlert('Registration failed: ' + error.message);
-      }
+      if (error) return showAlert('Registration failed: ' + error.message);
 
-      // Redirect to Login page with success notification
       switchAuthTab('member-login');
-      showAlert(`Registration successful! You have been assigned to ${assignedFellowship}. Please log in with your Mobile Number and 4-digit PIN.`, false);
+      showAlert(`Registration successful! Assigned to ${assignedFellowship}. Please log in.`, false);
     }
 
-    // ---------------------------------------------------------
-    // 5. MEMBER LOGIN & DASHBOARD
-    // ---------------------------------------------------------
     async function handleMemberLogin(e) {
       e.preventDefault();
       hideAlert();
@@ -646,11 +577,8 @@
         .eq('pin', pin)
         .single();
 
-      if (error || !data) {
-        return showAlert('Invalid Mobile Number or 4-Digit PIN.');
-      }
+      if (error || !data) return showAlert('Invalid Mobile Number or 4-Digit PIN.');
 
-      // Populate Member Dashboard
       document.getElementById('mem-dash-name').textContent = `Welcome, ${data.full_name}`;
       document.getElementById('mem-dash-fellowship').textContent = data.fellowship;
       document.getElementById('mem-dash-department').textContent = data.department;
@@ -660,15 +588,12 @@
       document.getElementById('mem-dash-dob').textContent = data.date_of_birth || 'N/A';
       document.getElementById('mem-dash-marital-gender').textContent = `${data.is_married === 'YES' ? 'Married' : 'Single'} • ${data.gender}`;
       document.getElementById('mem-dash-joined').textContent = data.joined_month_year || 'N/A';
-      document.getElementById('mem-dash-address').textContent = `${data.house_address}, ${data.state_of_residence} (Origin: ${data.state_of_origin}, ${data.nationality})`;
+      document.getElementById('mem-dash-address').textContent = `${data.house_address}, ${data.state_of_residence}`;
 
       document.getElementById('auth-container').classList.add('hidden-section');
       document.getElementById('member-dashboard').classList.remove('hidden-section');
     }
 
-    // ---------------------------------------------------------
-    // 6. ADMIN LOGIN & REAL-TIME ADMIN DASHBOARD
-    // ---------------------------------------------------------
     async function handleAdminLogin(e) {
       e.preventDefault();
       hideAlert();
@@ -680,9 +605,7 @@
         .eq('pin', adminPin)
         .single();
 
-      if (error || !data) {
-        return showAlert('Invalid 8-Digit Admin PIN.');
-      }
+      if (error || !data) return showAlert('Invalid 8-Digit Admin PIN.');
 
       document.getElementById('auth-container').classList.add('hidden-section');
       document.getElementById('admin-dashboard').classList.remove('hidden-section');
@@ -707,19 +630,17 @@
       supabaseClient
         .channel('public:members')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
-          loadAdminData(); // Instantly refresh dashboard on any insert/update/delete
+          loadAdminData();
         })
         .subscribe();
     }
 
     function updateAdminUI() {
-      // Update top counters
       document.getElementById('stat-total').textContent = allMembersData.length;
       document.getElementById('stat-men').textContent = allMembersData.filter(m => m.fellowship === 'Men Fellowship').length;
       document.getElementById('stat-women').textContent = allMembersData.filter(m => m.fellowship === 'Women Fellowship').length;
       document.getElementById('stat-youth').textContent = allMembersData.filter(m => m.fellowship === 'Youth Fellowship').length;
 
-      // Update All Members Table
       const tbody = document.getElementById('admin-members-tbody');
       tbody.innerHTML = allMembersData.map(m => `
         <tr class="hover:bg-slate-800/40">
@@ -738,8 +659,7 @@
 
     function renderFellowshipsView() {
       const groups = ['Men Fellowship', 'Women Fellowship', 'Youth Fellowship'];
-      const container = document.getElementById('fellowships-container');
-      container.innerHTML = groups.map(group => {
+      document.getElementById('fellowships-container').innerHTML = groups.map(group => {
         const members = allMembersData.filter(m => m.fellowship === group);
         return `
           <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
@@ -754,18 +674,10 @@
 
     function renderDepartmentsView() {
       const selected = document.getElementById('filter-department-select').value;
-      const depts = [
-        'Security Department',
-        'Usher Department',
-        'Technical Department',
-        'Sanitation Department',
-        'Children Teacher Department',
-        'None'
-      ];
+      const depts = ['Security Department', 'Usher Department', 'Technical Department', 'Sanitation Department', 'Children Teacher Department', 'None'];
       const filteredDepts = selected === 'ALL' ? depts : [selected];
-      const container = document.getElementById('departments-container');
-
-      container.innerHTML = filteredDepts.map(dept => {
+      
+      document.getElementById('departments-container').innerHTML = filteredDepts.map(dept => {
         const members = allMembersData.filter(m => m.department === dept);
         return `
           <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
