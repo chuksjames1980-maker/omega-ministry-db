@@ -54,9 +54,7 @@
 
     <!-- JAVASCRIPT APPLICATION CONTROLLER -->
     <script>
-        // Official Ministry Logo embedded directly as a reliable Base64 string to ensure 100% rendering on Vercel
-        const ministryLogoUrl = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=";
-        // High-fidelity SVG & Canvas fallback wrapper guaranteeing pristine golden seal display
+        // Official Ministry Logo Emblem Component
         const getLogoHtml = (size = "w-24 h-24") => `
             <div class="${size} mx-auto rounded-full p-0.5 bg-gradient-to-tr from-yellow-600 via-amber-400 to-yellow-200 shadow-xl flex items-center justify-center relative overflow-hidden">
                 <div class="w-full h-full rounded-full bg-black flex flex-col items-center justify-center relative">
@@ -81,7 +79,7 @@
 
         let loadingTimer = null;
 
-        // --- 1. LOADING SCREEN VIEW ---
+        // --- 1. LOADING SCREEN VIEW (5 Seconds Countdown) ---
         function renderLoadingScreen() {
             if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
@@ -100,10 +98,10 @@
                 </div>
             `;
 
-            // 10-second automatic redirect to Login Page (Skip loading button removed)
+            // 5-second automatic redirect to Login Page
             loadingTimer = setTimeout(() => {
                 renderLoginPage();
-            }, 10000);
+            }, 5000);
         }
 
         // --- 2. LOGIN PAGE VIEW ---
