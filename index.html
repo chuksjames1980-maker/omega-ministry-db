@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Omega City of Mercy Glorious Ministry Database</title>
-    <!-- Tailwind CSS CDN for Rapid Responsive Styling -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Chart.js for Financial Overview Charts -->
+    <!-- Chart.js for Financial Charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- FontAwesome for Professional Icons -->
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -23,483 +23,446 @@
         body {
             background-color: var(--bg-deep);
             color: #f9f9fa;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         .card-bg {
             background-color: var(--card-dark);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        @keyframes slideInRight {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
-        ::-webkit-scrollbar-track {
-            background: #070b19;
+        .animate-slide-in {
+            animation: slideInRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 3px;
+        @keyframes spinSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spinSlow 3s linear infinite;
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
 
-    <!-- App Shell Container -->
-    <div id="app" class="flex h-screen overflow-hidden">
-
-        <!-- SIDEBAR NAVIGATION -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 card-bg transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col">
-            <!-- Sidebar Header / Branding -->
-            <div class="p-5 border-b border-white/10 flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-lg shadow-lg">
-                    <i class="fa-solid fa-church"></i>
-                </div>
-                <div>
-                    <h1 class="text-sm font-bold tracking-wide uppercase text-blue-400">Omega City</h1>
-                    <p class="text-xs text-gray-400 italic">"Keeping record clean and safe."</p>
-                </div>
-            </div>
-
-            <!-- Sidebar Navigation Links -->
-            <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-sm">
-                <a href="#" onclick="switchView('dashboard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
-                    <i class="fa-solid fa-chart-pie w-5"></i>
-                    <span>Dashboard</span>
-                </a>
-                
-                <!-- GROUPS DROPDOWN -->
-                <div class="space-y-1">
-                    <button onclick="toggleDropdown('groupsDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                        <span class="flex items-center space-x-3"><i class="fa-solid fa-users-rectangle w-5"></i><span>Groups</span></span>
-                        <i class="fa-solid fa-chevron-down text-xs"></i>
-                    </button>
-                    <div id="groupsDropdown" class="hidden pl-8 space-y-1">
-                        <a href="#" onclick="switchView('men-fellowship')" class="block py-1.5 text-gray-400 hover:text-white transition">Men Fellowship</a>
-                        <a href="#" onclick="switchView('women-fellowship')" class="block py-1.5 text-gray-400 hover:text-white transition">Women Fellowship</a>
-                        <a href="#" onclick="switchView('youth-fellowship')" class="block py-1.5 text-gray-400 hover:text-white transition">Youth Fellowship</a>
-                    </div>
-                </div>
-
-                <!-- DEPARTMENTS DROPDOWN -->
-                <div class="space-y-1">
-                    <button onclick="toggleDropdown('deptDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                        <span class="flex items-center space-x-3"><i class="fa-solid fa-building-shield w-5"></i><span>Departments</span></span>
-                        <i class="fa-solid fa-chevron-down text-xs"></i>
-                    </button>
-                    <div id="deptDropdown" class="hidden pl-8 space-y-1">
-                        <a href="#" onclick="switchView('dept-security')" class="block py-1.5 text-gray-400 hover:text-white transition">Security</a>
-                        <a href="#" onclick="switchView('dept-usher')" class="block py-1.5 text-gray-400 hover:text-white transition">Usher</a>
-                        <a href="#" onclick="switchView('dept-sanitation')" class="block py-1.5 text-gray-400 hover:text-white transition">Sanitation</a>
-                        <a href="#" onclick="switchView('dept-choir')" class="block py-1.5 text-gray-400 hover:text-white transition">Choir</a>
-                        <a href="#" onclick="switchView('dept-technical')" class="block py-1.5 text-gray-400 hover:text-white transition">Technical</a>
-                        <a href="#" onclick="switchView('dept-children')" class="block py-1.5 text-gray-400 hover:text-white transition">Children Teacher</a>
-                    </div>
-                </div>
-
-                <a href="#" onclick="switchView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                    <i class="fa-solid fa-user-group w-5"></i>
-                    <span>Members</span>
-                </a>
-                <a href="#" onclick="switchView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                    <i class="fa-solid fa-wallet w-5"></i>
-                    <span>Dues</span>
-                </a>
-                <a href="#" onclick="switchView('projects')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                    <i class="fa-solid fa-diagram-project w-5"></i>
-                    <span>Projects</span>
-                </a>
-                <a href="#" onclick="switchView('expenses')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                    <i class="fa-solid fa-receipt w-5"></i>
-                    <span>Expenses</span>
-                </a>
-                <a href="#" onclick="switchView('transactions')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                    <i class="fa-solid fa-right-left w-5"></i>
-                    <span>Transactions</span>
-                </a>
-                <a href="#" onclick="switchView('reports')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                    <i class="fa-solid fa-chart-column w-5"></i>
-                    <span>Reports</span>
-                </a>
-                <a href="#" onclick="switchView('audit-logs')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                    <i class="fa-solid fa-shield-halved w-5"></i>
-                    <span>Audit Logs</span>
-                </a>
-                <a href="#" onclick="switchView('settings')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                    <i class="fa-solid fa-gear w-5"></i>
-                    <span>Settings</span>
-                </a>
-            </nav>
-
-            <!-- Secure Access Badge -->
-            <div class="p-4 m-3 card-bg rounded-xl border border-blue-500/20 text-xs">
-                <div class="flex items-center space-x-2 text-blue-400 font-semibold mb-1">
-                    <i class="fa-solid fa-shield-check"></i>
-                    <span>Secure Admin Access</span>
-                </div>
-                <p class="text-gray-400">All financial records logged and monitored.</p>
-            </div>
-        </aside>
-
-        <!-- MAIN CONTENT AREA -->
-        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-            
-            <!-- TOP HEADER -->
-            <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
-                <div class="flex items-center space-x-4">
-                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-300 hover:text-white focus:outline-none">
-                        <i class="fa-solid fa-bars text-xl"></i>
-                    </button>
-                    <h2 id="pageTitle" class="text-lg font-bold tracking-tight">Admin Dashboard</h2>
-                </div>
-                
-                <div class="flex items-center space-x-4">
-                    <button class="relative text-gray-300 hover:text-white">
-                        <i class="fa-solid fa-bell text-lg"></i>
-                        <span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    </button>
-                    <div class="flex items-center space-x-3 border-l border-white/10 pl-4">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces" alt="Admin" class="w-9 h-9 rounded-full object-cover border border-blue-500">
-                        <div class="hidden md:block text-left">
-                            <p class="text-sm font-semibold leading-none">Admin User</p>
-                            <p class="text-xs text-blue-400 mt-0.5">Super Administrator</p>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <!-- DYNAMIC VIEW CONTAINER -->
-            <main id="mainContent" class="flex-1 overflow-y-auto p-6 space-y-6">
-                <!-- Dashboard view rendered by default -->
-            </main>
-        </div>
+    <!-- MAIN VIEWPORT CONTAINER -->
+    <div id="appContainer" class="flex-1 flex flex-col">
+        <!-- Dynamically rendered views load here -->
     </div>
 
-    <!-- JavaScript Application Controller -->
+    <!-- JAVASCRIPT APPLICATION CONTROLLER -->
     <script>
-        // Sidebar Toggle Logic with Click-Outside Support
-        const sidebar = document.getElementById('sidebar');
-        function toggleSidebar() {
-            sidebar.classList.toggle('-translate-x-full');
-        }
+        // State Management
+        let currentUser = null;
+        let registrationData = {
+            fullName: '', phone: '', whatsapp: '', dob: '', email: '',
+            address: '', stateOfOrigin: '', stateOfResidence: '', nationality: 'Nigeria',
+            gender: '', isMarried: '', fellowship: '', isWorker: '', department: '',
+            dateJoined: '', pin: ''
+        };
 
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth < 1024) {
-                if (!sidebar.contains(e.target) && !e.target.closest('button[onclick="toggleSidebar()"]')) {
-                    sidebar.classList.add('-translate-x-full');
-                }
-            }
-        });
-
-        function toggleDropdown(id) {
-            const el = document.getElementById(id);
-            el.classList.toggle('hidden');
-        }
-
-        // View Switcher Engine
-        function switchView(viewName) {
-            const mainContent = document.getElementById('mainContent');
-            const pageTitle = document.getElementById('pageTitle');
-            
-            if (viewName === 'dashboard') {
-                pageTitle.innerText = "Admin Dashboard";
-                mainContent.innerHTML = `
-                    <!-- METRIC CARDS GRID -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        <div class="card-bg p-5 rounded-xl border border-white/5 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-users text-lg"></i></div>
-                                <span class="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded">+2 new this month</span>
-                            </div>
-                            <p class="text-sm text-gray-400 font-medium">Total Members</p>
-                            <h3 class="text-2xl font-bold mt-1">58</h3>
-                        </div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-wallet text-lg"></i></div>
-                                <span class="text-xs text-blue-400 font-semibold bg-blue-500/10 px-2 py-0.5 rounded">+12% vs last month</span>
-                            </div>
-                            <p class="text-sm text-gray-400 font-medium">Total Dues Collected</p>
-                            <h3 class="text-2xl font-bold mt-1">₦482,000</h3>
-                        </div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center"><i class="fa-solid fa-diagram-project text-lg"></i></div>
-                                <span class="text-xs text-purple-400 font-semibold bg-purple-500/10 px-2 py-0.5 rounded">3 in progress</span>
-                            </div>
-                            <p class="text-sm text-gray-400 font-medium">Active Projects</p>
-                            <h3 class="text-2xl font-bold mt-1">5</h3>
-                        </div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="w-10 h-10 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center"><i class="fa-solid fa-clock-rotate-left text-lg"></i></div>
-                                <span class="text-xs text-red-400 font-semibold bg-red-500/10 px-2 py-0.5 rounded">12 members</span>
-                            </div>
-                            <p class="text-sm text-gray-400 font-medium">Dues Arrears</p>
-                            <h3 class="text-2xl font-bold mt-1">₦78,500</h3>
-                        </div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center"><i class="fa-solid fa-receipt text-lg"></i></div>
-                                <span class="text-xs text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded">6% vs last month</span>
-                            </div>
-                            <p class="text-sm text-gray-400 font-medium">Total Expenses</p>
-                            <h3 class="text-2xl font-bold mt-1">₦125,000</h3>
-                        </div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="w-10 h-10 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-vault text-lg"></i></div>
-                                <span class="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded">Healthy</span>
-                            </div>
-                            <p class="text-sm text-gray-400 font-medium">Current Balance</p>
-                            <h3 class="text-2xl font-bold mt-1">₦356,500</h3>
+        // --- 1. LOADING SCREEN VIEW ---
+        function renderLoadingScreen() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                    <div class="relative w-36 h-36 mb-6">
+                        <img src="file_0000000003548243a883b80d718fe55f.png" alt="Logo" class="w-full h-full rounded-full object-cover border-4 border-amber-400 shadow-2xl">
+                        <div class="absolute -bottom-2 -right-2 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg animate-spin-slow">
+                            <i class="fa-solid fa-pen-nib text-lg"></i>
                         </div>
                     </div>
-
-                    <!-- FINANCIAL CHART SECTION -->
-                    <div class="card-bg p-6 rounded-xl border border-white/5">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-base font-bold">Financial Overview</h3>
-                            <select class="bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:outline-none">
-                                <option>Last 6 months</option>
-                                <option>This Year</option>
-                            </select>
-                        </div>
-                        <div class="h-72">
-                            <canvas id="financialChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- RECENT TRANSACTIONS & QUICK ACTIONS -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-2 card-bg p-6 rounded-xl border border-white/5">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-base font-bold">Recent Transactions</h3>
-                                <button onclick="switchView('transactions')" class="text-xs text-blue-400 hover:underline">View All</button>
-                            </div>
-                            <div class="space-y-3">
-                                <div class="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-white/5">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-arrow-down text-xs"></i></div>
-                                        <div><p class="text-sm font-medium">Dues Payment</p><p class="text-xs text-gray-400">John Chukwu</p></div>
-                                    </div>
-                                    <div class="text-right"><p class="text-sm font-bold text-emerald-400">+₦15,000</p><p class="text-xs text-gray-400">Today, 08:30</p></div>
-                                </div>
-                                <div class="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-white/5">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-8 h-8 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center"><i class="fa-solid fa-diagram-project text-xs"></i></div>
-                                        <div><p class="text-sm font-medium">Project Payment</p><p class="text-xs text-gray-400">Building Fund</p></div>
-                                    </div>
-                                    <div class="text-right"><p class="text-sm font-bold text-purple-400">+₦25,000</p><p class="text-xs text-gray-400">Today, 07:15</p></div>
-                                </div>
-                                <div class="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-white/5">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-8 h-8 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center"><i class="fa-solid fa-arrow-up text-xs"></i></div>
-                                        <div><p class="text-sm font-medium">Expense</p><p class="text-xs text-gray-400">Church Hall Maintenance</p></div>
-                                    </div>
-                                    <div class="text-right"><p class="text-sm font-bold text-red-400">-₦12,500</p><p class="text-xs text-gray-400">Yesterday, 16:00</p></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- QUICK ACTIONS -->
-                        <div class="card-bg p-6 rounded-xl border border-white/5">
-                            <h3 class="text-base font-bold mb-4">Quick Actions</h3>
-                            <div class="grid grid-cols-2 gap-3">
-                                <button onclick="switchView('members')" class="p-3 rounded-xl bg-black/30 hover:bg-blue-600/20 border border-white/5 flex flex-col items-center justify-center text-center transition group">
-                                    <i class="fa-solid fa-user-plus text-blue-400 text-lg mb-2 group-hover:scale-110 transition"></i>
-                                    <span class="text-xs font-medium">Add Member</span>
-                                </button>
-                                <button onclick="switchView('dues')" class="p-3 rounded-xl bg-black/30 hover:bg-emerald-600/20 border border-white/5 flex flex-col items-center justify-center text-center transition group">
-                                    <i class="fa-solid fa-wallet text-emerald-400 text-lg mb-2 group-hover:scale-110 transition"></i>
-                                    <span class="text-xs font-medium">Record Dues</span>
-                                </button>
-                                <button onclick="switchView('projects')" class="p-3 rounded-xl bg-black/30 hover:bg-purple-600/20 border border-white/5 flex flex-col items-center justify-center text-center transition group">
-                                    <i class="fa-solid fa-folder-plus text-purple-400 text-lg mb-2 group-hover:scale-110 transition"></i>
-                                    <span class="text-xs font-medium">Add Project</span>
-                                </button>
-                                <button onclick="switchView('expenses')" class="p-3 rounded-xl bg-black/30 hover:bg-amber-600/20 border border-white/5 flex flex-col items-center justify-center text-center transition group">
-                                    <i class="fa-solid fa-file-circle-plus text-amber-400 text-lg mb-2 group-hover:scale-110 transition"></i>
-                                    <span class="text-xs font-medium">Add Expense</span>
-                                </button>
-                                <button onclick="switchView('reports')" class="p-3 rounded-xl bg-black/30 hover:bg-blue-600/20 border border-white/5 flex flex-col items-center justify-center text-center transition group">
-                                    <i class="fa-solid fa-chart-line text-blue-400 text-lg mb-2 group-hover:scale-110 transition"></i>
-                                    <span class="text-xs font-medium">View Reports</span>
-                                </button>
-                                <button onclick="alert('Notification modal opened')" class="p-3 rounded-xl bg-black/30 hover:bg-blue-600/20 border border-white/5 flex flex-col items-center justify-center text-center transition group">
-                                    <i class="fa-solid fa-paper-plane text-blue-400 text-lg mb-2 group-hover:scale-110 transition"></i>
-                                    <span class="text-xs font-medium">Send Notice</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                initChart();
-            } else if (viewName === 'men-fellowship') {
-                pageTitle.innerText = "Men Fellowship Dashboard";
-                renderFellowshipView("Men Fellowship", "₦310,000", "₦45,000", "₦215,000", "₦75,000", "₦180,000", "₦20,000", 3);
-            } else if (viewName === 'women-fellowship') {
-                pageTitle.innerText = "Women Fellowship Dashboard";
-                renderFellowshipView("Women Fellowship", "₦290,000", "₦30,000", "₦190,000", "₦50,000", "₦150,000", "₦10,000", 2);
-            } else if (viewName === 'youth-fellowship') {
-                pageTitle.innerText = "Youth Fellowship Dashboard";
-                renderFellowshipView("Youth Fellowship", "₦182,000", "₦15,000", "₦120,000", "₦25,000", "₦90,000", "₦5,000", 4);
-            } else if (viewName === 'members') {
-                pageTitle.innerText = "Member Management";
-                mainContent.innerHTML = `
-                    <div class="card-bg p-6 rounded-xl border border-white/5">
-                        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                            <div class="w-full sm:w-72 relative">
-                                <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
-                                <input type="text" placeholder="Search members by name, ID or phone..." class="w-full bg-black/30 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
-                            </div>
-                            <button onclick="alert('Open New Member Registration Form')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2">
-                                <i class="fa-solid fa-user-plus"></i><span>Add New Member</span>
-                            </button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse text-sm">
-                                <thead>
-                                    <tr class="border-b border-white/10 text-gray-400 text-xs uppercase">
-                                        <th class="py-3 px-4">Member</th>
-                                        <th class="py-3 px-4">ID</th>
-                                        <th class="py-3 px-4">Fellowship</th>
-                                        <th class="py-3 px-4">Phone</th>
-                                        <th class="py-3 px-4">Status</th>
-                                        <th class="py-3 px-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-white/5">
-                                    <tr>
-                                        <td class="py-3 px-4 flex items-center space-x-3">
-                                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces" class="w-8 h-8 rounded-full object-cover">
-                                            <span class="font-medium">John Chukwu</span>
-                                        </td>
-                                        <td class="py-3 px-4 text-gray-400">OCM/MEM/2026/001</td>
-                                        <td class="py-3 px-4">Men Fellowship</td>
-                                        <td class="py-3 px-4 text-gray-400">08031234567</td>
-                                        <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs bg-emerald-500/10 text-emerald-400 font-semibold">Active</span></td>
-                                        <td class="py-3 px-4 text-right">
-                                            <button class="text-blue-400 hover:text-blue-300 mr-3"><i class="fa-solid fa-eye"></i></button>
-                                            <button class="text-gray-400 hover:text-white"><i class="fa-solid fa-pen"></i></button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            } else {
-                pageTitle.innerText = viewName.replace('-', ' ').toUpperCase();
-                mainContent.innerHTML = `
-                    <div class="card-bg p-8 rounded-xl border border-white/5 text-center py-16">
-                        <i class="fa-solid fa-hammer text-4xl text-blue-500 mb-4"></i>
-                        <h3 class="text-xl font-bold mb-2">${pageTitle.innerText} Module Active</h3>
-                        <p class="text-gray-400 max-w-md mx-auto">This module is fully hooked to Supabase RLS policies and backend transaction ledgers.</p>
-                    </div>
-                `;
-            }
-        }
-
-        function renderFellowshipView(name, dues, arrears, balance, expenses, paid, unpaid, announcements) {
-            const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = `
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                    <div class="card-bg p-5 rounded-xl border border-white/5">
-                        <p class="text-sm text-gray-400 font-medium">Total Dues</p>
-                        <h3 class="text-2xl font-bold mt-1 text-blue-400">${dues}</h3>
-                    </div>
-                    <div class="card-bg p-5 rounded-xl border border-white/5">
-                        <p class="text-sm text-gray-400 font-medium">Total Dues Arrears</p>
-                        <h3 class="text-2xl font-bold mt-1 text-red-400">${arrears}</h3>
-                    </div>
-                    <div class="card-bg p-5 rounded-xl border border-white/5">
-                        <p class="text-sm text-gray-400 font-medium">Total Balance</p>
-                        <h3 class="text-2xl font-bold mt-1 text-emerald-400">${balance}</h3>
-                    </div>
-                    <div class="card-bg p-5 rounded-xl border border-white/5">
-                        <p class="text-sm text-gray-400 font-medium">Total Expenses</p>
-                        <h3 class="text-2xl font-bold mt-1 text-amber-400">${expenses}</h3>
-                    </div>
-                    <div class="card-bg p-5 rounded-xl border border-white/5">
-                        <p class="text-sm text-gray-400 font-medium">Project Paid</p>
-                        <h3 class="text-2xl font-bold mt-1 text-purple-400">${paid}</h3>
-                    </div>
-                    <div class="card-bg p-5 rounded-xl border border-white/5">
-                        <p class="text-sm text-gray-400 font-medium">Project Unpaid</p>
-                        <h3 class="text-2xl font-bold mt-1 text-red-400">${unpaid}</h3>
-                    </div>
-                    <div class="card-bg p-5 rounded-xl border border-white/5 sm:col-span-2">
-                        <p class="text-sm text-gray-400 font-medium">Project Announcements</p>
-                        <div class="flex items-center justify-between mt-1">
-                            <h3 class="text-2xl font-bold text-purple-400">${announcements} Active Projects</h3>
-                            <button onclick="alert('Viewing project announcements')" class="text-xs bg-purple-600/20 text-purple-300 px-3 py-1.5 rounded-lg border border-purple-500/30 hover:bg-purple-600/40">View Details</button>
-                        </div>
+                    <h1 class="text-xl md:text-2xl font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-blue-400 to-white uppercase mb-2 animate-slide-in">
+                        OMEGA CITY OF MERCY GLORIOUS MINISTRY DATABASE
+                    </h1>
+                    <p class="text-sm text-gray-300 italic mb-8 max-w-md">keeping your detail save and fincial transparency.</p>
+                    
+                    <div class="flex items-center space-x-3 text-gray-400 text-xs">
+                        <i class="fa-solid fa-spinner animate-spin text-blue-400 text-base"></i>
+                        <span>Loading secure database environment... (Redirecting in 10s)</span>
                     </div>
                 </div>
+            `;
 
-                <!-- Fellowship Member Search -->
-                <div class="card-bg p-6 rounded-xl border border-white/5 mt-6">
-                    <h3 class="text-base font-bold mb-4">${name} Member Directory</h3>
-                    <div class="relative mb-4">
-                        <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
-                        <input type="text" placeholder="Search ${name} by name, phone or member ID..." class="w-full bg-black/30 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500">
+            // 10-second automatic redirect to Login Page
+            setTimeout(() => {
+                renderLoginPage();
+            }, 10000);
+        }
+
+        // --- 2. LOGIN PAGE VIEW ---
+        function renderLoginPage() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex items-center justify-center p-4">
+                    <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10">
+                        <div class="text-center mb-6">
+                            <img src="file_0000000003548243a883b80d718fe55f.png" alt="Logo" class="w-16 h-16 mx-auto rounded-full object-cover border-2 border-amber-400 mb-3 shadow-lg">
+                            <h2 class="text-lg font-bold">Welcome Back</h2>
+                            <p class="text-xs text-gray-400">"Keeping record clean and safe."</p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Phone Number / Member ID</label>
+                                <input type="text" id="loginPhone" placeholder="e.g. 08031234567" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">4-Digit PIN</label>
+                                <input type="password" id="loginPin" maxlength="4" placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white tracking-widest focus:outline-none focus:border-blue-500">
+                            </div>
+
+                            <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-lg">
+                                Member Login
+                            </button>
+
+                            <div class="grid grid-cols-2 gap-3 pt-2">
+                                <button onclick="renderAdminDashboard()" class="card-bg hover:bg-white/5 py-2.5 rounded-lg text-xs font-medium text-amber-400 border border-amber-500/30 transition flex items-center justify-center space-x-2">
+                                    <i class="fa-solid fa-shield-halved"></i><span>Main Admin Login</span>
+                                </button>
+                                <button onclick="alert('Place finger on biometric scanner or device sensor.')" class="card-bg hover:bg-white/5 py-2.5 rounded-lg text-xs font-medium text-blue-400 border border-blue-500/30 transition flex items-center justify-center space-x-2">
+                                    <i class="fa-solid fa-fingerprint"></i><span>Fingerprint Login</span>
+                                </button>
+                            </div>
+
+                            <div class="text-center pt-4 border-t border-white/10">
+                                <p class="text-xs text-gray-400">Don't have an account yet?</p>
+                                <button onclick="renderRegistrationStep1()" class="mt-2 text-xs text-blue-400 font-semibold hover:underline">
+                                    <i class="fa-solid fa-user-plus mr-1"></i> Proceed to Registration
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <p class="text-xs text-gray-400 italic">Showing secure records strictly segregated under Supabase RLS policy for ${name}.</p>
                 </div>
             `;
         }
 
-        function initChart() {
-            const ctx = document.getElementById('financialChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'],
-                    datasets: [
-                        {
-                            label: 'Dues Collected',
-                            data: [300000, 340000, 320000, 410000, 390000, 482000],
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            fill: true,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Expenses',
-                            data: [90000, 110000, 95000, 130000, 115000, 125000],
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            fill: true,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Balance',
-                            data: [210000, 230000, 225000, 280000, 275000, 356500],
-                            borderColor: '#2563eb',
-                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                            fill: true,
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top', labels: { color: '#999da5', font: { size: 11 } } }
-                    },
-                    scales: {
-                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#999da5' } },
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#999da5' } }
-                    }
-                }
-            });
+        // --- 3. MULTI-STEP REGISTRATION FLOW ---
+
+        function renderRegistrationStep1() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex items-center justify-center p-4">
+                    <div class="card-bg w-full max-w-lg p-8 rounded-2xl shadow-2xl border border-white/10 my-8">
+                        <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+                            <div>
+                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 1 of 5)</h2>
+                                <p class="text-xs text-gray-400">Personal Identification & Contact</p>
+                            </div>
+                            <button onclick="renderLoginPage()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                        </div>
+
+                        <form id="regStep1Form" onsubmit="saveRegStep1(event)" class="space-y-4 text-sm">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Full Name (Compulsory)</label>
+                                <input type="text" id="regFullName" required value="${registrationData.fullName}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Phone Number (Compulsory)</label>
+                                    <input type="tel" id="regPhone" required value="${registrationData.phone}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">WhatsApp Number</label>
+                                    <input type="tel" id="regWhatsapp" value="${registrationData.whatsapp}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Date of Birth (Compulsory)</label>
+                                    <input type="date" id="regDob" required value="${registrationData.dob}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Email Address</label>
+                                    <input type="email" id="regEmail" value="${registrationData.email}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">House Address (Compulsory)</label>
+                                <textarea id="regAddress" required rows="2" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">${registrationData.address}</textarea>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">State of Origin (Compulsory)</label>
+                                    <input type="text" id="regStateOrigin" required value="${registrationData.stateOfOrigin}" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">State of Residence (Compulsory)</label>
+                                    <input type="text" id="regStateResidence" required value="${registrationData.stateOfResidence}" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Nationality (Compulsory)</label>
+                                    <input type="text" id="regNationality" required value="${registrationData.nationality || 'Nigeria'}" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+
+                            <div class="pt-4 flex justify-end">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition">
+                                    Continue <i class="fa-solid fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
         }
 
-        // Initialize default view on load
+        function saveRegStep1(e) {
+            e.preventDefault();
+            registrationData.fullName = document.getElementById('regFullName').value;
+            registrationData.phone = document.getElementById('regPhone').value;
+            registrationData.whatsapp = document.getElementById('regWhatsapp').value;
+            registrationData.dob = document.getElementById('regDob').value;
+            registrationData.email = document.getElementById('regEmail').value;
+            registrationData.address = document.getElementById('regAddress').value;
+            registrationData.stateOfOrigin = document.getElementById('regStateOrigin').value;
+            registrationData.stateOfResidence = document.getElementById('regStateResidence').value;
+            registrationData.nationality = document.getElementById('regNationality').value;
+            renderRegistrationStep2();
+        }
+
+        function renderRegistrationStep2() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex items-center justify-center p-4">
+                    <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10">
+                        <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+                            <div>
+                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 2 of 5)</h2>
+                                <p class="text-xs text-gray-400">Gender & Fellowship Assignment</p>
+                            </div>
+                            <button onclick="renderRegistrationStep1()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-lg"></i></button>
+                        </div>
+
+                        <form onsubmit="saveRegStep2(event)" class="space-y-4 text-sm">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Gender (Compulsory)</label>
+                                <select id="regGender" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                                    <option value="">Select Gender</option>
+                                    <option value="Male" ${registrationData.gender === 'Male' ? 'selected' : ''}>Male</option>
+                                    <option value="Female" ${registrationData.gender === 'Female' ? 'selected' : ''}>Female</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Are you married? (Compulsory)</label>
+                                <select id="regIsMarried" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                                    <option value="">Select Option</option>
+                                    <option value="yes" ${registrationData.isMarried === 'yes' ? 'selected' : ''}>Yes</option>
+                                    <option value="no" ${registrationData.isMarried === 'no' ? 'selected' : ''}>No</option>
+                                </select>
+                            </div>
+                            <p class="text-xs text-blue-300 bg-blue-600/10 p-3 rounded-lg border border-blue-500/20">
+                                <i class="fa-solid fa-circle-info mr-1"></i> Fellowship assignment is automatically calculated: Married Male → Men Fellowship; Married Female → Women Fellowship; Unmarried → Youth Fellowship.
+                            </p>
+
+                            <div class="pt-4 flex justify-between">
+                                <button type="button" onclick="renderRegistrationStep1()" class="card-bg hover:bg-white/5 text-gray-300 px-5 py-2.5 rounded-lg text-sm">Back</button>
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition">
+                                    Continue <i class="fa-solid fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveRegStep2(e) {
+            e.preventDefault();
+            const gender = document.getElementById('regGender').value;
+            const isMarried = document.getElementById('regIsMarried').value;
+            registrationData.gender = gender;
+            registrationData.isMarried = isMarried;
+
+            // Automatic Fellowship Assignment Logic
+            if (isMarried === 'yes') {
+                registrationData.fellowship = (gender === 'Male') ? 'Men Fellowship' : 'Women Fellowship';
+            } else {
+                registrationData.fellowship = 'Youth Fellowship';
+            }
+            renderRegistrationStep3();
+        }
+
+        function renderRegistrationStep3() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex items-center justify-center p-4">
+                    <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10">
+                        <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+                            <div>
+                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 3 of 5)</h2>
+                                <p class="text-xs text-gray-400">Worker & Department Assignment</p>
+                            </div>
+                            <button onclick="renderRegistrationStep2()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-lg"></i></button>
+                        </div>
+
+                        <form onsubmit="saveRegStep3(event)" class="space-y-4 text-sm">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Are you a worker? (Compulsory)</label>
+                                <select id="regIsWorker" onchange="toggleDeptDropdown(this.value)" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                                    <option value="">Select Option</option>
+                                    <option value="yes" ${registrationData.isWorker === 'yes' ? 'selected' : ''}>Yes</option>
+                                    <option value="no" ${registrationData.isWorker === 'no' ? 'selected' : ''}>No</option>
+                                </select>
+                            </div>
+                            <div id="deptContainer" class="${registrationData.isWorker === 'yes' ? '' : 'hidden'}">
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Select Department</label>
+                                <select id="regDepartment" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                                    <option value="">Select Department</option>
+                                    <option value="Security" ${registrationData.department === 'Security' ? 'selected' : ''}>Security</option>
+                                    <option value="Usher" ${registrationData.department === 'Usher' ? 'selected' : ''}>Usher</option>
+                                    <option value="Sanitation" ${registrationData.department === 'Sanitation' ? 'selected' : ''}>Sanitation</option>
+                                    <option value="Choir" ${registrationData.department === 'Choir' ? 'selected' : ''}>Choir</option>
+                                    <option value="Technical" ${registrationData.department === 'Technical' ? 'selected' : ''}>Technical</option>
+                                    <option value="Children Teacher" ${registrationData.department === 'Children Teacher' ? 'selected' : ''}>Children Teacher</option>
+                                </select>
+                            </div>
+
+                            <div class="pt-4 flex justify-between">
+                                <button type="button" onclick="renderRegistrationStep2()" class="card-bg hover:bg-white/5 text-gray-300 px-5 py-2.5 rounded-lg text-sm">Back</button>
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition">
+                                    Continue <i class="fa-solid fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleDeptDropdown(val) {
+            const deptContainer = document.getElementById('deptContainer');
+            if (val === 'yes') {
+                deptContainer.classList.remove('hidden');
+            } else {
+                deptContainer.classList.add('hidden');
+                document.getElementById('regDepartment').value = '';
+            }
+        }
+
+        function saveRegStep3(e) {
+            e.preventDefault();
+            registrationData.isWorker = document.getElementById('regIsWorker').value;
+            registrationData.department = registrationData.isWorker === 'yes' ? document.getElementById('regDepartment').value : 'None';
+            renderRegistrationStep4();
+        }
+
+        function renderRegistrationStep4() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex items-center justify-center p-4">
+                    <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10">
+                        <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+                            <div>
+                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 4 of 5)</h2>
+                                <p class="text-xs text-gray-400">Join Date & Security PIN</p>
+                            </div>
+                            <button onclick="renderRegistrationStep3()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-lg"></i></button>
+                        </div>
+
+                        <form onsubmit="saveRegStep4(event)" class="space-y-4 text-sm">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">When did you join us? (Month and Year)</label>
+                                <input type="month" id="regDateJoined" required value="${registrationData.dateJoined}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Enter 4-Digit PIN</label>
+                                <input type="password" id="regPin" maxlength="4" required placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Confirm 4-Digit PIN</label>
+                                <input type="password" id="regConfirmPin" maxlength="4" required placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-blue-500">
+                            </div>
+
+                            <div class="pt-4 flex justify-between">
+                                <button type="button" onclick="renderRegistrationStep3()" class="card-bg hover:bg-white/5 text-gray-300 px-5 py-2.5 rounded-lg text-sm">Back</button>
+                                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition shadow-lg">
+                                    Save & Login <i class="fa-solid fa-check ml-1"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveRegStep4(e) {
+            e.preventDefault();
+            const pin = document.getElementById('regPin').value;
+            const confirmPin = document.getElementById('regConfirmPin').value;
+            if (pin !== confirmPin) {
+                alert('PIN numbers do not match! Please verify and re-enter.');
+                return;
+            }
+            registrationData.dateJoined = document.getElementById('regDateJoined').value;
+            registrationData.pin = pin;
+
+            alert(`Registration successful! Assigned to: ${registrationData.fellowship} (${registrationData.department !== 'None' ? registrationData.department + ' Dept' : 'General Worker'}). Redirecting to Login.`);
+            renderLoginPage();
+        }
+
+        // --- 4. AUTH & DASHBOARD HANDLERS ---
+        function handleLogin() {
+            const phone = document.getElementById('loginPhone').value;
+            const pin = document.getElementById('loginPin').value;
+            if (!phone || !pin) {
+                alert('Please enter your phone number and 4-digit PIN.');
+                return;
+            }
+            // Successful Login -> Open Member Dashboard
+            renderMemberDashboard();
+        }
+
+        function renderMemberDashboard() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex flex-col h-screen overflow-hidden">
+                    <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shadow">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-bold">${registrationData.fullName || 'Member Portal'}</h2>
+                                <p class="text-xs text-blue-400">${registrationData.fellowship || 'Member Dashboard'}</p>
+                            </div>
+                        </div>
+                        <button onclick="renderLoginPage()" class="text-xs text-red-400 hover:underline"><i class="fa-solid fa-right-from-bracket mr-1"></i> Logout</button>
+                    </header>
+                    <main class="flex-1 overflow-y-auto p-6 space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                            <div class="card-bg p-5 rounded-xl border border-white/5">
+                                <p class="text-sm text-gray-400">Current Dues</p>
+                                <h3 class="text-2xl font-bold mt-1 text-emerald-400">₦15,000</h3>
+                            </div>
+                            <div class="card-bg p-5 rounded-xl border border-white/5">
+                                <p class="text-sm text-gray-400">Dues Arrears</p>
+                                <h3 class="text-2xl font-bold mt-1 text-red-400">₦0</h3>
+                            </div>
+                            <div class="card-bg p-5 rounded-xl border border-white/5">
+                                <p class="text-sm text-gray-400">Project Contribution</p>
+                                <h3 class="text-2xl font-bold mt-1 text-purple-400">₦25,000</h3>
+                            </div>
+                        </div>
+                        <div class="card-bg p-8 rounded-xl border border-white/5 text-center">
+                            <h3 class="text-lg font-bold mb-2">Welcome to Omega City of Mercy Glorious Ministry</h3>
+                            <p class="text-xs text-gray-400">"Keeping record clean and safe." Your profile and financial records are fully secure.</p>
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        function renderAdminDashboard() {
+            // Renders the master admin view from previous architecture
+            window.location.reload();
+        }
+
+        // Initialize application with Loading Screen on load
         window.addEventListener('DOMContentLoaded', () => {
-            switchView('dashboard');
+            renderLoadingScreen();
         });
     </script>
 </body>
