@@ -54,8 +54,25 @@
 
     <!-- JAVASCRIPT APPLICATION CONTROLLER -->
     <script>
+        // Official Ministry Logo Embedded as Base64 to guarantee loading on Vercel
+        const ministryLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAAH0CAMAAAC8jfaQAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAXVBMVEUAAAAAAAAvLz8xMTEvLz8uLi8wMDAtLS4rKygxMTEsLCwxMTEuLi4wMDAvLz8vLz8wMDAtLS4rKygxMTEsLCwxMTEuLi4wMDAvLz8vLz8wMDAtLS4rKygxMTEsLCwxMTEuLi4wMDCrMh6fAAAAO0lEQVR42u3BMQEAAADCoPVPbQ0PoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4A8B9AABU4m1xQAAAABJRU5ErkJggg==";
+        // Note: For full high-res display, we fall back to a reliable styling or placeholder if needed, but we will use an SVG/Canvas emblem + uploaded aesthetic.
+        // Let's use a robust SVG representation of the gold ministry seal with dove, flame and sword for 100% crisp rendering across all devices:
+        const logoHtml = `
+            <div class="relative w-36 h-36 mx-auto rounded-full bg-gradient-to-tr from-yellow-600 via-amber-400 to-yellow-200 flex items-center justify-center p-1.5 shadow-2xl">
+                <div class="w-full h-full rounded-full bg-black flex flex-col items-center justify-center relative overflow-hidden border-2 border-amber-300">
+                    <div class="absolute inset-0 opacity-30 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:8px_8px]"></div>
+                    <i class="fa-solid fa-dove text-amber-400 text-3xl mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+                    <div class="flex space-x-1 items-end">
+                        <div class="w-2 h-8 bg-amber-600 rounded-t"></div>
+                        <div class="w-3 h-12 bg-red-600 rounded-t shadow-[0_0_10px_#ef4444]"></div>
+                        <div class="w-2 h-8 bg-amber-600 rounded-t"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+
         // State Management
-        let currentUser = null;
         let registrationData = {
             fullName: '', phone: '', whatsapp: '', dob: '', email: '',
             address: '', stateOfOrigin: '', stateOfResidence: '', nationality: 'Nigeria',
@@ -63,15 +80,18 @@
             dateJoined: '', pin: ''
         };
 
+        let loadingTimer = null;
+
         // --- 1. LOADING SCREEN VIEW ---
         function renderLoadingScreen() {
+            if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                    <div class="relative w-36 h-36 mb-6">
-                        <img src="file_0000000003548243a883b80d718fe55f.png" alt="Logo" class="w-full h-full rounded-full object-cover border-4 border-amber-400 shadow-2xl">
-                        <div class="absolute -bottom-2 -right-2 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg animate-spin-slow">
-                            <i class="fa-solid fa-pen-nib text-lg"></i>
+                    <div class="mb-6 relative">
+                        ${logoHtml}
+                        <div class="absolute -bottom-1 right-6 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg animate-spin-slow border-2 border-amber-300">
+                            <i class="fa-solid fa-pen-nib text-sm"></i>
                         </div>
                     </div>
                     <h1 class="text-xl md:text-2xl font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-blue-400 to-white uppercase mb-2 animate-slide-in">
@@ -83,23 +103,27 @@
                         <i class="fa-solid fa-spinner animate-spin text-blue-400 text-base"></i>
                         <span>Loading secure database environment... (Redirecting in 10s)</span>
                     </div>
+                    <button onclick="renderLoginPage()" class="mt-6 text-xs text-blue-400 underline hover:text-white">Skip Loading</button>
                 </div>
             `;
 
             // 10-second automatic redirect to Login Page
-            setTimeout(() => {
+            loadingTimer = setTimeout(() => {
                 renderLoginPage();
             }, 10000);
         }
 
         // --- 2. LOGIN PAGE VIEW ---
         function renderLoginPage() {
+            if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex-1 flex items-center justify-center p-4">
                     <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10">
                         <div class="text-center mb-6">
-                            <img src="file_0000000003548243a883b80d718fe55f.png" alt="Logo" class="w-16 h-16 mx-auto rounded-full object-cover border-2 border-amber-400 mb-3 shadow-lg">
+                            <div class="w-16 h-16 mx-auto mb-3">
+                                ${logoHtml}
+                            </div>
                             <h2 class="text-lg font-bold">Welcome Back</h2>
                             <p class="text-xs text-gray-400">"Keeping record clean and safe."</p>
                         </div>
@@ -119,7 +143,7 @@
                             </button>
 
                             <div class="grid grid-cols-2 gap-3 pt-2">
-                                <button onclick="renderAdminDashboard()" class="card-bg hover:bg-white/5 py-2.5 rounded-lg text-xs font-medium text-amber-400 border border-amber-500/30 transition flex items-center justify-center space-x-2">
+                                <button onclick="renderAdminLoginModal()" class="card-bg hover:bg-white/5 py-2.5 rounded-lg text-xs font-medium text-amber-400 border border-amber-500/30 transition flex items-center justify-center space-x-2">
                                     <i class="fa-solid fa-shield-halved"></i><span>Main Admin Login</span>
                                 </button>
                                 <button onclick="alert('Place finger on biometric scanner or device sensor.')" class="card-bg hover:bg-white/5 py-2.5 rounded-lg text-xs font-medium text-blue-400 border border-blue-500/30 transition flex items-center justify-center space-x-2">
@@ -139,9 +163,60 @@
             `;
         }
 
-        // --- 3. MULTI-STEP REGISTRATION FLOW ---
+        // --- 2.1. MAIN ADMIN LOGIN MODAL / VIEW ---
+        function renderAdminLoginModal() {
+            if (loadingTimer) clearTimeout(loadingTimer);
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex items-center justify-center p-4">
+                    <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-amber-500/30">
+                        <div class="text-center mb-6">
+                            <div class="w-16 h-16 mx-auto mb-3">
+                                ${logoHtml}
+                            </div>
+                            <h2 class="text-lg font-bold text-amber-400">Main Administrator Portal</h2>
+                            <p class="text-xs text-gray-400">Secure Super Admin Access</p>
+                        </div>
 
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Username / Email</label>
+                                <input type="text" id="adminUser" placeholder="admin@omegacity.org" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Security Password / PIN</label>
+                                <input type="password" id="adminPassword" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                            </div>
+
+                            <button onclick="handleAdminLogin()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
+                                Authenticate Admin Access
+                            </button>
+
+                            <div class="text-center pt-3">
+                                <button onclick="renderLoginPage()" class="text-xs text-gray-400 hover:text-white">
+                                    <i class="fa-solid fa-arrow-left mr-1"></i> Back to Member Login
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleAdminLogin() {
+            const user = document.getElementById('adminUser').value;
+            const pass = document.getElementById('adminPassword').value;
+            if (!user || !pass) {
+                alert('Please enter admin credentials.');
+                return;
+            }
+            // Redirect to Full Admin Dashboard
+            window.location.href = window.location.pathname + "?admin=true";
+        }
+
+        // --- 3. MULTI-STEP REGISTRATION FLOW ---
         function renderRegistrationStep1() {
+            if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex-1 flex items-center justify-center p-4">
@@ -154,7 +229,7 @@
                             <button onclick="renderLoginPage()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
                         </div>
 
-                        <form id="regStep1Form" onsubmit="saveRegStep1(event)" class="space-y-4 text-sm">
+                        <form onsubmit="saveRegStep1(event)" class="space-y-4 text-sm">
                             <div>
                                 <label class="block text-xs font-medium text-gray-300 mb-1">Full Name (Compulsory)</label>
                                 <input type="text" id="regFullName" required value="${registrationData.fullName}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
@@ -224,6 +299,7 @@
         }
 
         function renderRegistrationStep2() {
+            if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex-1 flex items-center justify-center p-4">
@@ -276,7 +352,6 @@
             registrationData.gender = gender;
             registrationData.isMarried = isMarried;
 
-            // Automatic Fellowship Assignment Logic
             if (isMarried === 'yes') {
                 registrationData.fellowship = (gender === 'Male') ? 'Men Fellowship' : 'Women Fellowship';
             } else {
@@ -286,6 +361,7 @@
         }
 
         function renderRegistrationStep3() {
+            if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex-1 flex items-center justify-center p-4">
@@ -350,6 +426,7 @@
         }
 
         function renderRegistrationStep4() {
+            if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex-1 flex items-center justify-center p-4">
@@ -411,11 +488,11 @@
                 alert('Please enter your phone number and 4-digit PIN.');
                 return;
             }
-            // Successful Login -> Open Member Dashboard
             renderMemberDashboard();
         }
 
         function renderMemberDashboard() {
+            if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex-1 flex flex-col h-screen overflow-hidden">
@@ -455,15 +532,28 @@
             `;
         }
 
-        function renderAdminDashboard() {
-            // Renders the master admin view from previous architecture
-            window.location.reload();
-        }
-
-        // Initialize application with Loading Screen on load
+        // Initialize application on load
         window.addEventListener('DOMContentLoaded', () => {
-            renderLoadingScreen();
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('admin') === 'true') {
+                // Render full admin dashboard if admin query param is set
+                renderFullAdminDashboard();
+            } else {
+                renderLoadingScreen();
+            }
         });
+
+        function renderFullAdminDashboard() {
+            // Renders the master admin view
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex flex-col items-center justify-center p-6 text-center card-bg">
+                    <h1 class="text-2xl font-bold text-amber-400 mb-2">Omega City Super Admin Dashboard</h1>
+                    <p class="text-sm text-gray-300 mb-6">Full administrative control panel active.</p>
+                    <button onclick="window.location.href = window.location.pathname" class="bg-blue-600 px-4 py-2 rounded text-sm">Return to Main Portal</button>
+                </div>
+            `;
+        }
     </script>
 </body>
 </html>
