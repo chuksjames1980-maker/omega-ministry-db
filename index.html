@@ -17,7 +17,6 @@
     .hidden-section {
       display: none !important;
     }
-    /* Smooth Drawer Transition */
     .sidebar-drawer {
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -31,9 +30,7 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white">
 
-  <!-- ==========================================
-       1. 10-SECOND LOADING / SPLASH SCREEN
-  =========================================== -->
+  <!-- 10-SECOND LOADING / SPLASH SCREEN -->
   <div id="splash-screen" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-50 px-4 text-center">
     <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center mb-6 shadow-2xl shadow-blue-600/30 animate-splash">
       <span class="text-3xl font-black tracking-wider text-white">COM</span>
@@ -46,9 +43,7 @@
     <p id="splash-timer-text" class="text-xs text-slate-400">Initializing secure connection... (10s)</p>
   </div>
 
-  <!-- ==========================================
-       2. AUTHENTICATION CONTAINER (LOGIN / ADMIN / REGISTER)
-  =========================================== -->
+  <!-- AUTHENTICATION CONTAINER -->
   <div id="auth-container" class="hidden-section min-h-screen flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950">
     <div class="w-full max-w-md bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl p-6 md:p-8">
       
@@ -107,7 +102,7 @@
         </button>
       </form>
 
-      <!-- MULTI-STEP REGISTRATION WIZARD -->
+      <!-- REGISTRATION WIZARD -->
       <div id="registration-wizard" class="hidden-section">
         <div class="flex items-center justify-between mb-4">
           <span id="step-indicator" class="text-xs font-bold uppercase tracking-wider text-blue-400">Step 1 of 5</span>
@@ -187,7 +182,7 @@
           </div>
         </div>
 
-        <!-- STEP 3 -->
+        <!-- STEP 3 (WITH CHOIR ADDED TO DEPARTMENTS) -->
         <div id="reg-step-3" class="hidden-section space-y-4">
           <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-2">Church Workforce</h3>
           <div>
@@ -204,9 +199,9 @@
               <option value="">-- Choose Department --</option>
               <option value="SECURITY">SECURITY</option>
               <option value="USHER">USHER</option>
+              <option value="TECHNICAL">TECHNICAL</option>
               <option value="SANITATION">SANITATION</option>
               <option value="CHOIR">CHOIR</option>
-              <option value="TECHNICAL">TECHNICAL</option>
               <option value="CHILDREN TEACHER">CHILDREN TEACHER</option>
             </select>
           </div>
@@ -256,12 +251,8 @@
     </div>
   </div>
 
-  <!-- ==========================================
-       3. MEMBER DASHBOARD (WITH GROUP LEADER & TOP-CENTER EXCO BUTTONS)
-  =========================================== -->
+  <!-- MEMBER DASHBOARD -->
   <div id="member-dashboard" class="hidden-section min-h-screen bg-slate-950 p-4 md:p-8">
-    
-    <!-- TOP CENTER EXCO ROLE BADGE/BUTTON (VISIBLE ONLY IF MEMBER HAS AN EXCO ROLE) -->
     <div id="top-center-exco-bar" class="hidden-section flex justify-center mb-4">
       <button onclick="openExcoDashboard()" class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold px-6 py-2.5 rounded-full shadow-lg shadow-purple-600/30 border border-purple-400/30 transition transform hover:scale-105">
         <span>🎖️ EXCO PORTAL:</span>
@@ -277,7 +268,6 @@
           <p class="text-xs text-slate-400">City of Mercy Membership Profile</p>
         </div>
         <div class="flex items-center gap-3">
-          <!-- GROUP LEADER BUTTON (VISIBLE ONLY IF ASSIGNED BY ADMIN) -->
           <button id="group-leader-portal-btn" onclick="openGroupLeaderDashboard()" class="hidden-section bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold px-4 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition">
             👑 Group Leader Dashboard
           </button>
@@ -310,14 +300,10 @@
     </div>
   </div>
 
-  <!-- ==========================================
-       4. GROUP LEADER DASHBOARD (WITH COLLAPSIBLE SIDEBAR & EXCO ASSIGNMENT)
-  =========================================== -->
+  <!-- GROUP LEADER DASHBOARD -->
   <div id="group-leader-dashboard" class="hidden-section min-h-screen bg-slate-950 relative">
-    <!-- Backdrop -->
     <div id="gl-sidebar-backdrop" onclick="closeGLSidebar()" class="hidden-section fixed inset-0 bg-black/60 backdrop-blur-xs z-30"></div>
 
-    <!-- Collapsible Sidebar -->
     <aside id="gl-sidebar" class="sidebar-drawer sidebar-closed fixed top-0 left-0 bottom-0 w-72 bg-slate-900 border-r border-slate-800 p-5 z-40 flex flex-col justify-between shadow-2xl">
       <div>
         <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
@@ -344,12 +330,9 @@
       </button>
     </aside>
 
-    <!-- Header -->
     <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-4 flex items-center justify-between sticky top-0 z-20">
       <div class="flex items-center gap-3">
-        <button onclick="toggleGLSidebar()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition">
-          ☰
-        </button>
+        <button onclick="toggleGLSidebar()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition">☰</button>
         <div>
           <h1 id="gl-header-title" class="text-lg font-bold text-white">Group Leader Dashboard</h1>
           <span class="text-[11px] text-emerald-400">● Real-Time Fellowship Ledger</span>
@@ -358,7 +341,6 @@
     </header>
 
     <main class="max-w-6xl mx-auto p-4 md:p-8">
-      <!-- GL HOME VIEW (7 FINANCIAL CARDS) -->
       <div id="gl-view-home" class="space-y-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
@@ -392,25 +374,19 @@
         </div>
       </div>
 
-      <!-- GL ASSIGN EXCOS VIEW -->
       <div id="gl-view-assign-excos" class="hidden-section max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
         <h3 class="text-xl font-bold text-white mb-1">Assign Group Excos</h3>
         <p class="text-xs text-slate-400 mb-5">Search for a member in your fellowship to assign an executive role.</p>
-
         <div id="gl-exco-alert" class="hidden-section mb-4 p-3 rounded-xl text-xs font-semibold text-center"></div>
-
         <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Search Member Name</label>
         <input type="text" id="gl-exco-search" oninput="searchMembersForExco()" placeholder="Type member name..."
           class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white mb-4 focus:outline-none focus:border-blue-500" />
-
         <div id="gl-exco-results" class="space-y-3"></div>
       </div>
     </main>
   </div>
 
-  <!-- ==========================================
-       5. ROLE-ISOLATED EXCO DASHBOARD
-  =========================================== -->
+  <!-- ROLE-ISOLATED EXCO DASHBOARD -->
   <div id="exco-dashboard" class="hidden-section min-h-screen bg-slate-950 relative">
     <div id="exco-sidebar-backdrop" onclick="closeExcoSidebar()" class="hidden-section fixed inset-0 bg-black/60 z-30"></div>
 
@@ -447,20 +423,13 @@
       </div>
     </header>
 
-    <main id="exco-role-content" class="max-w-4xl mx-auto p-4 md:p-8">
-      <!-- Dynamically populated strictly for the logged-in member's specific Exco role -->
-    </main>
+    <main id="exco-role-content" class="max-w-4xl mx-auto p-4 md:p-8"></main>
   </div>
 
-  <!-- ==========================================
-       6. MAIN ADMIN PORTAL (SLIDE-OUT DRAWER SIDEBAR + ALL VIEWS)
-  =========================================== -->
+  <!-- MAIN ADMIN PORTAL -->
   <div id="admin-dashboard" class="hidden-section min-h-screen bg-slate-950 relative">
-    
-    <!-- CLICK-ANYWHERE BACKDROP TO DISAPPEAR SIDEBAR -->
     <div id="admin-sidebar-backdrop" onclick="closeAdminSidebar()" class="hidden-section fixed inset-0 bg-black/60 backdrop-blur-xs z-30 transition-opacity"></div>
 
-    <!-- LEFT COLLAPSIBLE ADMIN SIDEBAR -->
     <aside id="admin-sidebar" class="sidebar-drawer sidebar-closed fixed top-0 left-0 bottom-0 w-72 bg-slate-900 border-r border-slate-800 p-5 z-40 flex flex-col justify-between overflow-y-auto shadow-2xl">
       <div>
         <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
@@ -475,13 +444,12 @@
         </div>
 
         <nav class="space-y-1.5">
-          <!-- 1. HOME -->
           <button onclick="navigateAdminHome()" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600/20 border border-blue-500/30 hover:bg-blue-600 transition">
             <span>🏠</span>
             <span>Home</span>
           </button>
 
-          <!-- 2. GROUPS DROPDOWN -->
+          <!-- GROUPS DROPDOWN -->
           <div>
             <button onclick="toggleSidebarDropdown('dropdown-groups')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition">
               <span class="flex items-center gap-3"><span>🤝</span><span>Groups</span></span>
@@ -494,7 +462,7 @@
             </div>
           </div>
 
-          <!-- 3. DEPARTMENT DROPDOWN -->
+          <!-- DEPARTMENT DROPDOWN (WITH CHOIR) -->
           <div>
             <button onclick="toggleSidebarDropdown('dropdown-departments')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition">
               <span class="flex items-center gap-3"><span>🏢</span><span>Department</span></span>
@@ -510,7 +478,7 @@
             </div>
           </div>
 
-          <!-- 4. ASSIGN GROUP LEADERS DROPDOWN -->
+          <!-- ASSIGN GROUP LEADERS DROPDOWN -->
           <div>
             <button onclick="toggleSidebarDropdown('dropdown-leaders')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition">
               <span class="flex items-center gap-3"><span>👑</span><span>Assign Group Leaders</span></span>
@@ -530,7 +498,6 @@
       </button>
     </aside>
 
-    <!-- TOP NAVBAR WITH SIDEBAR TOGGLE BUTTON -->
     <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-20">
       <div class="flex items-center gap-4">
         <button onclick="toggleAdminSidebar()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-blue-600 text-white transition shadow">
@@ -546,10 +513,8 @@
       </span>
     </header>
 
-    <!-- MAIN ADMIN CONTENT VIEWS -->
     <main class="max-w-7xl mx-auto p-4 md:p-8">
-
-      <!-- VIEW 1: ADMIN HOME OVERVIEW -->
+      <!-- ADMIN HOME VIEW -->
       <div id="admin-view-home" class="space-y-6">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
@@ -587,21 +552,20 @@
         </div>
       </div>
 
-      <!-- VIEW 2: FELLOWSHIP GROUP DASHBOARD (MEN / WOMEN / YOUTH) -->
+      <!-- FELLOWSHIP GROUP DASHBOARD -->
       <div id="admin-view-group-dashboard" class="hidden-section space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h2 id="group-dash-heading" class="text-2xl font-extrabold text-white">Men Fellowship Dashboard</h2>
           <span class="text-xs text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">Financial & Member Management</span>
         </div>
 
-        <!-- 7 FINANCIAL & PROJECT CARDS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
             <span class="text-xs font-semibold text-slate-400 uppercase">Total Dues</span>
             <p id="grp-card-dues" class="text-2xl font-black text-emerald-400 mt-2">₦0.00</p>
           </div>
           <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-            <span class="text-xs font-semibold text-slate-400 uppercase">Arrears (Total Dues Arrears)</span>
+            <span class="text-xs font-semibold text-slate-400 uppercase">Arrears</span>
             <p id="grp-card-arrears" class="text-2xl font-black text-amber-400 mt-2">₦0.00</p>
           </div>
           <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
@@ -620,7 +584,6 @@
             <span class="text-xs font-semibold text-slate-400 uppercase">Project Unpaid</span>
             <p id="grp-card-proj-unpaid" class="text-2xl font-black text-orange-400 mt-2">₦0.00</p>
           </div>
-          <!-- CLICKABLE PROJECT ANNOUNCEMENT CARD -->
           <div onclick="openProjectAnnouncementsModal()" class="cursor-pointer bg-gradient-to-br from-indigo-900/50 to-purple-900/50 hover:from-indigo-800/60 hover:to-purple-800/60 border border-indigo-500/40 p-5 rounded-2xl sm:col-span-2 transition shadow-lg">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-indigo-300 uppercase">📢 Project Announcement</span>
@@ -630,7 +593,6 @@
           </div>
         </div>
 
-        <!-- MEMBER SEARCH BAR & LIST UNDER GROUP -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
           <h3 class="text-base font-bold text-white mb-3">Search Members in <span id="grp-search-title">Fellowship</span></h3>
           <input type="text" id="grp-member-search-input" oninput="renderGroupMemberSearch()" placeholder="Enter member name to search..."
@@ -639,14 +601,13 @@
         </div>
       </div>
 
-      <!-- VIEW 3: DEPARTMENT DASHBOARD -->
+      <!-- DEPARTMENT DASHBOARD -->
       <div id="admin-view-department-dashboard" class="hidden-section space-y-6">
         <div class="flex items-center justify-between">
           <h2 id="dept-dash-heading" class="text-2xl font-extrabold text-white">Department Dashboard</h2>
           <span class="text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-3 py-1 rounded-lg">Department Ledger</span>
         </div>
 
-        <!-- 3 FINANCIAL CARDS FOR DEPARTMENT -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
             <span class="text-xs font-semibold text-slate-400 uppercase">Total Dues Collected</span>
@@ -662,34 +623,26 @@
           </div>
         </div>
 
-        <!-- DEPARTMENT MEMBERS LIST -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
           <h3 class="text-base font-bold text-white mb-4">Registered Workers in This Department</h3>
           <div id="dept-members-list" class="divide-y divide-slate-800"></div>
         </div>
       </div>
 
-      <!-- VIEW 4: ASSIGN GROUP LEADERS -->
+      <!-- ASSIGN GROUP LEADERS -->
       <div id="admin-view-assign-leader" class="hidden-section max-w-2xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
-        <h2 id="assign-leader-heading" class="text-xl font-extrabold text-white mb-1">Assign Group Leaders — Men Fellowship</h2>
+        <h2 id="assign-leader-heading" class="text-xl font-extrabold text-white mb-1">Assign Group Leaders</h2>
         <p class="text-xs text-slate-400 mb-5">Search for a member in this fellowship to make or remove them as Group Leader.</p>
-
         <div id="assign-leader-alert" class="hidden-section mb-4 p-3 rounded-xl text-xs font-semibold text-center"></div>
-
         <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Search Member Name</label>
         <input type="text" id="leader-search-input" oninput="searchMembersForLeader()" placeholder="Type member name..."
           class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white mb-4 focus:outline-none focus:border-amber-500" />
-
         <div id="leader-search-results" class="space-y-3"></div>
       </div>
-
     </main>
   </div>
 
-  <!-- ==========================================
-       MODALS (MEMBER DETAILS/EDIT/DELETE & PROJECT ANNOUNCEMENTS)
-  =========================================== -->
-  <!-- 1. Member Details / Edit / Delete Modal -->
+  <!-- MODALS -->
   <div id="member-detail-modal" class="hidden-section fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -737,7 +690,6 @@
     </div>
   </div>
 
-  <!-- 2. Project Announcements Modal -->
   <div id="announcements-modal" class="hidden-section fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -751,9 +703,7 @@
     </div>
   </div>
 
-  <!-- ==========================================
-       7. JAVASCRIPT REAL-TIME ENGINE
-  =========================================== -->
+  <!-- JAVASCRIPT ENGINE -->
   <script>
     const SUPABASE_URL = 'https://bugzrhjmedzubwwhvrql.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_3jzku7vSLCqz5Bw8BYO0uw_5FhrbAir';
@@ -767,7 +717,6 @@
     let activeAdminDepartment = 'Security Department';
     let activeLeaderAssignGroup = 'Men Fellowship';
 
-    // 1. 10-SECOND LOADING SCREEN
     window.addEventListener('DOMContentLoaded', () => {
       let secondsLeft = 10;
       const progressEl = document.getElementById('splash-progress');
@@ -786,12 +735,10 @@
       }, 1000);
     });
 
-    // Helper: Currency Formatter
     function formatNaira(amount) {
       return '₦' + Number(amount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    // 2. AUTHENTICATION & WIZARD
     function showAlert(message, isError = true) {
       const alertBox = document.getElementById('auth-alert');
       alertBox.textContent = message;
@@ -937,7 +884,6 @@
       showAlert(`Registration successful! Assigned to ${fellowship}. Please log in.`, false);
     }
 
-    // 3. MEMBER LOGIN & REAL-TIME SYNC
     async function handleMemberLogin(e) {
       e.preventDefault();
       hideAlert();
@@ -977,12 +923,10 @@
       document.getElementById('mem-dash-joined').textContent = m.joined_month_year || 'N/A';
       document.getElementById('mem-dash-address').textContent = `${m.house_address}, ${m.state_of_residence}`;
 
-      // Show Group Leader Button if assigned
       const glBtn = document.getElementById('group-leader-portal-btn');
       if (m.is_group_leader) glBtn.classList.remove('hidden-section');
       else glBtn.classList.add('hidden-section');
 
-      // Show Top-Center Exco Role Button if assigned an Exco Role
       const excoBar = document.getElementById('top-center-exco-bar');
       if (m.exco_role && m.exco_role !== 'None') {
         document.getElementById('exco-role-btn-label').textContent = m.exco_role;
@@ -992,7 +936,6 @@
       }
     }
 
-    // 4. GROUP LEADER PORTAL LOGIC
     function toggleGLSidebar() {
       document.getElementById('gl-sidebar').classList.toggle('sidebar-closed');
       document.getElementById('gl-sidebar').classList.toggle('sidebar-open');
@@ -1098,7 +1041,6 @@
       }
     }
 
-    // 5. ROLE-ISOLATED EXCO DASHBOARD
     function toggleExcoSidebar() {
       document.getElementById('exco-sidebar').classList.toggle('sidebar-closed');
       document.getElementById('exco-sidebar').classList.toggle('sidebar-open');
@@ -1126,16 +1068,6 @@
           <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 space-y-4">
             <h2 class="text-xl font-bold text-white">💰 Treasurer Treasury & Disbursement Ledger</h2>
             <p class="text-sm text-slate-400">Exclusive workspace for <strong>${m.full_name}</strong>. You can only view and manage Treasurer treasury records for <strong>${m.fellowship}</strong>.</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <span class="text-xs text-slate-400">Role Permission</span>
-                <p class="text-sm font-bold text-emerald-400 mt-1">Treasury Custody & Expense Approval</p>
-              </div>
-              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <span class="text-xs text-slate-400">Privacy Isolation</span>
-                <p class="text-sm font-bold text-purple-400 mt-1">Restricted to Treasurer Only</p>
-              </div>
-            </div>
           </div>`;
       } else if (m.exco_role === 'Financial Secretary') {
         content.innerHTML = `
@@ -1158,7 +1090,6 @@
       document.getElementById('member-dashboard').classList.remove('hidden-section');
     }
 
-    // 6. MAIN ADMIN PORTAL & DRAWER SIDEBAR
     function toggleAdminSidebar() {
       document.getElementById('admin-sidebar').classList.toggle('sidebar-closed');
       document.getElementById('admin-sidebar').classList.toggle('sidebar-open');
@@ -1232,7 +1163,6 @@
     }
 
     function refreshAllActiveViews() {
-      // Admin Home Stats & Table
       document.getElementById('stat-total').textContent = allMembersData.length;
       document.getElementById('stat-men').textContent = allMembersData.filter(m => m.fellowship === 'Men Fellowship').length;
       document.getElementById('stat-women').textContent = allMembersData.filter(m => m.fellowship === 'Women Fellowship').length;
@@ -1252,7 +1182,6 @@
         </tr>
       `).join('');
 
-      // Refresh open sub-views
       if (!document.getElementById('admin-view-group-dashboard').classList.contains('hidden-section')) {
         renderAdminGroupCards();
         renderGroupMemberSearch();
@@ -1269,7 +1198,6 @@
       }
     }
 
-    // 7. ADMIN GROUP DASHBOARD (MEN / WOMEN / YOUTH)
     function openAdminGroupDashboard(groupName) {
       activeAdminGroup = groupName;
       closeAdminSidebar();
@@ -1329,7 +1257,6 @@
       `).join('');
     }
 
-    // MEMBER DETAILS / EDIT / DELETE MODAL
     function openMemberModal(memberId) {
       const m = allMembersData.find(x => x.id === memberId);
       if (!m) return;
@@ -1365,7 +1292,6 @@
       closeMemberModal();
     }
 
-    // PROJECT ANNOUNCEMENTS MODAL
     function openProjectAnnouncementsModal() {
       const list = allAnnouncementsData.filter(a => a.fellowship === activeAdminGroup);
       document.getElementById('ann-modal-title').textContent = `📢 ${activeAdminGroup} — Project Announcements`;
@@ -1387,7 +1313,6 @@
       document.getElementById('announcements-modal').classList.add('hidden-section');
     }
 
-    // 8. ADMIN DEPARTMENT DASHBOARD
     function openAdminDepartmentDashboard(deptName) {
       activeAdminDepartment = deptName;
       closeAdminSidebar();
@@ -1424,7 +1349,6 @@
         : '<p class="py-4 text-xs text-slate-500">No workers assigned to this department yet.</p>';
     }
 
-    // 9. ASSIGN GROUP LEADERS VIEW
     function openAssignGroupLeaderView(groupName) {
       activeLeaderAssignGroup = groupName;
       closeAdminSidebar();
@@ -1484,7 +1408,6 @@
       }
     }
 
-    // 10. LOGOUT
     function logout() {
       currentLoggedInMember = null;
       closeAdminSidebar();
