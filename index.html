@@ -54,21 +54,13 @@
 
     <!-- JAVASCRIPT APPLICATION CONTROLLER -->
     <script>
-        // Official Ministry Logo Embedded as Base64 to guarantee loading on Vercel
-        const ministryLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAAH0CAMAAAC8jfaQAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAXVBMVEUAAAAAAAAvLz8xMTEvLz8uLi8wMDAtLS4rKygxMTEsLCwxMTEuLi4wMDAvLz8vLz8wMDAtLS4rKygxMTEsLCwxMTEuLi4wMDAvLz8vLz8wMDAtLS4rKygxMTEsLCwxMTEuLi4wMDCrMh6fAAAAO0lEQVR42u3BMQEAAADCoPVPbQ0PoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4A8B9AABU4m1xQAAAABJRU5ErkJggg==";
-        // Note: For full high-res display, we fall back to a reliable styling or placeholder if needed, but we will use an SVG/Canvas emblem + uploaded aesthetic.
-        // Let's use a robust SVG representation of the gold ministry seal with dove, flame and sword for 100% crisp rendering across all devices:
-        const logoHtml = `
-            <div class="relative w-36 h-36 mx-auto rounded-full bg-gradient-to-tr from-yellow-600 via-amber-400 to-yellow-200 flex items-center justify-center p-1.5 shadow-2xl">
-                <div class="w-full h-full rounded-full bg-black flex flex-col items-center justify-center relative overflow-hidden border-2 border-amber-300">
-                    <div class="absolute inset-0 opacity-30 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:8px_8px]"></div>
-                    <i class="fa-solid fa-dove text-amber-400 text-3xl mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-                    <div class="flex space-x-1 items-end">
-                        <div class="w-2 h-8 bg-amber-600 rounded-t"></div>
-                        <div class="w-3 h-12 bg-red-600 rounded-t shadow-[0_0_10px_#ef4444]"></div>
-                        <div class="w-2 h-8 bg-amber-600 rounded-t"></div>
-                    </div>
-                </div>
+        // Official Ministry Logo URL from generated asset
+        const ministryLogoUrl = "watermarked_img_12193073738161965137.jpg";
+
+        // Reusable Professional Logo Component
+        const getLogoHtml = (size = "w-24 h-24") => `
+            <div class="${size} mx-auto rounded-full p-0.5 bg-gradient-to-tr from-yellow-600 via-amber-400 to-yellow-200 shadow-xl flex items-center justify-center">
+                <img src="${ministryLogoUrl}" alt="Omega City of Mercy Logo" class="w-full h-full rounded-full object-cover shadow-inner">
             </div>
         `;
 
@@ -89,9 +81,9 @@
             container.innerHTML = `
                 <div class="flex-1 flex flex-col items-center justify-center p-6 text-center">
                     <div class="mb-6 relative">
-                        ${logoHtml}
-                        <div class="absolute -bottom-1 right-6 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg animate-spin-slow border-2 border-amber-300">
-                            <i class="fa-solid fa-pen-nib text-sm"></i>
+                        ${getLogoHtml("w-28 h-28")}
+                        <div class="absolute -bottom-1 right-2 w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg animate-spin-slow border-2 border-amber-300">
+                            <i class="fa-solid fa-pen-nib text-xs"></i>
                         </div>
                     </div>
                     <h1 class="text-xl md:text-2xl font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-blue-400 to-white uppercase mb-2 animate-slide-in">
@@ -121,8 +113,8 @@
                 <div class="flex-1 flex items-center justify-center p-4">
                     <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10">
                         <div class="text-center mb-6">
-                            <div class="w-16 h-16 mx-auto mb-3">
-                                ${logoHtml}
+                            <div class="mb-3">
+                                ${getLogoHtml("w-16 h-16")}
                             </div>
                             <h2 class="text-lg font-bold">Welcome Back</h2>
                             <p class="text-xs text-gray-400">"Keeping record clean and safe."</p>
@@ -171,8 +163,8 @@
                 <div class="flex-1 flex items-center justify-center p-4">
                     <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-amber-500/30">
                         <div class="text-center mb-6">
-                            <div class="w-16 h-16 mx-auto mb-3">
-                                ${logoHtml}
+                            <div class="mb-3">
+                                ${getLogoHtml("w-16 h-16")}
                             </div>
                             <h2 class="text-lg font-bold text-amber-400">Main Administrator Portal</h2>
                             <p class="text-xs text-gray-400">Secure Super Admin Access</p>
@@ -210,7 +202,6 @@
                 alert('Please enter admin credentials.');
                 return;
             }
-            // Redirect to Full Admin Dashboard
             window.location.href = window.location.pathname + "?admin=true";
         }
 
@@ -222,9 +213,14 @@
                 <div class="flex-1 flex items-center justify-center p-4">
                     <div class="card-bg w-full max-w-lg p-8 rounded-2xl shadow-2xl border border-white/10 my-8">
                         <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
-                            <div>
-                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 1 of 5)</h2>
-                                <p class="text-xs text-gray-400">Personal Identification & Contact</p>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10">
+                                    <img src="${ministryLogoUrl}" class="w-full h-full rounded-full object-cover border border-amber-400">
+                                </div>
+                                <div>
+                                    <h2 class="text-base font-bold text-blue-400">Member Registration (Step 1 of 5)</h2>
+                                    <p class="text-xs text-gray-400">Personal Identification & Contact</p>
+                                </div>
                             </div>
                             <button onclick="renderLoginPage()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
                         </div>
@@ -498,8 +494,8 @@
                 <div class="flex-1 flex flex-col h-screen overflow-hidden">
                     <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
                         <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shadow">
-                                <i class="fa-solid fa-user"></i>
+                            <div class="w-9 h-9">
+                                <img src="${ministryLogoUrl}" class="w-full h-full rounded-full object-cover border border-amber-400">
                             </div>
                             <div>
                                 <h2 class="text-sm font-bold">${registrationData.fullName || 'Member Portal'}</h2>
@@ -536,7 +532,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('admin') === 'true') {
-                // Render full admin dashboard if admin query param is set
                 renderFullAdminDashboard();
             } else {
                 renderLoadingScreen();
@@ -544,10 +539,12 @@
         });
 
         function renderFullAdminDashboard() {
-            // Renders the master admin view
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex-1 flex flex-col items-center justify-center p-6 text-center card-bg">
+                    <div class="w-16 h-16 mb-4">
+                        <img src="${ministryLogoUrl}" class="w-full h-full rounded-full object-cover border-2 border-amber-400">
+                    </div>
                     <h1 class="text-2xl font-bold text-amber-400 mb-2">Omega City Super Admin Dashboard</h1>
                     <p class="text-sm text-gray-300 mb-6">Full administrative control panel active.</p>
                     <button onclick="window.location.href = window.location.pathname" class="bg-blue-600 px-4 py-2 rounded text-sm">Return to Main Portal</button>
