@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>City of Mercy - Member & Admin Portal</title>
+  <title>City of Mercy - Enterprise Church Management Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     @keyframes pulse-slow {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.85; transform: scale(1.03); }
+      50% { opacity: 0.88; transform: scale(1.03); }
     }
     .animate-splash {
       animation: pulse-slow 2s infinite ease-in-out;
@@ -17,39 +17,54 @@
     .hidden-section {
       display: none !important;
     }
+    /* Smooth Drawer Transition */
+    .sidebar-drawer {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sidebar-closed {
+      transform: translateX(-100%);
+    }
+    .sidebar-open {
+      transform: translateX(0);
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white">
 
-  <!-- 10-SECOND LOADING SCREEN -->
+  <!-- ==========================================
+       1. 10-SECOND LOADING / SPLASH SCREEN
+  =========================================== -->
   <div id="splash-screen" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-50 px-4 text-center">
-    <div class="w-24 h-24 rounded-full bg-blue-600/20 border-2 border-blue-500 flex items-center justify-center mb-6 animate-splash">
-      <span class="text-3xl font-bold text-blue-400">COM</span>
+    <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center mb-6 shadow-2xl shadow-blue-600/30 animate-splash">
+      <span class="text-3xl font-black tracking-wider text-white">COM</span>
     </div>
     <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2">CITY OF MERCY</h1>
-    <p class="text-slate-400 text-sm md:text-base mb-8">Church Database & Fellowship Management Portal</p>
-    <div class="w-64 bg-slate-800 rounded-full h-2.5 overflow-hidden mb-3">
-      <div id="splash-progress" class="bg-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+    <p class="text-slate-400 text-sm md:text-base mb-8">Church Database, Fellowship & Financial Management Portal</p>
+    <div class="w-64 bg-slate-800/80 rounded-full h-2 overflow-hidden mb-3">
+      <div id="splash-progress" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
     </div>
     <p id="splash-timer-text" class="text-xs text-slate-400">Initializing secure connection... (10s)</p>
   </div>
 
-  <!-- AUTHENTICATION CONTAINER -->
-  <div id="auth-container" class="hidden-section min-h-screen flex flex-col items-center justify-center p-4">
-    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 md:p-8">
+  <!-- ==========================================
+       2. AUTHENTICATION CONTAINER (LOGIN / ADMIN / REGISTER)
+  =========================================== -->
+  <div id="auth-container" class="hidden-section min-h-screen flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950">
+    <div class="w-full max-w-md bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl p-6 md:p-8">
       
       <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 font-black text-lg mb-3">COM</div>
         <h2 class="text-2xl font-bold text-white">City of Mercy Portal</h2>
-        <p class="text-sm text-slate-400 mt-1">Welcome! Please sign in or register below.</p>
+        <p class="text-sm text-slate-400 mt-1">Sign in to your account or register as a new member</p>
       </div>
 
-      <div id="auth-alert" class="hidden-section mb-4 p-3 rounded-lg text-sm font-medium text-center"></div>
+      <div id="auth-alert" class="hidden-section mb-4 p-3 rounded-xl text-sm font-medium text-center"></div>
 
       <div id="login-tabs" class="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-xl mb-6 border border-slate-800">
-        <button onclick="switchAuthTab('member-login')" id="tab-member" class="py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white transition">
+        <button onclick="switchAuthTab('member-login')" id="tab-member" class="py-2.5 text-sm font-semibold rounded-lg bg-blue-600 text-white shadow transition">
           Member Login
         </button>
-        <button onclick="switchAuthTab('admin-login')" id="tab-admin" class="py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition">
+        <button onclick="switchAuthTab('admin-login')" id="tab-admin" class="py-2.5 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition">
           Admin Portal
         </button>
       </div>
@@ -59,19 +74,19 @@
         <div>
           <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Mobile Number</label>
           <input type="tel" id="login-member-phone" required placeholder="e.g. 08100000000"
-            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+            class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" />
         </div>
         <div>
           <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">4-Digit Login PIN</label>
           <input type="password" id="login-member-pin" maxlength="4" pattern="\d{4}" required placeholder="••••"
-            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white tracking-widest text-center text-lg focus:outline-none focus:border-blue-500" />
+            class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-white tracking-widest text-center text-lg focus:outline-none focus:border-blue-500 transition" />
         </div>
-        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-blue-600/20">
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-blue-600/25">
           Login to Dashboard
         </button>
         <div class="text-center pt-4 border-t border-slate-800">
           <p class="text-sm text-slate-400">
-            Don't have an account? 
+            New to City of Mercy? 
             <button type="button" onclick="showRegistrationWizard()" class="text-blue-400 hover:underline font-semibold ml-1">Register Here</button>
           </p>
         </div>
@@ -79,20 +94,20 @@
 
       <!-- ADMIN LOGIN -->
       <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="hidden-section space-y-4">
-        <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-center">
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-center">
           <p class="text-xs text-amber-300 font-medium">Restricted Area — Authorized Main Admin Only</p>
         </div>
         <div>
           <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">8-Digit Admin PIN</label>
           <input type="password" id="login-admin-pin" maxlength="8" pattern="\d{8}" required placeholder="••••••••"
-            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white tracking-widest text-center text-lg focus:outline-none focus:border-amber-500" />
+            class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-3 text-white tracking-widest text-center text-lg focus:outline-none focus:border-amber-500 transition" />
         </div>
-        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-amber-600/20">
+        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-amber-600/25">
           Access Admin Control Panel
         </button>
       </form>
 
-      <!-- REGISTRATION WIZARD -->
+      <!-- MULTI-STEP REGISTRATION WIZARD -->
       <div id="registration-wizard" class="hidden-section">
         <div class="flex items-center justify-between mb-4">
           <span id="step-indicator" class="text-xs font-bold uppercase tracking-wider text-blue-400">Step 1 of 5</span>
@@ -189,8 +204,9 @@
               <option value="">-- Choose Department --</option>
               <option value="SECURITY">SECURITY</option>
               <option value="USHER">USHER</option>
-              <option value="TECHNICAL">TECHNICAL</option>
               <option value="SANITATION">SANITATION</option>
+              <option value="CHOIR">CHOIR</option>
+              <option value="TECHNICAL">TECHNICAL</option>
               <option value="CHILDREN TEACHER">CHILDREN TEACHER</option>
             </select>
           </div>
@@ -240,17 +256,35 @@
     </div>
   </div>
 
-  <!-- MEMBER DASHBOARD -->
+  <!-- ==========================================
+       3. MEMBER DASHBOARD (WITH GROUP LEADER & TOP-CENTER EXCO BUTTONS)
+  =========================================== -->
   <div id="member-dashboard" class="hidden-section min-h-screen bg-slate-950 p-4 md:p-8">
-    <div class="max-w-3xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
+    
+    <!-- TOP CENTER EXCO ROLE BADGE/BUTTON (VISIBLE ONLY IF MEMBER HAS AN EXCO ROLE) -->
+    <div id="top-center-exco-bar" class="hidden-section flex justify-center mb-4">
+      <button onclick="openExcoDashboard()" class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold px-6 py-2.5 rounded-full shadow-lg shadow-purple-600/30 border border-purple-400/30 transition transform hover:scale-105">
+        <span>🎖️ EXCO PORTAL:</span>
+        <span id="exco-role-btn-label" class="uppercase tracking-wider">ROLE</span>
+        <span>→</span>
+      </button>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
         <div>
-          <h2 class="text-xl font-bold text-white" id="mem-dash-name">Welcome, Member</h2>
+          <h2 class="text-2xl font-bold text-white" id="mem-dash-name">Welcome, Member</h2>
           <p class="text-xs text-slate-400">City of Mercy Membership Profile</p>
         </div>
-        <button onclick="logout()" class="bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white px-4 py-2 rounded-lg text-xs font-semibold transition">
-          Logout
-        </button>
+        <div class="flex items-center gap-3">
+          <!-- GROUP LEADER BUTTON (VISIBLE ONLY IF ASSIGNED BY ADMIN) -->
+          <button id="group-leader-portal-btn" onclick="openGroupLeaderDashboard()" class="hidden-section bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold px-4 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition">
+            👑 Group Leader Dashboard
+          </button>
+          <button onclick="logout()" class="bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold transition">
+            Logout
+          </button>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -264,7 +298,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-slate-950 p-4 rounded-xl border border-slate-800">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-slate-950 p-5 rounded-xl border border-slate-800">
         <div><span class="text-slate-500 block text-xs">Mobile Number</span><span id="mem-dash-mobile" class="font-medium">--</span></div>
         <div><span class="text-slate-500 block text-xs">WhatsApp Number</span><span id="mem-dash-whatsapp" class="font-medium">--</span></div>
         <div><span class="text-slate-500 block text-xs">Email</span><span id="mem-dash-email" class="font-medium">--</span></div>
@@ -276,104 +310,464 @@
     </div>
   </div>
 
-  <!-- ADMIN DASHBOARD -->
-  <div id="admin-dashboard" class="hidden-section min-h-screen flex flex-col md:flex-row bg-slate-950">
-    <aside class="w-full md:w-64 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-4 flex flex-col justify-between">
+  <!-- ==========================================
+       4. GROUP LEADER DASHBOARD (WITH COLLAPSIBLE SIDEBAR & EXCO ASSIGNMENT)
+  =========================================== -->
+  <div id="group-leader-dashboard" class="hidden-section min-h-screen bg-slate-950 relative">
+    <!-- Backdrop -->
+    <div id="gl-sidebar-backdrop" onclick="closeGLSidebar()" class="hidden-section fixed inset-0 bg-black/60 backdrop-blur-xs z-30"></div>
+
+    <!-- Collapsible Sidebar -->
+    <aside id="gl-sidebar" class="sidebar-drawer sidebar-closed fixed top-0 left-0 bottom-0 w-72 bg-slate-900 border-r border-slate-800 p-5 z-40 flex flex-col justify-between shadow-2xl">
       <div>
-        <div class="flex items-center gap-2 px-2 py-3 border-b border-slate-800 mb-4">
-          <div class="w-8 h-8 rounded-lg bg-amber-600 flex items-center justify-center font-bold text-white">A</div>
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
           <div>
-            <h2 class="text-sm font-bold text-white">ADMIN PANEL</h2>
-            <span class="text-[10px] text-emerald-400 flex items-center gap-1">● Live Real-Time Sync</span>
+            <h3 class="font-extrabold text-amber-400 text-sm tracking-wide">GROUP LEADER</h3>
+            <p id="gl-sidebar-group-name" class="text-xs text-slate-400">--</p>
           </div>
+          <button onclick="closeGLSidebar()" class="text-slate-400 hover:text-white text-lg">✕</button>
         </div>
-        <nav class="space-y-1">
-          <button onclick="switchAdminView('overview')" id="nav-overview" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white">
-            📊 All Members
+        <nav class="space-y-2">
+          <button onclick="switchGLView('home')" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold bg-slate-800 text-white hover:bg-blue-600 transition">
+            🏠 Home (Leader Dashboard)
           </button>
-          <button onclick="switchAdminView('fellowships')" id="nav-fellowships" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white">
-            🤝 Fellowships
+          <button onclick="switchGLView('assign-excos')" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition">
+            🎖️ Assign Excos
           </button>
-          <button onclick="switchAdminView('departments')" id="nav-departments" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white">
-            🏢 Departments
+          <button onclick="backToMemberProfileFromGL()" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-blue-400 hover:bg-slate-800 transition">
+            ← Back to Personal Profile
           </button>
         </nav>
       </div>
-      <button onclick="logout()" class="mt-6 w-full bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white py-2 rounded-lg text-xs font-semibold transition">
-        Logout Admin
+      <button onclick="logout()" class="w-full bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white py-2.5 rounded-xl text-xs font-bold transition">
+        Logout
       </button>
     </aside>
 
-    <main class="flex-1 p-4 md:p-8 overflow-y-auto">
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-          <span class="text-xs text-slate-400">Total Members</span>
-          <p id="stat-total" class="text-2xl font-bold text-white mt-1">0</p>
+    <!-- Header -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-4 flex items-center justify-between sticky top-0 z-20">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleGLSidebar()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition">
+          ☰
+        </button>
+        <div>
+          <h1 id="gl-header-title" class="text-lg font-bold text-white">Group Leader Dashboard</h1>
+          <span class="text-[11px] text-emerald-400">● Real-Time Fellowship Ledger</span>
         </div>
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-          <span class="text-xs text-slate-400">Men Fellowship</span>
-          <p id="stat-men" class="text-2xl font-bold text-blue-400 mt-1">0</p>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-          <span class="text-xs text-slate-400">Women Fellowship</span>
-          <p id="stat-women" class="text-2xl font-bold text-pink-400 mt-1">0</p>
-        </div>
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-          <span class="text-xs text-slate-400">Youth Fellowship</span>
-          <p id="stat-youth" class="text-2xl font-bold text-amber-400 mt-1">0</p>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-8">
+      <!-- GL HOME VIEW (7 FINANCIAL CARDS) -->
+      <div id="gl-view-home" class="space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Dues</span>
+            <p id="gl-card-dues" class="text-2xl font-black text-emerald-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Expenses</span>
+            <p id="gl-card-expenses" class="text-2xl font-black text-rose-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Project Paid</span>
+            <p id="gl-card-proj-paid" class="text-2xl font-black text-blue-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Arrears</span>
+            <p id="gl-card-arrears" class="text-2xl font-black text-amber-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Project Unpaid</span>
+            <p id="gl-card-proj-unpaid" class="text-2xl font-black text-orange-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Old Dues</span>
+            <p id="gl-card-old-dues" class="text-2xl font-black text-purple-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border border-blue-700/50 p-5 rounded-2xl sm:col-span-2">
+            <span class="text-xs font-bold text-blue-300 uppercase">Total Net Balance</span>
+            <p id="gl-card-balance" class="text-3xl font-black text-white mt-2">₦0.00</p>
+          </div>
         </div>
       </div>
 
-      <div id="admin-view-overview" class="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-x-auto">
-        <h3 class="text-lg font-bold text-white mb-4">Registered Church Members (Real-Time)</h3>
-        <table class="w-full text-left border-collapse text-sm">
-          <thead>
-            <tr class="border-b border-slate-800 text-slate-400 text-xs uppercase">
-              <th class="py-3 px-2">Full Name</th>
-              <th class="py-3 px-2">Mobile</th>
-              <th class="py-3 px-2">Gender / Married</th>
-              <th class="py-3 px-2">Fellowship</th>
-              <th class="py-3 px-2">Department</th>
-              <th class="py-3 px-2">Joined</th>
-            </tr>
-          </thead>
-          <tbody id="admin-members-tbody" class="divide-y divide-slate-800"></tbody>
-        </table>
-      </div>
+      <!-- GL ASSIGN EXCOS VIEW -->
+      <div id="gl-view-assign-excos" class="hidden-section max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h3 class="text-xl font-bold text-white mb-1">Assign Group Excos</h3>
+        <p class="text-xs text-slate-400 mb-5">Search for a member in your fellowship to assign an executive role.</p>
 
-      <div id="admin-view-fellowships" class="hidden-section space-y-6">
-        <h3 class="text-lg font-bold text-white">Fellowship Groups</h3>
-        <div id="fellowships-container" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-      </div>
+        <div id="gl-exco-alert" class="hidden-section mb-4 p-3 rounded-xl text-xs font-semibold text-center"></div>
 
-      <div id="admin-view-departments" class="hidden-section space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <h3 class="text-lg font-bold text-white">Church Departments</h3>
-          <select id="filter-department-select" onchange="renderDepartmentsView()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-            <option value="ALL">All Departments</option>
-            <option value="Security Department">Security Department</option>
-            <option value="Usher Department">Usher Department</option>
-            <option value="Technical Department">Technical Department</option>
-            <option value="Sanitation Department">Sanitation Department</option>
-            <option value="Children Teacher Department">Children Teacher Department</option>
-            <option value="None">Non-Workers</option>
-          </select>
-        </div>
-        <div id="departments-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Search Member Name</label>
+        <input type="text" id="gl-exco-search" oninput="searchMembersForExco()" placeholder="Type member name..."
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white mb-4 focus:outline-none focus:border-blue-500" />
+
+        <div id="gl-exco-results" class="space-y-3"></div>
       </div>
     </main>
   </div>
 
-  <!-- JAVASCRIPT LOGIC -->
+  <!-- ==========================================
+       5. ROLE-ISOLATED EXCO DASHBOARD
+  =========================================== -->
+  <div id="exco-dashboard" class="hidden-section min-h-screen bg-slate-950 relative">
+    <div id="exco-sidebar-backdrop" onclick="closeExcoSidebar()" class="hidden-section fixed inset-0 bg-black/60 z-30"></div>
+
+    <aside id="exco-sidebar" class="sidebar-drawer sidebar-closed fixed top-0 left-0 bottom-0 w-72 bg-slate-900 border-r border-slate-800 p-5 z-40 flex flex-col justify-between shadow-2xl">
+      <div>
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+          <div>
+            <h3 id="exco-sidebar-title" class="font-extrabold text-purple-400 text-sm uppercase">EXCO PORTAL</h3>
+            <p id="exco-sidebar-group" class="text-xs text-slate-400">--</p>
+          </div>
+          <button onclick="closeExcoSidebar()" class="text-slate-400 hover:text-white">✕</button>
+        </div>
+        <nav class="space-y-2">
+          <button onclick="closeExcoSidebar()" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold bg-purple-600 text-white">
+            📋 My Role Workspace
+          </button>
+          <button onclick="backToMemberProfileFromExco()" class="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800">
+            ← Back to Member Dashboard
+          </button>
+        </nav>
+      </div>
+      <button onclick="logout()" class="w-full bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white py-2.5 rounded-xl text-xs font-bold">
+        Logout
+      </button>
+    </aside>
+
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleExcoSidebar()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white">☰</button>
+        <div>
+          <h1 id="exco-main-heading" class="text-lg font-bold text-white">Exco Workspace</h1>
+          <p class="text-xs text-purple-400">Private Role-Restricted View</p>
+        </div>
+      </div>
+    </header>
+
+    <main id="exco-role-content" class="max-w-4xl mx-auto p-4 md:p-8">
+      <!-- Dynamically populated strictly for the logged-in member's specific Exco role -->
+    </main>
+  </div>
+
+  <!-- ==========================================
+       6. MAIN ADMIN PORTAL (SLIDE-OUT DRAWER SIDEBAR + ALL VIEWS)
+  =========================================== -->
+  <div id="admin-dashboard" class="hidden-section min-h-screen bg-slate-950 relative">
+    
+    <!-- CLICK-ANYWHERE BACKDROP TO DISAPPEAR SIDEBAR -->
+    <div id="admin-sidebar-backdrop" onclick="closeAdminSidebar()" class="hidden-section fixed inset-0 bg-black/60 backdrop-blur-xs z-30 transition-opacity"></div>
+
+    <!-- LEFT COLLAPSIBLE ADMIN SIDEBAR -->
+    <aside id="admin-sidebar" class="sidebar-drawer sidebar-closed fixed top-0 left-0 bottom-0 w-72 bg-slate-900 border-r border-slate-800 p-5 z-40 flex flex-col justify-between overflow-y-auto shadow-2xl">
+      <div>
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-black text-slate-950">A</div>
+            <div>
+              <h2 class="text-sm font-extrabold text-white tracking-wide">MAIN ADMIN</h2>
+              <span class="text-[10px] text-emerald-400 flex items-center gap-1">● Live Real-Time Sync</span>
+            </div>
+          </div>
+          <button onclick="closeAdminSidebar()" class="text-slate-400 hover:text-white p-1">✕</button>
+        </div>
+
+        <nav class="space-y-1.5">
+          <!-- 1. HOME -->
+          <button onclick="navigateAdminHome()" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600/20 border border-blue-500/30 hover:bg-blue-600 transition">
+            <span>🏠</span>
+            <span>Home</span>
+          </button>
+
+          <!-- 2. GROUPS DROPDOWN -->
+          <div>
+            <button onclick="toggleSidebarDropdown('dropdown-groups')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition">
+              <span class="flex items-center gap-3"><span>🤝</span><span>Groups</span></span>
+              <span class="text-xs">▼</span>
+            </button>
+            <div id="dropdown-groups" class="hidden-section pl-9 pr-2 py-1 space-y-1">
+              <button onclick="openAdminGroupDashboard('Men Fellowship')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Men Fellowship</button>
+              <button onclick="openAdminGroupDashboard('Women Fellowship')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Women Fellowship</button>
+              <button onclick="openAdminGroupDashboard('Youth Fellowship')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Youth Fellowship</button>
+            </div>
+          </div>
+
+          <!-- 3. DEPARTMENT DROPDOWN -->
+          <div>
+            <button onclick="toggleSidebarDropdown('dropdown-departments')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition">
+              <span class="flex items-center gap-3"><span>🏢</span><span>Department</span></span>
+              <span class="text-xs">▼</span>
+            </button>
+            <div id="dropdown-departments" class="hidden-section pl-9 pr-2 py-1 space-y-1">
+              <button onclick="openAdminDepartmentDashboard('Security Department')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Security</button>
+              <button onclick="openAdminDepartmentDashboard('Usher Department')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Usher</button>
+              <button onclick="openAdminDepartmentDashboard('Sanitation Department')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Sanitation</button>
+              <button onclick="openAdminDepartmentDashboard('Choir Department')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Choir</button>
+              <button onclick="openAdminDepartmentDashboard('Technical Department')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Technical</button>
+              <button onclick="openAdminDepartmentDashboard('Children Teacher Department')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Children Teacher</button>
+            </div>
+          </div>
+
+          <!-- 4. ASSIGN GROUP LEADERS DROPDOWN -->
+          <div>
+            <button onclick="toggleSidebarDropdown('dropdown-leaders')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition">
+              <span class="flex items-center gap-3"><span>👑</span><span>Assign Group Leaders</span></span>
+              <span class="text-xs">▼</span>
+            </button>
+            <div id="dropdown-leaders" class="hidden-section pl-9 pr-2 py-1 space-y-1">
+              <button onclick="openAssignGroupLeaderView('Men Fellowship')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Men Fellowship</button>
+              <button onclick="openAssignGroupLeaderView('Women Fellowship')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Women Fellowship</button>
+              <button onclick="openAssignGroupLeaderView('Youth Fellowship')" class="w-full text-left py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800">Youth Fellowship</button>
+            </div>
+          </div>
+        </nav>
+      </div>
+
+      <button onclick="logout()" class="mt-8 w-full bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white py-2.5 rounded-xl text-xs font-bold transition">
+        Logout Admin
+      </button>
+    </aside>
+
+    <!-- TOP NAVBAR WITH SIDEBAR TOGGLE BUTTON -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-20">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleAdminSidebar()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-blue-600 text-white transition shadow">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        <div>
+          <h1 id="admin-topbar-title" class="text-lg md:text-xl font-extrabold text-white">City of Mercy — Admin Dashboard</h1>
+          <p class="text-xs text-slate-400">Real-Time Church & Financial Operations</p>
+        </div>
+      </div>
+      <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Sync
+      </span>
+    </header>
+
+    <!-- MAIN ADMIN CONTENT VIEWS -->
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
+
+      <!-- VIEW 1: ADMIN HOME OVERVIEW -->
+      <div id="admin-view-home" class="space-y-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Members</span>
+            <p id="stat-total" class="text-3xl font-black text-white mt-1">0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Men Fellowship</span>
+            <p id="stat-men" class="text-3xl font-black text-blue-400 mt-1">0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Women Fellowship</span>
+            <p id="stat-women" class="text-3xl font-black text-pink-400 mt-1">0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Youth Fellowship</span>
+            <p id="stat-youth" class="text-3xl font-black text-amber-400 mt-1">0</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 overflow-x-auto shadow-xl">
+          <h3 class="text-base font-bold text-white mb-4">All Registered Members (Live Feed)</h3>
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 text-xs uppercase">
+                <th class="py-3 px-3">Full Name</th>
+                <th class="py-3 px-3">Mobile</th>
+                <th class="py-3 px-3">Fellowship</th>
+                <th class="py-3 px-3">Department</th>
+                <th class="py-3 px-3">Leadership / Role</th>
+              </tr>
+            </thead>
+            <tbody id="admin-members-tbody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- VIEW 2: FELLOWSHIP GROUP DASHBOARD (MEN / WOMEN / YOUTH) -->
+      <div id="admin-view-group-dashboard" class="hidden-section space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="group-dash-heading" class="text-2xl font-extrabold text-white">Men Fellowship Dashboard</h2>
+          <span class="text-xs text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">Financial & Member Management</span>
+        </div>
+
+        <!-- 7 FINANCIAL & PROJECT CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Dues</span>
+            <p id="grp-card-dues" class="text-2xl font-black text-emerald-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Arrears (Total Dues Arrears)</span>
+            <p id="grp-card-arrears" class="text-2xl font-black text-amber-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Balance</span>
+            <p id="grp-card-balance" class="text-2xl font-black text-blue-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Expenses</span>
+            <p id="grp-card-expenses" class="text-2xl font-black text-rose-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Project Paid</span>
+            <p id="grp-card-proj-paid" class="text-2xl font-black text-teal-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Project Unpaid</span>
+            <p id="grp-card-proj-unpaid" class="text-2xl font-black text-orange-400 mt-2">₦0.00</p>
+          </div>
+          <!-- CLICKABLE PROJECT ANNOUNCEMENT CARD -->
+          <div onclick="openProjectAnnouncementsModal()" class="cursor-pointer bg-gradient-to-br from-indigo-900/50 to-purple-900/50 hover:from-indigo-800/60 hover:to-purple-800/60 border border-indigo-500/40 p-5 rounded-2xl sm:col-span-2 transition shadow-lg">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-300 uppercase">📢 Project Announcement</span>
+              <span class="text-xs bg-indigo-500/30 text-indigo-200 px-2.5 py-0.5 rounded-full">Click to View All →</span>
+            </div>
+            <p id="grp-card-announcement-preview" class="text-base font-bold text-white mt-2">View all project updates & dates</p>
+          </div>
+        </div>
+
+        <!-- MEMBER SEARCH BAR & LIST UNDER GROUP -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <h3 class="text-base font-bold text-white mb-3">Search Members in <span id="grp-search-title">Fellowship</span></h3>
+          <input type="text" id="grp-member-search-input" oninput="renderGroupMemberSearch()" placeholder="Enter member name to search..."
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white mb-4 focus:outline-none focus:border-blue-500" />
+          <div id="grp-member-search-results" class="divide-y divide-slate-800"></div>
+        </div>
+      </div>
+
+      <!-- VIEW 3: DEPARTMENT DASHBOARD -->
+      <div id="admin-view-department-dashboard" class="hidden-section space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 id="dept-dash-heading" class="text-2xl font-extrabold text-white">Department Dashboard</h2>
+          <span class="text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-3 py-1 rounded-lg">Department Ledger</span>
+        </div>
+
+        <!-- 3 FINANCIAL CARDS FOR DEPARTMENT -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Dues Collected</span>
+            <p id="dept-card-dues" class="text-3xl font-black text-emerald-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Expenses</span>
+            <p id="dept-card-expenses" class="text-3xl font-black text-rose-400 mt-2">₦0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Balance</span>
+            <p id="dept-card-balance" class="text-3xl font-black text-blue-400 mt-2">₦0.00</p>
+          </div>
+        </div>
+
+        <!-- DEPARTMENT MEMBERS LIST -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <h3 class="text-base font-bold text-white mb-4">Registered Workers in This Department</h3>
+          <div id="dept-members-list" class="divide-y divide-slate-800"></div>
+        </div>
+      </div>
+
+      <!-- VIEW 4: ASSIGN GROUP LEADERS -->
+      <div id="admin-view-assign-leader" class="hidden-section max-w-2xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+        <h2 id="assign-leader-heading" class="text-xl font-extrabold text-white mb-1">Assign Group Leaders — Men Fellowship</h2>
+        <p class="text-xs text-slate-400 mb-5">Search for a member in this fellowship to make or remove them as Group Leader.</p>
+
+        <div id="assign-leader-alert" class="hidden-section mb-4 p-3 rounded-xl text-xs font-semibold text-center"></div>
+
+        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Search Member Name</label>
+        <input type="text" id="leader-search-input" oninput="searchMembersForLeader()" placeholder="Type member name..."
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white mb-4 focus:outline-none focus:border-amber-500" />
+
+        <div id="leader-search-results" class="space-y-3"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ==========================================
+       MODALS (MEMBER DETAILS/EDIT/DELETE & PROJECT ANNOUNCEMENTS)
+  =========================================== -->
+  <!-- 1. Member Details / Edit / Delete Modal -->
+  <div id="member-detail-modal" class="hidden-section fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white">Member Details & Management</h3>
+        <button onclick="closeMemberModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <input type="hidden" id="modal-member-id" />
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="text-xs text-slate-400">Full Name</label>
+          <input type="text" id="modal-edit-name" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white mt-1" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400">Mobile Number</label>
+            <input type="text" id="modal-edit-mobile" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white mt-1" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Department</label>
+            <select id="modal-edit-dept" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white mt-1">
+              <option value="None">None</option>
+              <option value="Security Department">Security Department</option>
+              <option value="Usher Department">Usher Department</option>
+              <option value="Sanitation Department">Sanitation Department</option>
+              <option value="Choir Department">Choir Department</option>
+              <option value="Technical Department">Technical Department</option>
+              <option value="Children Teacher Department">Children Teacher Department</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">House Address</label>
+          <input type="text" id="modal-edit-address" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white mt-1" />
+        </div>
+      </div>
+      <div class="flex items-center justify-between pt-4 border-t border-slate-800">
+        <button onclick="deleteMemberRecord()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition">
+          🗑️ Delete Member
+        </button>
+        <div class="flex gap-2">
+          <button onclick="closeMemberModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold">Cancel</button>
+          <button onclick="saveEditedMember()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Project Announcements Modal -->
+  <div id="announcements-modal" class="hidden-section fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 id="ann-modal-title" class="text-lg font-bold text-white">📢 Project Announcements</h3>
+        <button onclick="closeAnnouncementsModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div id="ann-modal-list" class="space-y-3 max-h-80 overflow-y-auto"></div>
+      <div class="pt-3 border-t border-slate-800 text-right">
+        <button onclick="closeAnnouncementsModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       7. JAVASCRIPT REAL-TIME ENGINE
+  =========================================== -->
   <script>
-    // YOUR LIVE SUPABASE CREDENTIALS
     const SUPABASE_URL = 'https://bugzrhjmedzubwwhvrql.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_3jzku7vSLCqz5Bw8BYO0uw_5FhrbAir';
-
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let allMembersData = [];
+    let allFinancialsData = [];
+    let allAnnouncementsData = [];
+    let currentLoggedInMember = null;
+    let activeAdminGroup = 'Men Fellowship';
+    let activeAdminDepartment = 'Security Department';
+    let activeLeaderAssignGroup = 'Men Fellowship';
 
+    // 1. 10-SECOND LOADING SCREEN
     window.addEventListener('DOMContentLoaded', () => {
       let secondsLeft = 10;
       const progressEl = document.getElementById('splash-progress');
@@ -381,8 +775,7 @@
 
       const interval = setInterval(() => {
         secondsLeft--;
-        const percentage = ((10 - secondsLeft) / 10) * 100;
-        progressEl.style.width = `${percentage}%`;
+        progressEl.style.width = `${((10 - secondsLeft) / 10) * 100}%`;
         timerText.textContent = `Initializing secure connection... (${secondsLeft}s)`;
 
         if (secondsLeft <= 0) {
@@ -393,10 +786,16 @@
       }, 1000);
     });
 
+    // Helper: Currency Formatter
+    function formatNaira(amount) {
+      return '₦' + Number(amount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // 2. AUTHENTICATION & WIZARD
     function showAlert(message, isError = true) {
       const alertBox = document.getElementById('auth-alert');
       alertBox.textContent = message;
-      alertBox.className = `mb-4 p-3 rounded-lg text-sm font-medium text-center ${
+      alertBox.className = `mb-4 p-3 rounded-xl text-sm font-medium text-center ${
         isError ? 'bg-red-950/80 border border-red-700 text-red-200' : 'bg-emerald-950/80 border border-emerald-700 text-emerald-200'
       }`;
       alertBox.classList.remove('hidden-section');
@@ -410,17 +809,16 @@
       hideAlert();
       document.getElementById('registration-wizard').classList.add('hidden-section');
       document.getElementById('login-tabs').classList.remove('hidden-section');
-
       if (tab === 'member-login') {
         document.getElementById('member-login-form').classList.remove('hidden-section');
         document.getElementById('admin-login-form').classList.add('hidden-section');
-        document.getElementById('tab-member').className = 'py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white transition';
-        document.getElementById('tab-admin').className = 'py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition';
+        document.getElementById('tab-member').className = 'py-2.5 text-sm font-semibold rounded-lg bg-blue-600 text-white shadow transition';
+        document.getElementById('tab-admin').className = 'py-2.5 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition';
       } else {
         document.getElementById('member-login-form').classList.add('hidden-section');
         document.getElementById('admin-login-form').classList.remove('hidden-section');
-        document.getElementById('tab-admin').className = 'py-2 text-sm font-semibold rounded-lg bg-amber-600 text-white transition';
-        document.getElementById('tab-member').className = 'py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition';
+        document.getElementById('tab-admin').className = 'py-2.5 text-sm font-semibold rounded-lg bg-amber-600 text-white shadow transition';
+        document.getElementById('tab-member').className = 'py-2.5 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition';
       }
     }
 
@@ -433,103 +831,84 @@
       goToStep(1);
     }
 
-    function cancelRegistration() {
-      switchAuthTab('member-login');
-    }
+    function cancelRegistration() { switchAuthTab('member-login'); }
 
     function goToStep(stepNumber) {
       hideAlert();
-      for (let i = 1; i <= 5; i++) {
-        document.getElementById(`reg-step-${i}`).classList.add('hidden-section');
-      }
+      for (let i = 1; i <= 5; i++) document.getElementById(`reg-step-${i}`).classList.add('hidden-section');
       document.getElementById(`reg-step-${stepNumber}`).classList.remove('hidden-section');
       document.getElementById('step-indicator').textContent = `Step ${stepNumber} of 5`;
     }
 
-    function prevStep(currentStep) {
-      goToStep(currentStep - 1);
-    }
+    function prevStep(s) { goToStep(s - 1); }
 
-    function nextStep(currentStep) {
-      if (currentStep === 1) {
+    function nextStep(s) {
+      if (s === 1) {
         if (!document.getElementById('reg-fullname').value.trim() || !document.getElementById('reg-mobile').value.trim() || !document.getElementById('reg-dob').value || !document.getElementById('reg-address').value.trim()) {
           return showAlert('Please fill in all required personal information fields.');
         }
         goToStep(2);
-      } else if (currentStep === 2) {
+      } else if (s === 2) {
         if (!document.getElementById('reg-married').value || !document.getElementById('reg-gender').value) {
           return showAlert('Please select both Marital Status and Gender.');
         }
         goToStep(3);
-      } else if (currentStep === 3) {
-        const isWorker = document.getElementById('reg-worker').value;
-        if (!isWorker) return showAlert('Please select whether you are a worker.');
-        if (isWorker === 'YES' && !document.getElementById('reg-department').value) {
-          return showAlert('Please select your department.');
-        }
+      } else if (s === 3) {
+        const w = document.getElementById('reg-worker').value;
+        if (!w) return showAlert('Please select whether you are a worker.');
+        if (w === 'YES' && !document.getElementById('reg-department').value) return showAlert('Please select your department.');
         goToStep(4);
-      } else if (currentStep === 4) {
-        if (!document.getElementById('reg-joined').value) {
-          return showAlert('Please select the Month and Year you joined.');
-        }
+      } else if (s === 4) {
+        if (!document.getElementById('reg-joined').value) return showAlert('Please select Month and Year joined.');
         goToStep(5);
       }
     }
 
     function toggleDepartmentDropdown() {
-      const isWorker = document.getElementById('reg-worker').value;
-      const wrapper = document.getElementById('department-select-wrapper');
-      if (isWorker === 'YES') {
-        wrapper.classList.remove('hidden-section');
-      } else {
-        wrapper.classList.add('hidden-section');
-        document.getElementById('reg-department').value = '';
-      }
+      const w = document.getElementById('reg-worker').value;
+      const wrap = document.getElementById('department-select-wrapper');
+      if (w === 'YES') wrap.classList.remove('hidden-section');
+      else { wrap.classList.add('hidden-section'); document.getElementById('reg-department').value = ''; }
     }
 
     function checkPinMatch() {
-      const pin = document.getElementById('reg-pin').value.replace(/\D/g, '');
-      const confirmPin = document.getElementById('reg-pin-confirm').value.replace(/\D/g, '');
-      document.getElementById('reg-pin').value = pin;
-      document.getElementById('reg-pin-confirm').value = confirmPin;
-
-      const statusEl = document.getElementById('pin-match-status');
-      const submitBtn = document.getElementById('submit-register-btn');
-
-      if (pin.length === 4 && pin === confirmPin) {
-        statusEl.textContent = '✓ PINs Matched! Click Submit & Register below.';
-        statusEl.className = 'text-xs text-center text-emerald-400 font-semibold';
-        submitBtn.classList.remove('hidden-section');
+      const p1 = document.getElementById('reg-pin').value.replace(/\D/g, '');
+      const p2 = document.getElementById('reg-pin-confirm').value.replace(/\D/g, '');
+      document.getElementById('reg-pin').value = p1;
+      document.getElementById('reg-pin-confirm').value = p2;
+      const status = document.getElementById('pin-match-status');
+      const btn = document.getElementById('submit-register-btn');
+      if (p1.length === 4 && p1 === p2) {
+        status.textContent = '✓ PINs Matched! Click Submit & Register below.';
+        status.className = 'text-xs text-center text-emerald-400 font-semibold';
+        btn.classList.remove('hidden-section');
       } else {
-        statusEl.textContent = 'Enter matching 4-digit numbers to unlock registration.';
-        statusEl.className = 'text-xs text-center text-slate-400';
-        submitBtn.classList.add('hidden-section');
+        status.textContent = 'Enter matching 4-digit numbers to unlock registration.';
+        status.className = 'text-xs text-center text-slate-400';
+        btn.classList.add('hidden-section');
       }
     }
 
     async function submitRegistration() {
       const married = document.getElementById('reg-married').value;
       const gender = document.getElementById('reg-gender').value;
-
-      let assignedFellowship = 'Youth Fellowship';
-      if (married === 'YES' && gender === 'FEMALE') assignedFellowship = 'Women Fellowship';
-      else if (married === 'YES' && gender === 'MALE') assignedFellowship = 'Men Fellowship';
+      let fellowship = 'Youth Fellowship';
+      if (married === 'YES' && gender === 'FEMALE') fellowship = 'Women Fellowship';
+      else if (married === 'YES' && gender === 'MALE') fellowship = 'Men Fellowship';
 
       const isWorker = document.getElementById('reg-worker').value;
       const rawDept = document.getElementById('reg-department').value;
-      let assignedDepartment = 'None';
-      if (isWorker === 'YES') {
-        const deptMap = {
-          'SECURITY': 'Security Department',
-          'USHER': 'Usher Department',
-          'TECHNICAL': 'Technical Department',
-          'SANITATION': 'Sanitation Department',
-          'CHILDREN TEACHER': 'Children Teacher Department'
-        };
-        assignedDepartment = deptMap[rawDept] || rawDept;
-      }
+      const deptMap = {
+        'SECURITY': 'Security Department',
+        'USHER': 'Usher Department',
+        'SANITATION': 'Sanitation Department',
+        'CHOIR': 'Choir Department',
+        'TECHNICAL': 'Technical Department',
+        'CHILDREN TEACHER': 'Children Teacher Department'
+      };
+      const department = isWorker === 'YES' ? (deptMap[rawDept] || rawDept) : 'None';
 
-      const memberPayload = {
+      const payload = {
         full_name: document.getElementById('reg-fullname').value.trim(),
         mobile_number: document.getElementById('reg-mobile').value.trim(),
         whatsapp_number: document.getElementById('reg-whatsapp').value.trim(),
@@ -541,28 +920,24 @@
         state_of_residence: document.getElementById('reg-residence').value.trim(),
         is_married: married,
         gender: gender,
-        fellowship: assignedFellowship,
+        fellowship: fellowship,
         is_worker: isWorker,
-        department: assignedDepartment,
+        department: department,
         joined_month_year: document.getElementById('reg-joined').value,
         pin: document.getElementById('reg-pin').value
       };
 
-      const submitBtn = document.getElementById('submit-register-btn');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Registering...';
-
-      const { error } = await supabaseClient.from('members').insert([memberPayload]);
-
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'SUBMIT & REGISTER';
+      const btn = document.getElementById('submit-register-btn');
+      btn.disabled = true; btn.textContent = 'Registering...';
+      const { error } = await supabaseClient.from('members').insert([payload]);
+      btn.disabled = false; btn.textContent = 'SUBMIT & REGISTER';
 
       if (error) return showAlert('Registration failed: ' + error.message);
-
       switchAuthTab('member-login');
-      showAlert(`Registration successful! Assigned to ${assignedFellowship}. Please log in.`, false);
+      showAlert(`Registration successful! Assigned to ${fellowship}. Please log in.`, false);
     }
 
+    // 3. MEMBER LOGIN & REAL-TIME SYNC
     async function handleMemberLogin(e) {
       e.preventDefault();
       hideAlert();
@@ -578,19 +953,239 @@
 
       if (error || !data) return showAlert('Invalid Mobile Number or 4-Digit PIN.');
 
-      document.getElementById('mem-dash-name').textContent = `Welcome, ${data.full_name}`;
-      document.getElementById('mem-dash-fellowship').textContent = data.fellowship;
-      document.getElementById('mem-dash-department').textContent = data.department;
-      document.getElementById('mem-dash-mobile').textContent = data.mobile_number;
-      document.getElementById('mem-dash-whatsapp').textContent = data.whatsapp_number || 'N/A';
-      document.getElementById('mem-dash-email').textContent = data.email || 'N/A';
-      document.getElementById('mem-dash-dob').textContent = data.date_of_birth || 'N/A';
-      document.getElementById('mem-dash-marital-gender').textContent = `${data.is_married === 'YES' ? 'Married' : 'Single'} • ${data.gender}`;
-      document.getElementById('mem-dash-joined').textContent = data.joined_month_year || 'N/A';
-      document.getElementById('mem-dash-address').textContent = `${data.house_address}, ${data.state_of_residence}`;
+      currentLoggedInMember = data;
+      await fetchAllData();
+      setupRealtimeSubscription();
+      renderMemberDashboard();
 
       document.getElementById('auth-container').classList.add('hidden-section');
       document.getElementById('member-dashboard').classList.remove('hidden-section');
+    }
+
+    function renderMemberDashboard() {
+      const m = allMembersData.find(x => x.id === currentLoggedInMember.id) || currentLoggedInMember;
+      currentLoggedInMember = m;
+
+      document.getElementById('mem-dash-name').textContent = `Welcome, ${m.full_name}`;
+      document.getElementById('mem-dash-fellowship').textContent = m.fellowship;
+      document.getElementById('mem-dash-department').textContent = m.department;
+      document.getElementById('mem-dash-mobile').textContent = m.mobile_number;
+      document.getElementById('mem-dash-whatsapp').textContent = m.whatsapp_number || 'N/A';
+      document.getElementById('mem-dash-email').textContent = m.email || 'N/A';
+      document.getElementById('mem-dash-dob').textContent = m.date_of_birth || 'N/A';
+      document.getElementById('mem-dash-marital-gender').textContent = `${m.is_married === 'YES' ? 'Married' : 'Single'} • ${m.gender}`;
+      document.getElementById('mem-dash-joined').textContent = m.joined_month_year || 'N/A';
+      document.getElementById('mem-dash-address').textContent = `${m.house_address}, ${m.state_of_residence}`;
+
+      // Show Group Leader Button if assigned
+      const glBtn = document.getElementById('group-leader-portal-btn');
+      if (m.is_group_leader) glBtn.classList.remove('hidden-section');
+      else glBtn.classList.add('hidden-section');
+
+      // Show Top-Center Exco Role Button if assigned an Exco Role
+      const excoBar = document.getElementById('top-center-exco-bar');
+      if (m.exco_role && m.exco_role !== 'None') {
+        document.getElementById('exco-role-btn-label').textContent = m.exco_role;
+        excoBar.classList.remove('hidden-section');
+      } else {
+        excoBar.classList.add('hidden-section');
+      }
+    }
+
+    // 4. GROUP LEADER PORTAL LOGIC
+    function toggleGLSidebar() {
+      document.getElementById('gl-sidebar').classList.toggle('sidebar-closed');
+      document.getElementById('gl-sidebar').classList.toggle('sidebar-open');
+      document.getElementById('gl-sidebar-backdrop').classList.toggle('hidden-section');
+    }
+    function closeGLSidebar() {
+      document.getElementById('gl-sidebar').classList.add('sidebar-closed');
+      document.getElementById('gl-sidebar').classList.remove('sidebar-open');
+      document.getElementById('gl-sidebar-backdrop').classList.add('hidden-section');
+    }
+
+    function openGroupLeaderDashboard() {
+      document.getElementById('member-dashboard').classList.add('hidden-section');
+      document.getElementById('group-leader-dashboard').classList.remove('hidden-section');
+      document.getElementById('gl-sidebar-group-name').textContent = currentLoggedInMember.fellowship;
+      document.getElementById('gl-header-title').textContent = `${currentLoggedInMember.fellowship} — Leader Dashboard`;
+      switchGLView('home');
+      updateGroupLeaderCards();
+    }
+
+    function backToMemberProfileFromGL() {
+      closeGLSidebar();
+      document.getElementById('group-leader-dashboard').classList.add('hidden-section');
+      document.getElementById('member-dashboard').classList.remove('hidden-section');
+    }
+
+    function switchGLView(view) {
+      closeGLSidebar();
+      document.getElementById('gl-view-home').classList.add('hidden-section');
+      document.getElementById('gl-view-assign-excos').classList.add('hidden-section');
+      document.getElementById(`gl-view-${view}`).classList.remove('hidden-section');
+      if (view === 'assign-excos') searchMembersForExco();
+    }
+
+    function updateGroupLeaderCards() {
+      if (!currentLoggedInMember) return;
+      const grp = currentLoggedInMember.fellowship;
+      const recs = allFinancialsData.filter(f => f.entity_type === 'FELLOWSHIP' && f.entity_name === grp);
+
+      const sumCat = (cat) => recs.filter(r => r.category === cat).reduce((acc, r) => acc + Number(r.amount), 0);
+      const dues = sumCat('DUES');
+      const expenses = sumCat('EXPENSES');
+      const projPaid = sumCat('PROJECT_PAID');
+      const arrears = sumCat('ARREARS');
+      const projUnpaid = sumCat('PROJECT_UNPAID');
+      const oldDues = sumCat('OLD_DUES');
+      const balance = (dues + projPaid + oldDues) - expenses;
+
+      document.getElementById('gl-card-dues').textContent = formatNaira(dues);
+      document.getElementById('gl-card-expenses').textContent = formatNaira(expenses);
+      document.getElementById('gl-card-proj-paid').textContent = formatNaira(projPaid);
+      document.getElementById('gl-card-arrears').textContent = formatNaira(arrears);
+      document.getElementById('gl-card-proj-unpaid').textContent = formatNaira(projUnpaid);
+      document.getElementById('gl-card-old-dues').textContent = formatNaira(oldDues);
+      document.getElementById('gl-card-balance').textContent = formatNaira(balance);
+    }
+
+    function searchMembersForExco() {
+      const q = document.getElementById('gl-exco-search').value.trim().toLowerCase();
+      const grp = currentLoggedInMember.fellowship;
+      const matches = allMembersData.filter(m => m.fellowship === grp && m.full_name.toLowerCase().includes(q));
+      const container = document.getElementById('gl-exco-results');
+
+      if (!matches.length) {
+        container.innerHTML = `<p class="text-xs text-slate-500">No matching members found in ${grp}.</p>`;
+        return;
+      }
+
+      container.innerHTML = matches.map(m => `
+        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="font-bold text-white text-sm">${m.full_name}</p>
+              <p class="text-xs text-slate-400">${m.mobile_number} • Current Role: <span class="text-purple-400 font-semibold">${m.exco_role || 'None'}</span></p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <select id="exco-select-${m.id}" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white">
+              <option value="None" ${m.exco_role === 'None' ? 'selected' : ''}>Remove Exco Role (None)</option>
+              <option value="Treasurer" ${m.exco_role === 'Treasurer' ? 'selected' : ''}>Treasurer</option>
+              <option value="Financial Secretary" ${m.exco_role === 'Financial Secretary' ? 'selected' : ''}>Financial Secretary</option>
+              <option value="Dues Collector" ${m.exco_role === 'Dues Collector' ? 'selected' : ''}>Dues Collector</option>
+            </select>
+            <button onclick="saveExcoRole('${m.id}')" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-lg text-xs">
+              Save Role
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function saveExcoRole(memberId) {
+      const role = document.getElementById(`exco-select-${memberId}`).value;
+      const { error } = await supabaseClient.from('members').update({ exco_role: role }).eq('id', memberId);
+      const alertBox = document.getElementById('gl-exco-alert');
+      alertBox.classList.remove('hidden-section');
+      if (error) {
+        alertBox.className = 'mb-4 p-3 rounded-xl text-xs font-semibold text-center bg-red-950 text-red-300';
+        alertBox.textContent = 'Error updating role: ' + error.message;
+      } else {
+        alertBox.className = 'mb-4 p-3 rounded-xl text-xs font-semibold text-center bg-emerald-950 text-emerald-300';
+        alertBox.textContent = `✓ Exco role updated to "${role}" in real time!`;
+      }
+    }
+
+    // 5. ROLE-ISOLATED EXCO DASHBOARD
+    function toggleExcoSidebar() {
+      document.getElementById('exco-sidebar').classList.toggle('sidebar-closed');
+      document.getElementById('exco-sidebar').classList.toggle('sidebar-open');
+      document.getElementById('exco-sidebar-backdrop').classList.toggle('hidden-section');
+    }
+    function closeExcoSidebar() {
+      document.getElementById('exco-sidebar').classList.add('sidebar-closed');
+      document.getElementById('exco-sidebar').classList.remove('sidebar-open');
+      document.getElementById('exco-sidebar-backdrop').classList.add('hidden-section');
+    }
+
+    function openExcoDashboard() {
+      const m = currentLoggedInMember;
+      if (!m || !m.exco_role || m.exco_role === 'None') return;
+
+      document.getElementById('member-dashboard').classList.add('hidden-section');
+      document.getElementById('exco-dashboard').classList.remove('hidden-section');
+      document.getElementById('exco-sidebar-title').textContent = `EXCO: ${m.exco_role}`;
+      document.getElementById('exco-sidebar-group').textContent = m.fellowship;
+      document.getElementById('exco-main-heading').textContent = `${m.exco_role} Portal (${m.fellowship})`;
+
+      const content = document.getElementById('exco-role-content');
+      if (m.exco_role === 'Treasurer') {
+        content.innerHTML = `
+          <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 space-y-4">
+            <h2 class="text-xl font-bold text-white">💰 Treasurer Treasury & Disbursement Ledger</h2>
+            <p class="text-sm text-slate-400">Exclusive workspace for <strong>${m.full_name}</strong>. You can only view and manage Treasurer treasury records for <strong>${m.fellowship}</strong>.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <span class="text-xs text-slate-400">Role Permission</span>
+                <p class="text-sm font-bold text-emerald-400 mt-1">Treasury Custody & Expense Approval</p>
+              </div>
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <span class="text-xs text-slate-400">Privacy Isolation</span>
+                <p class="text-sm font-bold text-purple-400 mt-1">Restricted to Treasurer Only</p>
+              </div>
+            </div>
+          </div>`;
+      } else if (m.exco_role === 'Financial Secretary') {
+        content.innerHTML = `
+          <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 space-y-4">
+            <h2 class="text-xl font-bold text-white">📊 Financial Secretary Audit & Bookkeeping</h2>
+            <p class="text-sm text-slate-400">Exclusive workspace for <strong>${m.full_name}</strong>. Manage financial statements and ledger reconciliation for <strong>${m.fellowship}</strong>.</p>
+          </div>`;
+      } else if (m.exco_role === 'Dues Collector') {
+        content.innerHTML = `
+          <div class="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 space-y-4">
+            <h2 class="text-xl font-bold text-white">🧾 Dues Collector Recording Desk</h2>
+            <p class="text-sm text-slate-400">Exclusive workspace for <strong>${m.full_name}</strong>. Record member monthly dues and project payments for <strong>${m.fellowship}</strong>.</p>
+          </div>`;
+      }
+    }
+
+    function backToMemberProfileFromExco() {
+      closeExcoSidebar();
+      document.getElementById('exco-dashboard').classList.add('hidden-section');
+      document.getElementById('member-dashboard').classList.remove('hidden-section');
+    }
+
+    // 6. MAIN ADMIN PORTAL & DRAWER SIDEBAR
+    function toggleAdminSidebar() {
+      document.getElementById('admin-sidebar').classList.toggle('sidebar-closed');
+      document.getElementById('admin-sidebar').classList.toggle('sidebar-open');
+      document.getElementById('admin-sidebar-backdrop').classList.toggle('hidden-section');
+    }
+
+    function closeAdminSidebar() {
+      document.getElementById('admin-sidebar').classList.add('sidebar-closed');
+      document.getElementById('admin-sidebar').classList.remove('sidebar-open');
+      document.getElementById('admin-sidebar-backdrop').classList.add('hidden-section');
+    }
+
+    function toggleSidebarDropdown(id) {
+      document.getElementById(id).classList.toggle('hidden-section');
+    }
+
+    function hideAllAdminViews() {
+      ['admin-view-home', 'admin-view-group-dashboard', 'admin-view-department-dashboard', 'admin-view-assign-leader'].forEach(v => {
+        document.getElementById(v).classList.add('hidden-section');
+      });
+    }
+
+    function navigateAdminHome() {
+      closeAdminSidebar();
+      hideAllAdminViews();
+      document.getElementById('admin-topbar-title').textContent = 'City of Mercy — Admin Dashboard';
+      document.getElementById('admin-view-home').classList.remove('hidden-section');
     }
 
     async function handleAdminLogin(e) {
@@ -609,97 +1204,295 @@
       document.getElementById('auth-container').classList.add('hidden-section');
       document.getElementById('admin-dashboard').classList.remove('hidden-section');
 
-      await loadAdminData();
-      subscribeToRealtimeMembers();
+      await fetchAllData();
+      setupRealtimeSubscription();
+      navigateAdminHome();
     }
 
-    async function loadAdminData() {
-      const { data, error } = await supabaseClient
-        .from('members')
-        .select('*')
-        .order('created_at', { ascending: false });
+    async function fetchAllData() {
+      const [memRes, finRes, annRes] = await Promise.all([
+        supabaseClient.from('members').select('*').order('created_at', { ascending: false }),
+        supabaseClient.from('financial_records').select('*'),
+        supabaseClient.from('project_announcements').select('*').order('announcement_date', { ascending: false })
+      ]);
+      if (memRes.data) allMembersData = memRes.data;
+      if (finRes.data) allFinancialsData = finRes.data;
+      if (annRes.data) allAnnouncementsData = annRes.data;
 
-      if (!error && data) {
-        allMembersData = data;
-        updateAdminUI();
-      }
+      refreshAllActiveViews();
     }
 
-    function subscribeToRealtimeMembers() {
+    function setupRealtimeSubscription() {
       supabaseClient
-        .channel('public:members')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
-          loadAdminData();
-        })
+        .channel('com-realtime-all')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => fetchAllData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'financial_records' }, () => fetchAllData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'project_announcements' }, () => fetchAllData())
         .subscribe();
     }
 
-    function updateAdminUI() {
+    function refreshAllActiveViews() {
+      // Admin Home Stats & Table
       document.getElementById('stat-total').textContent = allMembersData.length;
       document.getElementById('stat-men').textContent = allMembersData.filter(m => m.fellowship === 'Men Fellowship').length;
       document.getElementById('stat-women').textContent = allMembersData.filter(m => m.fellowship === 'Women Fellowship').length;
       document.getElementById('stat-youth').textContent = allMembersData.filter(m => m.fellowship === 'Youth Fellowship').length;
 
-      const tbody = document.getElementById('admin-members-tbody');
-      tbody.innerHTML = allMembersData.map(m => `
+      document.getElementById('admin-members-tbody').innerHTML = allMembersData.map(m => `
         <tr class="hover:bg-slate-800/40">
-          <td class="py-3 px-2 font-medium text-white">${m.full_name}</td>
-          <td class="py-3 px-2 text-slate-300">${m.mobile_number}</td>
-          <td class="py-3 px-2 text-slate-400">${m.gender} / ${m.is_married === 'YES' ? 'Married' : 'Single'}</td>
-          <td class="py-3 px-2"><span class="px-2 py-1 rounded-md text-xs bg-blue-950 text-blue-300 border border-blue-800">${m.fellowship}</span></td>
-          <td class="py-3 px-2"><span class="px-2 py-1 rounded-md text-xs bg-emerald-950 text-emerald-300 border border-emerald-800">${m.department}</span></td>
-          <td class="py-3 px-2 text-slate-400">${m.joined_month_year || '-'}</td>
+          <td class="py-3 px-3 font-semibold text-white">${m.full_name}</td>
+          <td class="py-3 px-3 text-slate-300">${m.mobile_number}</td>
+          <td class="py-3 px-3"><span class="px-2.5 py-1 rounded-md text-xs bg-blue-950 text-blue-300 border border-blue-800">${m.fellowship}</span></td>
+          <td class="py-3 px-3"><span class="px-2.5 py-1 rounded-md text-xs bg-emerald-950 text-emerald-300 border border-emerald-800">${m.department}</span></td>
+          <td class="py-3 px-3 text-xs">
+            ${m.is_group_leader ? '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 mr-1">👑 Group Leader</span>' : ''}
+            ${m.exco_role && m.exco_role !== 'None' ? `<span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">🎖️ ${m.exco_role}</span>` : ''}
+            ${!m.is_group_leader && (!m.exco_role || m.exco_role === 'None') ? '<span class="text-slate-500">Member</span>' : ''}
+          </td>
         </tr>
       `).join('');
 
-      renderFellowshipsView();
-      renderDepartmentsView();
+      // Refresh open sub-views
+      if (!document.getElementById('admin-view-group-dashboard').classList.contains('hidden-section')) {
+        renderAdminGroupCards();
+        renderGroupMemberSearch();
+      }
+      if (!document.getElementById('admin-view-department-dashboard').classList.contains('hidden-section')) {
+        renderAdminDepartmentCards();
+      }
+      if (!document.getElementById('admin-view-assign-leader').classList.contains('hidden-section')) {
+        searchMembersForLeader();
+      }
+      if (currentLoggedInMember) {
+        renderMemberDashboard();
+        updateGroupLeaderCards();
+      }
     }
 
-    function renderFellowshipsView() {
-      const groups = ['Men Fellowship', 'Women Fellowship', 'Youth Fellowship'];
-      document.getElementById('fellowships-container').innerHTML = groups.map(group => {
-        const members = allMembersData.filter(m => m.fellowship === group);
-        return `
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-            <h4 class="font-bold text-blue-400 mb-2">${group} (${members.length})</h4>
-            <ul class="space-y-1 text-sm text-slate-300 max-h-60 overflow-y-auto">
-              ${members.length ? members.map(m => `<li>• ${m.full_name} (${m.mobile_number})</li>`).join('') : '<li class="text-slate-500">No members yet</li>'}
-            </ul>
+    // 7. ADMIN GROUP DASHBOARD (MEN / WOMEN / YOUTH)
+    function openAdminGroupDashboard(groupName) {
+      activeAdminGroup = groupName;
+      closeAdminSidebar();
+      hideAllAdminViews();
+      document.getElementById('admin-topbar-title').textContent = groupName;
+      document.getElementById('group-dash-heading').textContent = `${groupName} Dashboard`;
+      document.getElementById('grp-search-title').textContent = groupName;
+      document.getElementById('grp-member-search-input').value = '';
+      document.getElementById('admin-view-group-dashboard').classList.remove('hidden-section');
+
+      renderAdminGroupCards();
+      renderGroupMemberSearch();
+    }
+
+    function renderAdminGroupCards() {
+      const recs = allFinancialsData.filter(f => f.entity_type === 'FELLOWSHIP' && f.entity_name === activeAdminGroup);
+      const sumCat = (cat) => recs.filter(r => r.category === cat).reduce((acc, r) => acc + Number(r.amount), 0);
+
+      const dues = sumCat('DUES');
+      const arrears = sumCat('ARREARS');
+      const expenses = sumCat('EXPENSES');
+      const projPaid = sumCat('PROJECT_PAID');
+      const projUnpaid = sumCat('PROJECT_UNPAID');
+      const balance = (dues + projPaid) - expenses;
+
+      document.getElementById('grp-card-dues').textContent = formatNaira(dues);
+      document.getElementById('grp-card-arrears').textContent = formatNaira(arrears);
+      document.getElementById('grp-card-balance').textContent = formatNaira(balance);
+      document.getElementById('grp-card-expenses').textContent = formatNaira(expenses);
+      document.getElementById('grp-card-proj-paid').textContent = formatNaira(projPaid);
+      document.getElementById('grp-card-proj-unpaid').textContent = formatNaira(projUnpaid);
+
+      const groupAnns = allAnnouncementsData.filter(a => a.fellowship === activeAdminGroup);
+      document.getElementById('grp-card-announcement-preview').textContent = groupAnns.length
+        ? `${groupAnns[0].title} (${groupAnns[0].announcement_date})`
+        : 'No active project announcements';
+    }
+
+    function renderGroupMemberSearch() {
+      const q = document.getElementById('grp-member-search-input').value.trim().toLowerCase();
+      const members = allMembersData.filter(m => m.fellowship === activeAdminGroup && m.full_name.toLowerCase().includes(q));
+      const container = document.getElementById('grp-member-search-results');
+
+      if (!members.length) {
+        container.innerHTML = `<p class="py-4 text-xs text-slate-500">No members found matching "${q}" in ${activeAdminGroup}.</p>`;
+        return;
+      }
+
+      container.innerHTML = members.map(m => `
+        <div onclick="openMemberModal('${m.id}')" class="py-3.5 px-2 flex items-center justify-between hover:bg-slate-800/50 rounded-xl cursor-pointer transition">
+          <div>
+            <p class="font-bold text-white text-sm">${m.full_name}</p>
+            <p class="text-xs text-slate-400">${m.mobile_number} • ${m.department}</p>
           </div>
-        `;
-      }).join('');
+          <span class="text-xs text-blue-400 font-semibold">View / Edit →</span>
+        </div>
+      `).join('');
     }
 
-    function renderDepartmentsView() {
-      const selected = document.getElementById('filter-department-select').value;
-      const depts = ['Security Department', 'Usher Department', 'Technical Department', 'Sanitation Department', 'Children Teacher Department', 'None'];
-      const filteredDepts = selected === 'ALL' ? depts : [selected];
-      
-      document.getElementById('departments-container').innerHTML = filteredDepts.map(dept => {
-        const members = allMembersData.filter(m => m.department === dept);
-        return `
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-            <h4 class="font-bold text-emerald-400 mb-2">${dept === 'None' ? 'General Members (Non-Workers)' : dept} (${members.length})</h4>
-            <ul class="space-y-1 text-sm text-slate-300 max-h-60 overflow-y-auto">
-              ${members.length ? members.map(m => `<li>• ${m.full_name} — <span class="text-xs text-slate-400">${m.mobile_number}</span></li>`).join('') : '<li class="text-slate-500">No members assigned</li>'}
-            </ul>
+    // MEMBER DETAILS / EDIT / DELETE MODAL
+    function openMemberModal(memberId) {
+      const m = allMembersData.find(x => x.id === memberId);
+      if (!m) return;
+      document.getElementById('modal-member-id').value = m.id;
+      document.getElementById('modal-edit-name').value = m.full_name;
+      document.getElementById('modal-edit-mobile').value = m.mobile_number;
+      document.getElementById('modal-edit-dept').value = m.department;
+      document.getElementById('modal-edit-address').value = m.house_address || '';
+      document.getElementById('member-detail-modal').classList.remove('hidden-section');
+    }
+
+    function closeMemberModal() {
+      document.getElementById('member-detail-modal').classList.add('hidden-section');
+    }
+
+    async function saveEditedMember() {
+      const id = document.getElementById('modal-member-id').value;
+      const updates = {
+        full_name: document.getElementById('modal-edit-name').value.trim(),
+        mobile_number: document.getElementById('modal-edit-mobile').value.trim(),
+        department: document.getElementById('modal-edit-dept').value,
+        is_worker: document.getElementById('modal-edit-dept').value !== 'None' ? 'YES' : 'NO',
+        house_address: document.getElementById('modal-edit-address').value.trim()
+      };
+      await supabaseClient.from('members').update(updates).eq('id', id);
+      closeMemberModal();
+    }
+
+    async function deleteMemberRecord() {
+      const id = document.getElementById('modal-member-id').value;
+      if (!confirm('Are you sure you want to permanently delete this member?')) return;
+      await supabaseClient.from('members').delete().eq('id', id);
+      closeMemberModal();
+    }
+
+    // PROJECT ANNOUNCEMENTS MODAL
+    function openProjectAnnouncementsModal() {
+      const list = allAnnouncementsData.filter(a => a.fellowship === activeAdminGroup);
+      document.getElementById('ann-modal-title').textContent = `📢 ${activeAdminGroup} — Project Announcements`;
+      document.getElementById('ann-modal-list').innerHTML = list.length
+        ? list.map(a => `
+            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl">
+              <div class="flex items-center justify-between mb-1">
+                <h4 class="font-bold text-indigo-300 text-sm">${a.title}</h4>
+                <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">${a.announcement_date}</span>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">${a.details}</p>
+            </div>
+          `).join('')
+        : '<p class="text-xs text-slate-500">No project announcements posted yet.</p>';
+      document.getElementById('announcements-modal').classList.remove('hidden-section');
+    }
+
+    function closeAnnouncementsModal() {
+      document.getElementById('announcements-modal').classList.add('hidden-section');
+    }
+
+    // 8. ADMIN DEPARTMENT DASHBOARD
+    function openAdminDepartmentDashboard(deptName) {
+      activeAdminDepartment = deptName;
+      closeAdminSidebar();
+      hideAllAdminViews();
+      document.getElementById('admin-topbar-title').textContent = deptName;
+      document.getElementById('dept-dash-heading').textContent = `${deptName} Dashboard`;
+      document.getElementById('admin-view-department-dashboard').classList.remove('hidden-section');
+      renderAdminDepartmentCards();
+    }
+
+    function renderAdminDepartmentCards() {
+      const recs = allFinancialsData.filter(f => f.entity_type === 'DEPARTMENT' && f.entity_name === activeAdminDepartment);
+      const sumCat = (cat) => recs.filter(r => r.category === cat).reduce((acc, r) => acc + Number(r.amount), 0);
+
+      const dues = sumCat('DUES');
+      const expenses = sumCat('EXPENSES');
+      const balance = dues - expenses;
+
+      document.getElementById('dept-card-dues').textContent = formatNaira(dues);
+      document.getElementById('dept-card-expenses').textContent = formatNaira(expenses);
+      document.getElementById('dept-card-balance').textContent = formatNaira(balance);
+
+      const members = allMembersData.filter(m => m.department === activeAdminDepartment);
+      document.getElementById('dept-members-list').innerHTML = members.length
+        ? members.map(m => `
+            <div class="py-3 flex items-center justify-between">
+              <div>
+                <p class="font-bold text-white text-sm">${m.full_name}</p>
+                <p class="text-xs text-slate-400">${m.mobile_number} • ${m.fellowship}</p>
+              </div>
+              <button onclick="openMemberModal('${m.id}')" class="text-xs text-blue-400 hover:underline">Manage</button>
+            </div>
+          `).join('')
+        : '<p class="py-4 text-xs text-slate-500">No workers assigned to this department yet.</p>';
+    }
+
+    // 9. ASSIGN GROUP LEADERS VIEW
+    function openAssignGroupLeaderView(groupName) {
+      activeLeaderAssignGroup = groupName;
+      closeAdminSidebar();
+      hideAllAdminViews();
+      document.getElementById('admin-topbar-title').textContent = 'Assign Group Leaders';
+      document.getElementById('assign-leader-heading').textContent = `Assign Group Leaders — ${groupName}`;
+      document.getElementById('leader-search-input').value = '';
+      document.getElementById('assign-leader-alert').classList.add('hidden-section');
+      document.getElementById('admin-view-assign-leader').classList.remove('hidden-section');
+      searchMembersForLeader();
+    }
+
+    function searchMembersForLeader() {
+      const q = document.getElementById('leader-search-input').value.trim().toLowerCase();
+      const matches = allMembersData.filter(m => m.fellowship === activeLeaderAssignGroup && m.full_name.toLowerCase().includes(q));
+      const container = document.getElementById('leader-search-results');
+
+      if (!matches.length) {
+        container.innerHTML = `<p class="text-xs text-slate-500">No members found in ${activeLeaderAssignGroup}.</p>`;
+        return;
+      }
+
+      container.innerHTML = matches.map(m => `
+        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="font-bold text-white text-sm">${m.full_name}</p>
+              <p class="text-xs text-slate-400">${m.mobile_number} • Status: ${m.is_group_leader ? '<span class="text-amber-400 font-bold">👑 Group Leader</span>' : 'Regular Member'}</p>
+            </div>
           </div>
-        `;
-      }).join('');
+          <div class="flex gap-2">
+            <select id="leader-action-${m.id}" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white">
+              <option value="true" ${m.is_group_leader ? 'selected' : ''}>Make Group Leader</option>
+              <option value="false" ${!m.is_group_leader ? 'selected' : ''}>Remove as Group Leader</option>
+            </select>
+            <button onclick="saveGroupLeaderStatus('${m.id}')" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold px-4 py-2 rounded-lg text-xs">
+              Save
+            </button>
+          </div>
+        </div>
+      `).join('');
     }
 
-    function switchAdminView(view) {
-      ['overview', 'fellowships', 'departments'].forEach(v => {
-        document.getElementById(`admin-view-${v}`).classList.add('hidden-section');
-        document.getElementById(`nav-${v}`).className = 'w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white';
-      });
-      document.getElementById(`admin-view-${view}`).classList.remove('hidden-section');
-      document.getElementById(`nav-${view}`).className = 'w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white';
+    async function saveGroupLeaderStatus(memberId) {
+      const makeLeader = document.getElementById(`leader-action-${memberId}`).value === 'true';
+      const { error } = await supabaseClient.from('members').update({ is_group_leader: makeLeader }).eq('id', memberId);
+      const alertBox = document.getElementById('assign-leader-alert');
+      alertBox.classList.remove('hidden-section');
+      if (error) {
+        alertBox.className = 'mb-4 p-3 rounded-xl text-xs font-semibold text-center bg-red-950 text-red-300';
+        alertBox.textContent = 'Error saving leader status: ' + error.message;
+      } else {
+        alertBox.className = 'mb-4 p-3 rounded-xl text-xs font-semibold text-center bg-emerald-950 text-emerald-300';
+        alertBox.textContent = makeLeader
+          ? '✓ Member promoted to Group Leader! Their dashboard updated in real time.'
+          : '✓ Member removed as Group Leader.';
+      }
     }
 
+    // 10. LOGOUT
     function logout() {
+      currentLoggedInMember = null;
+      closeAdminSidebar();
+      closeGLSidebar();
+      closeExcoSidebar();
       document.getElementById('member-dashboard').classList.add('hidden-section');
+      document.getElementById('group-leader-dashboard').classList.add('hidden-section');
+      document.getElementById('exco-dashboard').classList.add('hidden-section');
       document.getElementById('admin-dashboard').classList.add('hidden-section');
       document.getElementById('auth-container').classList.remove('hidden-section');
       switchAuthTab('member-login');
