@@ -621,13 +621,25 @@
                                     <a href="#" onclick="switchAdminView('youth-fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Youth Fellowship</a>
                                 </div>
                             </div>
-                            <!-- DEPARTMENTS DROPDOWN -->
+                            <!-- DEPARTMENTS DROPDOWN (WITH ASSIGN LEADERS) -->
                             <div>
                                 <button onclick="toggleDropdown('deptDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                     <span class="flex items-center space-x-3"><i class="fa-solid fa-building-shield w-5"></i><span>Departments</span></span>
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
-                                <div id="deptDropdown" class="hidden pl-8 space-y-1">
+                                <div id="deptDropdown" class="hidden pl-6 space-y-1">
+                                    <!-- ASSIGN LEADERS NESTED DROPDOWN -->
+                                    <div>
+                                        <button onclick="toggleDropdown('assignLeadersDropdown')" class="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-white/5 text-amber-400 text-xs font-semibold transition">
+                                            <span class="flex items-center space-x-2"><i class="fa-solid fa-user-shield"></i><span>Assign Leaders</span></span>
+                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                        </button>
+                                        <div id="assignLeadersDropdown" class="hidden pl-6 space-y-1">
+                                            <a href="#" onclick="switchAdminView('assign-men')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Men Fellowship</a>
+                                            <a href="#" onclick="switchAdminView('assign-women')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Women Fellowship</a>
+                                            <a href="#" onclick="switchAdminView('assign-youth')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Youth Fellowship</a>
+                                        </div>
+                                    </div>
                                     <a href="#" onclick="switchAdminView('dept-security')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Security</a>
                                     <a href="#" onclick="switchAdminView('dept-usher')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Usher</a>
                                     <a href="#" onclick="switchAdminView('dept-sanitation')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Sanitation</a>
@@ -672,7 +684,6 @@
         }
 
         // Sidebar & Click-Outside Logic
-        const sidebar = document.getElementById('sidebar');
         function toggleSidebar() {
             const sb = document.getElementById('sidebar');
             if (sb) sb.classList.toggle('-translate-x-full');
@@ -690,7 +701,7 @@
             if (el) el.classList.toggle('hidden');
         }
 
-        // Admin View Switcher (Cards set to 2 by 2 side-by-side: grid-cols-2)
+        // Admin View Switcher
         function switchAdminView(view) {
             const main = document.getElementById('mainAdminContent');
             const title = document.getElementById('pageTitle');
@@ -732,21 +743,11 @@
                 `;
                 initChart();
                 loadAdminMemberCount();
-            } else if (view === 'men-fellowship' || view === 'women-fellowship' || view === 'youth-fellowship') {
-                const name = view === 'men-fellowship' ? 'Men Fellowship' : view === 'women-fellowship' ? 'Women Fellowship' : 'Youth Fellowship';
-                title.innerText = name + " Dashboard";
-                main.innerHTML = `
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5"><p class="text-xs sm:text-sm text-gray-400">Total Dues</p><h3 class="text-lg sm:text-2xl font-bold mt-1 text-blue-400">₦310,000</h3></div>
-                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5"><p class="text-xs sm:text-sm text-gray-400">Total Arrears</p><h3 class="text-lg sm:text-2xl font-bold mt-1 text-red-400">₦45,000</h3></div>
-                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5"><p class="text-xs sm:text-sm text-gray-400">Total Balance</p><h3 class="text-lg sm:text-2xl font-bold mt-1 text-emerald-400">₦215,000</h3></div>
-                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5"><p class="text-xs sm:text-sm text-gray-400">Total Expenses</p><h3 class="text-lg sm:text-2xl font-bold mt-1 text-amber-400">₦75,000</h3></div>
-                    </div>
-                    <div class="card-bg p-6 rounded-xl border border-white/5 mt-6">
-                        <h3 class="text-base font-bold mb-4">${name} Member Directory</h3>
-                        <input type="text" placeholder="Search ${name} members..." class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                    </div>
-                `;
+            } else if (view.startsWith('assign-')) {
+                const fellowshipKey = view.replace('assign-', '');
+                const fellowshipName = fellowshipKey === 'men' ? 'Men Fellowship' : fellowshipKey === 'women' ? 'Women Fellowship' : 'Youth Fellowship';
+                title.innerText = `Assign Group Leader – ${fellowshipName}`;
+                renderAssignLeaderView(fellowshipName);
             } else {
                 title.innerText = view.replace('-', ' ').toUpperCase();
                 main.innerHTML = `
@@ -756,6 +757,122 @@
                         <p class="text-gray-400 text-xs">Fully secured under Supabase RLS policies.</p>
                     </div>
                 `;
+            }
+        }
+
+        // --- ASSIGN LEADERS DIRECTORY & SEARCH LOGIC ---
+        async function renderAssignLeaderView(fellowshipName) {
+            const main = document.getElementById('mainAdminContent');
+            main.innerHTML = `
+                <div class="card-bg p-6 rounded-xl border border-white/5 space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <div>
+                            <h3 class="text-base font-bold text-amber-400">${fellowshipName} Member Directory</h3>
+                            <p class="text-xs text-gray-400">Search member names, click to assign or remove Group Leader role.</p>
+                        </div>
+                        <input type="text" id="leaderSearchInput" oninput="filterLeaderSearch()" placeholder="Search member name..." class="w-full sm:w-72 bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div id="leaderListContainer" class="divide-y divide-white/5 overflow-x-auto">
+                        <p class="py-4 text-center text-gray-400 text-xs">Loading members...</p>
+                    </div>
+                </div>
+            `;
+
+            const { data: fellowshipRow } = await supabaseClient.from('fellowships').select('id').eq('name', fellowshipName).single();
+            if (!fellowshipRow) {
+                document.getElementById('leaderListContainer').innerHTML = `<p class="py-4 text-center text-gray-400 text-xs">Fellowship not found in database.</p>`;
+                return;
+            }
+
+            const { data: memberLinks } = await supabaseClient
+                .from('member_fellowships')
+                .select('member_id, members(*), group_leaders(is_active)')
+                .eq('fellowship_id', fellowshipRow.id);
+
+            window.currentFellowshipMembers = (memberLinks || []).map(ml => ({
+                ...ml.members,
+                isGroupLeader: (ml.members.group_leaders || []).some(gl => gl.is_active)
+            }));
+
+            displayMemberList(window.currentFellowshipMembers, "");
+        }
+
+        function displayMemberList(members, searchQuery) {
+            const container = document.getElementById('leaderListContainer');
+            if (!container) return;
+
+            if (members.length === 0) {
+                container.innerHTML = `<p class="py-4 text-center text-gray-400 text-xs">No members found in this fellowship.</p>`;
+                return;
+            }
+
+            container.innerHTML = members.map(m => {
+                const nameMatch = searchQuery && m.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+                return `
+                    <div class="py-3 px-4 flex items-center justify-between hover:bg-white/5 transition rounded-lg ${nameMatch ? 'bg-amber-500/10 border border-amber-500/30' : ''}">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-xs">
+                                ${m.full_name.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold ${nameMatch ? 'text-amber-300 font-bold' : 'text-white'}">${m.full_name}</h4>
+                                <p class="text-[11px] text-gray-400">${m.member_id} • Phone: ${m.phone} ${m.isGroupLeader ? '• <span class="text-amber-400 font-semibold">Group Leader</span>' : ''}</p>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <button onclick="toggleLeaderDropdown('${m.id}')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                Action <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                            </button>
+                            <div id="actionDropdown-${m.id}" class="hidden absolute right-0 mt-2 w-48 card-bg border border-white/10 rounded-xl shadow-2xl z-50 p-2 space-y-1">
+                                <button onclick="saveGroupLeaderRole('${m.id}', true)" class="w-full text-left px-3 py-2 text-xs rounded hover:bg-emerald-500/20 text-emerald-400 font-medium transition">
+                                    <i class="fa-solid fa-crown mr-1.5"></i> Group Leader
+                                </button>
+                                <button onclick="saveGroupLeaderRole('${m.id}', false)" class="w-full text-left px-3 py-2 text-xs rounded hover:bg-red-500/20 text-red-400 font-medium transition">
+                                    <i class="fa-solid fa-user-minus mr-1.5"></i> Remove as Leader
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterLeaderSearch() {
+            const query = document.getElementById('leaderSearchInput').value.trim();
+            const filtered = (window.currentFellowshipMembers || []).filter(m => m.full_name.toLowerCase().includes(query.toLowerCase()));
+            displayMemberList(filtered, query);
+        }
+
+        function toggleLeaderDropdown(memberId) {
+            // Close all other dropdowns
+            document.querySelectorAll('[id^="actionDropdown-"]').forEach(el => {
+                if (el.id !== `actionDropdown-${memberId}`) el.classList.add('hidden');
+            });
+            const drop = document.getElementById(`actionDropdown-${memberId}`);
+            if (drop) drop.classList.toggle('hidden');
+        }
+
+        async function saveGroupLeaderRole(memberId, makeLeader) {
+            try {
+                if (makeLeader) {
+                    // Check fellowship ID of member
+                    const { data: mf } = await supabaseClient.from('member_fellowships').select('fellowship_id').eq('member_id', memberId).single();
+                    if (mf) {
+                        await supabaseClient.from('group_leaders').upsert([{
+                            member_id: memberId,
+                            fellowship_id: mf.fellowship_id,
+                            is_active: true
+                        }], { onConflict: 'member_id,fellowship_id' });
+                    }
+                    alert('Successfully assigned as Group Leader! The Member Dashboard will now display the Group Leader button.');
+                } else {
+                    await supabaseClient.from('group_leaders').update({ is_active: false }).eq('member_id', memberId);
+                    alert('Successfully removed Group Leader role.');
+                }
+                // Refresh list
+                switchAdminView('assign-men');
+            } catch (err) {
+                alert('Error updating leader status: ' + err.message);
             }
         }
 
@@ -782,7 +899,7 @@
             });
         }
 
-        // --- 6. MEMBER DASHBOARD (Cards set to 2 by 2 side-by-side: grid-cols-2) ---
+        // --- 6. MEMBER DASHBOARD & GROUP LEADER DASHBOARD ---
         function renderMemberDashboard() {
             if (loadingTimer) clearTimeout(loadingTimer);
             const m = activeMemberSession;
@@ -807,12 +924,16 @@
                         </button>
                     </header>
                     <main class="flex-1 overflow-y-auto p-6 space-y-6">
-                        ${(isGroupLeader || activeExco) ? `
-                        <div class="flex flex-wrap justify-center gap-3">
-                            ${isGroupLeader ? `<button onclick="alert('Opening Group Leader Dashboard')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg"><i class="fa-solid fa-crown mr-1.5 text-amber-300"></i> GROUP LEADER DASHBOARD</button>` : ''}
-                            ${activeExco ? `<button onclick="alert('Opening ${activeExco.role_type} Executive Dashboard')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg"><i class="fa-solid fa-briefcase mr-1.5"></i> EXCO – ${activeExco.role_type.toUpperCase()}</button>` : ''}
+                        <!-- AUTOMATICALLY SHOWN GROUP LEADER BUTTON AT THE TOP CENTER -->
+                        ${isGroupLeader ? `
+                        <div class="flex justify-center">
+                            <button onclick="renderGroupLeaderDashboard()" class="bg-amber-600 hover:bg-amber-700 text-black font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(245,158,11,0.4)] transition flex items-center space-x-2 border border-amber-300">
+                                <i class="fa-solid fa-crown text-sm"></i>
+                                <span>OPEN GROUP LEADER DASHBOARD</span>
+                            </button>
                         </div>
                         ` : ''}
+
                         <div class="grid grid-cols-2 gap-4">
                             <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
                                 <p class="text-xs sm:text-sm text-gray-400">Fellowship & Unit</p>
@@ -841,6 +962,56 @@
                                 <p><span class="text-gray-400">State of Origin:</span> ${m.state}</p>
                                 <p><span class="text-gray-400">Status:</span> <span class="text-emerald-400 font-semibold">${m.membership_status}</span></p>
                             </div>
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        // --- GROUP LEADER DASHBOARD (Similar to Admin Dashboard) ---
+        function renderGroupLeaderDashboard() {
+            const m = activeMemberSession;
+            const fellowshipName = m?.member_fellowships?.[0]?.fellowships?.name || 'Fellowship';
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex flex-col h-screen overflow-hidden">
+                    <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
+                            <div>
+                                <h2 class="text-sm font-bold text-amber-400">${fellowshipName.toUpperCase()} – GROUP LEADER PORTAL</h2>
+                                <p class="text-xs text-gray-400">Leader: ${m.full_name}</p>
+                            </div>
+                        </div>
+                        <button onclick="renderMemberDashboard()" class="text-xs text-blue-400 hover:underline">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Back to Member Dashboard
+                        </button>
+                    </header>
+                    <main class="flex-1 overflow-y-auto p-6 space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                                <p class="text-xs sm:text-sm text-gray-400">Fellowship Members</p>
+                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-emerald-400">Active</h3>
+                            </div>
+                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                                <p class="text-xs sm:text-sm text-gray-400">Fellowship Dues</p>
+                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-blue-400">₦150,000</h3>
+                            </div>
+                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                                <p class="text-xs sm:text-sm text-gray-400">Total Arrears</p>
+                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-red-400">₦12,000</h3>
+                            </div>
+                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                                <p class="text-xs sm:text-sm text-gray-400">Fellowship Balance</p>
+                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-purple-400">₦138,000</h3>
+                            </div>
+                        </div>
+                        <div class="card-bg p-6 rounded-xl border border-white/5">
+                            <h3 class="text-base font-bold mb-3">${fellowshipName} Overview & Quick Actions</h3>
+                            <p class="text-xs text-gray-400 mb-4">Manage attendance, view member contributions, and coordinate group activities for ${fellowshipName}.</p>
+                            <button onclick="alert('Group Leader attendance register export initiated.')" class="bg-amber-600 hover:bg-amber-700 text-black font-semibold px-4 py-2 rounded-lg text-xs transition">
+                                Export Fellowship Register
+                            </button>
                         </div>
                     </main>
                 </div>
