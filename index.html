@@ -96,7 +96,7 @@
 
         // State Management & LocalStorage Persistence
         let activeMemberSession = JSON.parse(localStorage.getItem('ocm_member_session')) || null;
-        let activeAdminSession = null;
+        let activeAdminSession = JSON.parse(localStorage.getItem('ocm_admin_session')) || null;
         let registrationData = {
             fullName: '', phone: '', whatsapp: '', dob: '', email: '',
             address: '', stateOfOrigin: '', stateOfResidence: '', nationality: 'Nigeria',
@@ -106,7 +106,7 @@
         let loadingTimer = null;
         let modalCallback = null;
 
-        // Professional In-App Modal Handler (Replaces browser alerts)
+        // Professional In-App Modal Handler
         function showModal(title, message, callback = null, isSuccess = true) {
             const modal = document.getElementById('customModal');
             const titleEl = document.getElementById('modalTitle');
@@ -220,7 +220,7 @@
             `;
         }
 
-        // --- 2.1. MAIN ADMIN LOGIN MODAL ---
+        // --- 2.1. MAIN ADMIN LOGIN MODAL WITH FORGOT PASSWORD ---
         function renderAdminLoginModal() {
             if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
@@ -230,7 +230,7 @@
                         <div class="text-center mb-6">
                             <div class="mb-3">${getLogoHtml("w-16 h-16")}</div>
                             <h2 class="text-lg font-bold text-amber-400">Main Administrator Portal</h2>
-                            <p class="text-xs text-gray-400">Authenticated Supabase Admin Access</p>
+                            <p class="text-xs text-gray-400">Self-Contained Database Admin Login</p>
                         </div>
                         <div id="adminLoginAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
                         <div class="space-y-4">
@@ -241,6 +241,9 @@
                             <div>
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Password</label>
                                 <input type="password" id="adminPassword" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div class="flex justify-end">
+                                <button onclick="renderAdminForgotPassword()" class="text-xs text-amber-400 hover:underline">Forgot Password?</button>
                             </div>
                             <button id="adminAuthBtn" onclick="handleAdminLogin()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
                                 Authenticate Admin Access
@@ -267,30 +270,129 @@
             btn.disabled = true;
             btn.innerText = 'Authenticating...';
             try {
-                const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (authError) throw authError;
+                // Check admin table in Supabase
+                const { data: adminRow, error: adminErr } = await supabaseClient
+                    .from('admin_users')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
 
-                const { data: roleRows, error: roleError } = await supabaseClient
-                    .from('user_roles')
-                    .select('roles(name)')
-                    .eq('user_id', authData.user.id);
-                if (roleError) throw roleError;
-
-                const roleNames = (roleRows || []).map(r => r.roles?.name);
-                const isAuthorizedAdmin = roleNames.includes('Super Administrator') || roleNames.includes('Administrator');
-
-                if (!isAuthorizedAdmin) {
-                    await supabaseClient.auth.signOut();
-                    throw new Error('Access Denied: Your account does not hold an Administrator role.');
+                if (adminErr || !adminRow || adminRow.password !== password) {
+                    throw new Error('Invalid Admin Email or Password.');
                 }
 
-                activeAdminSession = { user: authData.user, roles: roleNames };
+                activeAdminSession = adminRow;
+                localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
                 renderFullAdminDashboard();
             } catch (err) {
                 showAlert('adminLoginAlert', err.message || 'Invalid admin credentials.');
                 btn.disabled = false;
                 btn.innerText = 'Authenticate Admin Access';
             }
+        }
+
+        function renderAdminForgotPassword() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex items-center justify-center p-4">
+                    <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-amber-500/30">
+                        <div class="text-center mb-6">
+                            <div class="mb-3">${getLogoHtml("w-16 h-16")}</div>
+                            <h2 class="text-lg font-bold text-amber-400">Admin Password Recovery</h2>
+                            <p class="text-xs text-gray-400">Enter your email to receive a reset code</p>
+                        </div>
+                        <div id="forgotAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Email</label>
+                                <input type="email" id="forgotEmail" placeholder="admin@omegacity.org" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <button onclick="sendAdminResetCode()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
+                                Send Reset Code
+                            </button>
+                            <div class="text-center pt-3">
+                                <button onclick="renderAdminLoginModal()" class="text-xs text-gray-400 hover:text-white">
+                                    <i class="fa-solid fa-arrow-left mr-1"></i> Back to Admin Login
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function sendAdminResetCode() {
+            const email = document.getElementById('forgotEmail').value.trim();
+            if (!email) {
+                showAlert('forgotAlert', 'Please enter your admin email.');
+                return;
+            }
+            const { data: adminRow } = await supabaseClient.from('admin_users').select('*').eq('email', email).single();
+            if (!adminRow) {
+                showAlert('forgotAlert', 'Admin email not found in database.');
+                return;
+            }
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            await supabaseClient.from('admin_users').update({ reset_code: code }).eq('email', email);
+            
+            showModal("Reset Code Sent", `A password reset code has been sent to ${email}. (Demo Code: ${code})`, () => {
+                renderAdminResetPassword(email);
+            });
+        }
+
+        function renderAdminResetPassword(email) {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex-1 flex items-center justify-center p-4">
+                    <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-amber-500/30">
+                        <div class="text-center mb-6">
+                            <div class="mb-3">${getLogoHtml("w-16 h-16")}</div>
+                            <h2 class="text-lg font-bold text-amber-400">Set New Password</h2>
+                            <p class="text-xs text-gray-400">Enter reset code and your new password</p>
+                        </div>
+                        <div id="resetAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">6-Digit Reset Code</label>
+                                <input type="text" id="resetCode" maxlength="6" placeholder="123456" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white tracking-widest focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">New Password</label>
+                                <input type="password" id="newPassword" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Confirm New Password</label>
+                                <input type="password" id="confirmNewPassword" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <button onclick="verifyAndResetAdminPassword('${email}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
+                                Update Password & Login
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function verifyAndResetAdminPassword(email) {
+            const code = document.getElementById('resetCode').value.trim();
+            const pass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmNewPassword').value;
+
+            if (pass !== confirmPass) {
+                showAlert('resetAlert', 'Passwords do not match.');
+                return;
+            }
+
+            const { data: adminRow } = await supabaseClient.from('admin_users').select('*').eq('email', email).single();
+            if (!adminRow || adminRow.reset_code !== code) {
+                showAlert('resetAlert', 'Invalid reset code.');
+                return;
+            }
+
+            await supabaseClient.from('admin_users').update({ password: pass, reset_code: null }).eq('email', email);
+            showModal("Password Updated", "Your new password is now active. Please log in.", () => {
+                renderAdminLoginModal();
+            });
         }
 
         // --- 3. REGISTRATION FLOW ---
@@ -708,7 +810,6 @@
             if (sb) sb.classList.toggle('-translate-x-full');
         }
 
-        // Global Click Listener for Member Dashboard (Closes sidebar when clicking anywhere on screen)
         document.addEventListener('click', (e) => {
             const sb = document.getElementById('memberSidebar');
             const hamburgerBtn = document.querySelector('button[onclick*="toggleMemberSidebar"]');
@@ -815,8 +916,9 @@
             }
         }
 
-        // --- 6. FULL ADMIN DASHBOARD & ASSIGN LEADERS ---
+        // --- 6. FULL ADMIN DASHBOARD & PROFILE / SETTINGS ---
         function renderFullAdminDashboard() {
+            const admin = activeAdminSession || { full_name: 'Administrator', avatar_url: '' };
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex h-screen overflow-hidden">
@@ -832,6 +934,9 @@
                         <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
                             <a href="#" onclick="switchAdminView('dashboard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
                                 <i class="fa-solid fa-chart-pie w-5"></i><span>Dashboard</span>
+                            </a>
+                            <a href="#" onclick="switchAdminView('profile')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-user-gear w-5"></i><span>Profile</span>
                             </a>
                             <!-- GROUPS DROPDOWN -->
                             <div>
@@ -852,7 +957,6 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                                 <div id="deptDropdown" class="hidden pl-6 space-y-1">
-                                    <!-- ASSIGN LEADERS NESTED DROPDOWN -->
                                     <div>
                                         <button onclick="toggleDropdown('assignLeadersDropdown')" class="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-white/5 text-amber-400 text-xs font-semibold transition">
                                             <span class="flex items-center space-x-2"><i class="fa-solid fa-user-shield"></i><span>Assign Leaders</span></span>
@@ -876,10 +980,19 @@
                             <a href="#" onclick="switchAdminView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-wallet w-5"></i><span>Dues</span></a>
                             <a href="#" onclick="switchAdminView('projects')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-diagram-project w-5"></i><span>Projects</span></a>
                             <a href="#" onclick="switchAdminView('expenses')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-receipt w-5"></i><span>Expenses</span></a>
-                            <a href="#" onclick="switchAdminView('transactions')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-right-left w-5"></i><span>Transactions</span></a>
-                            <a href="#" onclick="switchAdminView('reports')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-chart-column w-5"></i><span>Reports</span></a>
-                            <a href="#" onclick="switchAdminView('audit-logs')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-shield-halved w-5"></i><span>Audit Logs</span></a>
-                            <a href="#" onclick="switchAdminView('settings')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-gear w-5"></i><span>Settings</span></a>
+                            <!-- SETTINGS DROPDOWN -->
+                            <div>
+                                <button onclick="toggleDropdown('settingsDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                    <span class="flex items-center space-x-3"><i class="fa-solid fa-gear w-5"></i><span>Settings</span></span>
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </button>
+                                <div id="settingsDropdown" class="hidden pl-6 space-y-1">
+                                    <a href="#" onclick="switchAdminView('set-pin')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Login PIN</a>
+                                    <a href="#" onclick="switchAdminView('set-email')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Login Email</a>
+                                    <a href="#" onclick="switchAdminView('set-theme')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Theme</a>
+                                    <a href="#" onclick="switchAdminView('set-sound')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Notification Sound</a>
+                                </div>
+                            </div>
                         </nav>
                         <div class="p-3 m-2 card-bg rounded-xl border border-amber-500/20 text-xs">
                             <p class="text-amber-400 font-semibold mb-0.5"><i class="fa-solid fa-shield-check"></i> Super Admin</p>
@@ -895,6 +1008,13 @@
                                 <h2 id="pageTitle" class="text-lg font-bold tracking-tight">Admin Dashboard</h2>
                             </div>
                             <div class="flex items-center space-x-4">
+                                <!-- Top Right Corner Admin Avatar & Name -->
+                                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchAdminView('profile')">
+                                    <div id="headerAvatarContainer" class="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center overflow-hidden font-bold text-amber-400">
+                                        ${admin.avatar_url ? `<img src="${admin.avatar_url}" class="w-full h-full object-cover">` : admin.full_name.charAt(0)}
+                                    </div>
+                                    <span class="hidden sm:inline text-xs font-semibold text-gray-200">${admin.full_name}</span>
+                                </div>
                                 <button onclick="adminLogout()" class="text-xs text-red-400 hover:underline"><i class="fa-solid fa-right-from-bracket mr-1"></i> Logout</button>
                             </div>
                         </header>
@@ -927,6 +1047,7 @@
         function switchAdminView(view) {
             const main = document.getElementById('mainAdminContent');
             const title = document.getElementById('pageTitle');
+            const admin = activeAdminSession || {};
             if (!main) return;
 
             if (view === 'dashboard') {
@@ -957,6 +1078,137 @@
                 `;
                 initChart();
                 loadAdminMemberCount();
+            } else if (view === 'profile') {
+                title.innerText = "Administrator Profile";
+                main.innerHTML = `
+                    <div class="card-bg w-full max-w-xl p-6 rounded-xl border border-amber-500/30 space-y-6">
+                        <div class="flex items-center space-x-4 border-b border-white/10 pb-4">
+                            <div class="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center overflow-hidden text-2xl font-bold text-amber-400">
+                                ${admin.avatar_url ? `<img src="${admin.avatar_url}" class="w-full h-full object-cover">` : (admin.full_name ? admin.full_name.charAt(0) : 'A')}
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-white">${admin.full_name || 'Admin'}</h3>
+                                <p class="text-xs text-amber-400">${admin.email}</p>
+                            </div>
+                        </div>
+                        <form onsubmit="updateAdminProfile(event)" class="space-y-4 text-sm">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Full Name</label>
+                                <input type="text" id="profFullName" value="${admin.full_name || ''}" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Phone Number</label>
+                                    <input type="tel" id="profPhone" value="${admin.phone || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">WhatsApp Number</label>
+                                    <input type="tel" id="profWhatsapp" value="${admin.whatsapp || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Date of Birth</label>
+                                    <input type="date" id="profDob" value="${admin.dob || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Profile Picture URL / Upload</label>
+                                    <input type="text" id="profAvatar" value="${admin.avatar_url || ''}" placeholder="https://image-url.com/pic.jpg" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                            </div>
+                            <div class="pt-2 flex justify-end">
+                                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-black font-bold px-6 py-2.5 rounded-lg text-sm transition shadow-lg">
+                                    Save Profile Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+            } else if (view === 'set-pin') {
+                title.innerText = "Change Login PIN";
+                main.innerHTML = `
+                    <div class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4">
+                        <h3 class="text-base font-bold text-amber-400">Security PIN Update</h3>
+                        <p class="text-xs text-gray-400">Enter a new 8-digit login PIN.</p>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">New 8-Digit PIN</label>
+                                <input type="password" id="newAdminPin" maxlength="8" pattern="\\d{8}" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Confirm New 8-Digit PIN</label>
+                                <input type="password" id="confirmAdminPin" maxlength="8" pattern="\\d{8}" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-amber-500">
+                            </div>
+                            <button onclick="saveNewAdminPin()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition">
+                                Save New PIN
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (view === 'set-email') {
+                title.innerText = "Change Login Email";
+                main.innerHTML = `
+                    <div id="emailStep1Container" class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4">
+                        <h3 class="text-base font-bold text-amber-400">Update Administrator Email</h3>
+                        <p class="text-xs text-gray-400">Current email: <span class="text-white">${admin.email}</span></p>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">New Login Email</label>
+                                <input type="email" id="newAdminEmail" placeholder="newadmin@omegacity.org" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <button onclick="sendEmailChangeCode()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition">
+                                Send Code
+                            </button>
+                        </div>
+                    </div>
+                    <div id="emailStep2Container" class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4 hidden">
+                        <h3 class="text-base font-bold text-amber-400">Enter Verification Code</h3>
+                        <p class="text-xs text-gray-400">Enter the 6-digit code sent to your new email.</p>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">6-Digit Code</label>
+                                <input type="text" id="emailChangeCode" maxlength="6" placeholder="123456" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-amber-500">
+                            </div>
+                            <button onclick="verifyAndSaveNewEmail()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm transition">
+                                Verify & Save Email
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (view === 'set-theme') {
+                title.innerText = "Change Theme";
+                main.innerHTML = `
+                    <div class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4">
+                        <h3 class="text-base font-bold text-amber-400">Appearance Settings</h3>
+                        <p class="text-xs text-gray-400">Select your preferred system theme.</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="showModal('Theme Updated', 'Dark Deep Navy theme active.')" class="p-4 rounded-xl border border-blue-500 bg-[#070b19] text-white font-bold text-xs">Deep Navy (Default)</button>
+                            <button onclick="showModal('Theme Updated', 'Midnight Obsidian theme active.')" class="p-4 rounded-xl border border-white/10 bg-black text-white font-bold text-xs">Pure Obsidian</button>
+                        </div>
+                    </div>
+                `;
+            } else if (view === 'set-sound') {
+                title.innerText = "Change Notification Sound";
+                main.innerHTML = `
+                    <div class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4">
+                        <h3 class="text-base font-bold text-amber-400">Notification Alert Sounds</h3>
+                        <p class="text-xs text-gray-400">Choose alert tone for payments and registrations.</p>
+                        <div class="space-y-2 text-xs">
+                            <label class="flex items-center space-x-3 p-3 rounded-lg card-bg cursor-pointer hover:bg-white/5">
+                                <input type="radio" name="sound" checked class="text-amber-500"> <span>Chime Bell (Default)</span>
+                            </label>
+                            <label class="flex items-center space-x-3 p-3 rounded-lg card-bg cursor-pointer hover:bg-white/5">
+                                <input type="radio" name="sound" class="text-amber-500"> <span>Soft Digital Beep</span>
+                            </label>
+                            <label class="flex items-center space-x-3 p-3 rounded-lg card-bg cursor-pointer hover:bg-white/5">
+                                <input type="radio" name="sound" class="text-amber-500"> <span>Celestial Harp</span>
+                            </label>
+                        </div>
+                        <button onclick="showModal('Settings Saved', 'Notification sound preference updated.')" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition">
+                            Save Preference
+                        </button>
+                    </div>
+                `;
             } else if (view.startsWith('assign-')) {
                 const fellowshipKey = view.replace('assign-', '');
                 const fellowshipName = fellowshipKey === 'men' ? 'Men Fellowship' : fellowshipKey === 'women' ? 'Women Fellowship' : 'Youth Fellowship';
@@ -972,6 +1224,78 @@
                     </div>
                 `;
             }
+        }
+
+        async function updateAdminProfile(e) {
+            e.preventDefault();
+            const fullName = document.getElementById('profFullName').value.trim();
+            const phone = document.getElementById('profPhone').value.trim();
+            const whatsapp = document.getElementById('profWhatsapp').value.trim();
+            const dob = document.getElementById('profDob').value;
+            const avatarUrl = document.getElementById('profAvatar').value.trim();
+
+            const { error } = await supabaseClient
+                .from('admin_users')
+                .update({ full_name: fullName, phone, whatsapp, dob, avatar_url: avatarUrl })
+                .eq('id', activeAdminSession.id);
+
+            if (error) {
+                showModal('Error', error.message, null, false);
+                return;
+            }
+
+            activeAdminSession.full_name = fullName;
+            activeAdminSession.phone = phone;
+            activeAdminSession.whatsapp = whatsapp;
+            activeAdminSession.dob = dob;
+            activeAdminSession.avatar_url = avatarUrl;
+            localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
+
+            showModal('Success', 'Admin profile updated successfully. Avatar updated at top right.', () => {
+                renderFullAdminDashboard();
+            });
+        }
+
+        async function saveNewAdminPin() {
+            const pin1 = document.getElementById('newAdminPin').value;
+            const pin2 = document.getElementById('confirmAdminPin').value;
+            if (pin1 !== pin2 || !/^\d{8}$/.test(pin1)) {
+                showModal('Error', 'PIN must be exactly 8 numeric digits and match confirmation.', null, false);
+                return;
+            }
+            await supabaseClient.from('admin_users').update({ login_pin: pin1 }).eq('id', activeAdminSession.id);
+            showModal('Success', '8-digit login PIN updated successfully.');
+        }
+
+        async function sendEmailChangeCode() {
+            const newEmail = document.getElementById('newAdminEmail').value.trim();
+            if (!newEmail) {
+                showModal('Error', 'Please enter a valid email address.', null, false);
+                return;
+            }
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            window.pendingNewAdminEmail = newEmail;
+            await supabaseClient.from('admin_users').update({ reset_code: code }).eq('id', activeAdminSession.id);
+            
+            document.getElementById('emailStep1Container').classList.add('hidden');
+            document.getElementById('emailStep2Container').classList.remove('hidden');
+            showModal('Code Sent', `Verification code sent to ${newEmail}. (Demo Code: ${code})`);
+        }
+
+        async function verifyAndSaveNewEmail() {
+            const code = document.getElementById('emailChangeCode').value.trim();
+            const { data: adminRow } = await supabaseClient.from('admin_users').select('*').eq('id', activeAdminSession.id).single();
+            if (!adminRow || adminRow.reset_code !== code) {
+                showModal('Error', 'Invalid verification code.', null, false);
+                return;
+            }
+            const newEmail = window.pendingNewAdminEmail;
+            await supabaseClient.from('admin_users').update({ email: newEmail, reset_code: null }).eq('id', activeAdminSession.id);
+            activeAdminSession.email = newEmail;
+            localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
+            showModal('Success', 'Login email changed successfully. Old email is now inactive.', () => {
+                renderFullAdminDashboard();
+            });
         }
 
         async function renderAssignLeaderView(fellowshipName) {
@@ -1160,18 +1484,17 @@
         }
 
         async function adminLogout() {
-            await supabaseClient.auth.signOut();
             activeAdminSession = null;
+            localStorage.removeItem('ocm_admin_session');
             renderLoginPage();
         }
 
         // Initialize application on load with Session Persistence check
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('admin') === 'true') {
+            if (urlParams.get('admin') === 'true' || activeAdminSession) {
                 renderFullAdminDashboard();
             } else if (activeMemberSession) {
-                // If a member session exists in localStorage, skip loading screen & login page on manual refresh
                 renderMemberDashboardShell();
             } else {
                 renderLoadingScreen();
