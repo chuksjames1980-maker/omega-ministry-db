@@ -690,7 +690,7 @@
             if (el) el.classList.toggle('hidden');
         }
 
-        // Admin View Switcher
+        // Admin View Switcher (Cards set to 2 by 2 side-by-side: grid-cols-2)
         function switchAdminView(view) {
             const main = document.getElementById('mainAdminContent');
             const title = document.getElementById('pageTitle');
@@ -699,30 +699,30 @@
             if (view === 'dashboard') {
                 title.innerText = "Admin Dashboard";
                 main.innerHTML = `
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        <div class="card-bg p-5 rounded-xl border border-white/5">
-                            <p class="text-sm text-gray-400">Total Members</p>
-                            <h3 id="statTotalMembers" class="text-2xl font-bold mt-1 text-emerald-400">Loading...</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Total Members</p>
+                            <h3 id="statTotalMembers" class="text-lg sm:text-2xl font-bold mt-1 text-emerald-400">Loading...</h3>
                         </div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5">
-                            <p class="text-sm text-gray-400">Total Dues Collected</p>
-                            <h3 class="text-2xl font-bold mt-1 text-blue-400">₦482,000</h3>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Total Dues Collected</p>
+                            <h3 class="text-lg sm:text-2xl font-bold mt-1 text-blue-400">₦482,000</h3>
                         </div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5">
-                            <p class="text-sm text-gray-400">Active Projects</p>
-                            <h3 class="text-2xl font-bold mt-1 text-purple-400">5</h3>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Active Projects</p>
+                            <h3 class="text-lg sm:text-2xl font-bold mt-1 text-purple-400">5</h3>
                         </div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5">
-                            <p class="text-sm text-gray-400">Dues Arrears</p>
-                            <h3 class="text-2xl font-bold mt-1 text-red-400">₦78,500</h3>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Dues Arrears</p>
+                            <h3 class="text-lg sm:text-2xl font-bold mt-1 text-red-400">₦78,500</h3>
                         </div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5">
-                            <p class="text-sm text-gray-400">Total Expenses</p>
-                            <h3 class="text-2xl font-bold mt-1 text-amber-400">₦125,000</h3>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Total Expenses</p>
+                            <h3 class="text-lg sm:text-2xl font-bold mt-1 text-amber-400">₦125,000</h3>
                         </div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5">
-                            <p class="text-sm text-gray-400">Current Balance</p>
-                            <h3 class="text-2xl font-bold mt-1 text-blue-500">₦356,500</h3>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Current Balance</p>
+                            <h3 class="text-lg sm:text-2xl font-bold mt-1 text-blue-500">₦356,500</h3>
                         </div>
                     </div>
                     <div class="card-bg p-6 rounded-xl border border-white/5">
@@ -736,11 +736,11 @@
                 const name = view === 'men-fellowship' ? 'Men Fellowship' : view === 'women-fellowship' ? 'Women Fellowship' : 'Youth Fellowship';
                 title.innerText = name + " Dashboard";
                 main.innerHTML = `
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                        <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Total Dues</p><h3 class="text-2xl font-bold mt-1 text-blue-400">₦310,000</h3></div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Total Arrears</p><h3 class="text-2xl font-bold mt-1 text-red-400">₦45,000</h3></div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Total Balance</p><h3 class="text-2xl font-bold mt-1 text-emerald-400">₦215,000</h3></div>
-                        <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Total Expenses</p><h3 class="text-2xl font-bold mt-1 text-amber-400">₦75,000</h3></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5"><p class="text-xs sm:text-sm text-gray-400">Total Dues</p><h3 class="text-lg sm:text-2xl font-bold mt-1 text-blue-400">₦310,000</h3></div>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5"><p class="text-xs sm:text-sm text-gray-400">Total Arrears</p><h3 class="text-lg sm:text-2xl font-bold mt-1 text-red-400">₦45,000</h3></div>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5"><p class="text-xs sm:text-sm text-gray-400">Total Balance</p><h3 class="text-lg sm:text-2xl font-bold mt-1 text-emerald-400">₦215,000</h3></div>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5"><p class="text-xs sm:text-sm text-gray-400">Total Expenses</p><h3 class="text-lg sm:text-2xl font-bold mt-1 text-amber-400">₦75,000</h3></div>
                     </div>
                     <div class="card-bg p-6 rounded-xl border border-white/5 mt-6">
                         <h3 class="text-base font-bold mb-4">${name} Member Directory</h3>
@@ -782,7 +782,7 @@
             });
         }
 
-        // --- 6. MEMBER DASHBOARD ---
+        // --- 6. MEMBER DASHBOARD (Cards set to 2 by 2 side-by-side: grid-cols-2) ---
         function renderMemberDashboard() {
             if (loadingTimer) clearTimeout(loadingTimer);
             const m = activeMemberSession;
@@ -813,10 +813,24 @@
                             ${activeExco ? `<button onclick="alert('Opening ${activeExco.role_type} Executive Dashboard')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg"><i class="fa-solid fa-briefcase mr-1.5"></i> EXCO – ${activeExco.role_type.toUpperCase()}</button>` : ''}
                         </div>
                         ` : ''}
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                            <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Fellowship & Unit</p><h3 class="text-base font-bold mt-1 text-blue-400">${fellowshipName}</h3><p class="text-xs text-gray-400 mt-1">Department: ${deptName}</p></div>
-                            <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Current Dues Paid</p><h3 class="text-2xl font-bold mt-1 text-emerald-400">₦0.00</h3></div>
-                            <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Dues Arrears</p><h3 class="text-2xl font-bold mt-1 text-red-400">₦0.00</h3></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                                <p class="text-xs sm:text-sm text-gray-400">Fellowship & Unit</p>
+                                <h3 class="text-sm sm:text-base font-bold mt-1 text-blue-400">${fellowshipName}</h3>
+                                <p class="text-[11px] text-gray-400 mt-1">Dept: ${deptName}</p>
+                            </div>
+                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                                <p class="text-xs sm:text-sm text-gray-400">Current Dues Paid</p>
+                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-emerald-400">₦0.00</h3>
+                            </div>
+                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                                <p class="text-xs sm:text-sm text-gray-400">Dues Arrears</p>
+                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-red-400">₦0.00</h3>
+                            </div>
+                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                                <p class="text-xs sm:text-sm text-gray-400">Account Status</p>
+                                <h3 class="text-sm sm:text-base font-bold mt-1 text-emerald-400">${m.membership_status}</h3>
+                            </div>
                         </div>
                         <div class="card-bg p-6 rounded-xl border border-white/5">
                             <h3 class="text-base font-bold mb-3">Member Profile Summary</h3>
