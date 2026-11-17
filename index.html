@@ -6,6 +6,8 @@
     <title>Omega City of Mercy Glorious Ministry Database</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Supabase JS Client SDK v2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Chart.js for Financial Charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome Icons -->
@@ -54,6 +56,16 @@
 
     <!-- JAVASCRIPT APPLICATION CONTROLLER -->
     <script>
+        // =========================================================================
+        // SUPABASE CONFIGURATION (REPLACE WITH YOUR PROJECT URL & ANON PUBLIC KEY)
+        // =========================================================================
+        const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_PUBLIC_KEY";
+
+        const supabaseClient = (SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL" && SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_PUBLIC_KEY")
+            ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+            : null;
+
         // Official Ministry Logo Emblem Component
         const getLogoHtml = (size = "w-24 h-24") => `
             <div class="${size} mx-auto rounded-full p-0.5 bg-gradient-to-tr from-yellow-600 via-amber-400 to-yellow-200 shadow-xl flex items-center justify-center relative overflow-hidden">
@@ -70,6 +82,9 @@
         `;
 
         // State Management
+        let activeMemberSession = null;
+        let activeAdminSession = null;
+
         let registrationData = {
             fullName: '', phone: '', whatsapp: '', dob: '', email: '',
             address: '', stateOfOrigin: '', stateOfResidence: '', nationality: 'Nigeria',
@@ -78,6 +93,15 @@
         };
 
         let loadingTimer = null;
+
+        // Simple client-side PIN SHA-256 helper so raw PINs are hashed before transmission
+        async function hashPin(pin) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode("OCM_SALT_" + pin);
+            const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+        }
 
         // --- 1. LOADING SCREEN VIEW (5 Seconds Countdown) ---
         function renderLoadingScreen() {
@@ -98,7 +122,6 @@
                 </div>
             `;
 
-            // 5-second automatic redirect to Login Page
             loadingTimer = setTimeout(() => {
                 renderLoginPage();
             }, 5000);
@@ -119,6 +142,8 @@
                             <p class="text-xs text-gray-400">"Keeping record clean and safe."</p>
                         </div>
 
+                        <div id="loginAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
+
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">Phone Number / Member ID</label>
@@ -126,10 +151,10 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">4-Digit PIN</label>
-                                <input type="password" id="loginPin" maxlength="4" placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white tracking-widest focus:outline-none focus:border-blue-500">
+                                <input type="password" id="loginPin" maxlength="4" inputmode="numeric" placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white tracking-widest focus:outline-none focus:border-blue-500">
                             </div>
 
-                            <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-lg">
+                            <button id="memberLoginBtn" onclick="handleMemberLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-lg">
                                 Member Login
                             </button>
 
@@ -137,7 +162,7 @@
                                 <button onclick="renderAdminLoginModal()" class="card-bg hover:bg-white/5 py-2.5 rounded-lg text-xs font-medium text-amber-400 border border-amber-500/30 transition flex items-center justify-center space-x-2">
                                     <i class="fa-solid fa-shield-halved"></i><span>Main Admin Login</span>
                                 </button>
-                                <button onclick="alert('Place finger on biometric scanner or device sensor.')" class="card-bg hover:bg-white/5 py-2.5 rounded-lg text-xs font-medium text-blue-400 border border-blue-500/30 transition flex items-center justify-center space-x-2">
+                                <button onclick="alert('Biometric Passkey login requires a registered WebAuthn credential on your profile.')" class="card-bg hover:bg-white/5 py-2.5 rounded-lg text-xs font-medium text-blue-400 border border-blue-500/30 transition flex items-center justify-center space-x-2">
                                     <i class="fa-solid fa-fingerprint"></i><span>Fingerprint Login</span>
                                 </button>
                             </div>
@@ -154,6 +179,14 @@
             `;
         }
 
+        function showAlert(elementId, message, isError = true) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.className = `mb-4 p-3 rounded-lg text-xs ${isError ? 'bg-red-500/10 border border-red-500/30 text-red-400' : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'}`;
+            el.innerText = message;
+            el.classList.remove('hidden');
+        }
+
         // --- 2.1. MAIN ADMIN LOGIN MODAL / VIEW ---
         function renderAdminLoginModal() {
             if (loadingTimer) clearTimeout(loadingTimer);
@@ -166,20 +199,22 @@
                                 ${getLogoHtml("w-16 h-16")}
                             </div>
                             <h2 class="text-lg font-bold text-amber-400">Main Administrator Portal</h2>
-                            <p class="text-xs text-gray-400">Secure Super Admin Access</p>
+                            <p class="text-xs text-gray-400">Authenticated Supabase Admin Access</p>
                         </div>
+
+                        <div id="adminLoginAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
 
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Username / Email</label>
-                                <input type="text" id="adminUser" placeholder="admin@omegacity.org" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Email</label>
+                                <input type="email" id="adminEmail" placeholder="admin@omegacity.org" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Security Password / PIN</label>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Password</label>
                                 <input type="password" id="adminPassword" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
                             </div>
 
-                            <button onclick="handleAdminLogin()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
+                            <button id="adminAuthBtn" onclick="handleAdminLogin()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
                                 Authenticate Admin Access
                             </button>
 
@@ -194,14 +229,68 @@
             `;
         }
 
-        function handleAdminLogin() {
-            const user = document.getElementById('adminUser').value;
-            const pass = document.getElementById('adminPassword').value;
-            if (!user || !pass) {
-                alert('Please enter admin credentials.');
+        async function handleAdminLogin() {
+            const email = document.getElementById('adminEmail').value.trim();
+            const password = document.getElementById('adminPassword').value;
+            const btn = document.getElementById('adminAuthBtn');
+
+            if (!email || !password) {
+                showAlert('adminLoginAlert', 'Please enter your Admin Email and Password.');
                 return;
             }
-            window.location.href = window.location.pathname + "?admin=true";
+
+            if (!supabaseClient) {
+                showAlert('adminLoginAlert', 'Supabase keys are not configured yet in index.html. Please add SUPABASE_URL and SUPABASE_ANON_KEY.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Authenticating...';
+
+            try {
+                // 1. Authenticate with Supabase Auth
+                const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (authError) throw authError;
+
+                // 2. Verify user has Super Administrator or Administrator role in user_roles
+                const { data: roleRows, error: roleError } = await supabaseClient
+                    .from('user_roles')
+                    .select('roles(name)')
+                    .eq('user_id', authData.user.id);
+
+                if (roleError) throw roleError;
+
+                const roleNames = (roleRows || []).map(r => r.roles?.name);
+                const isAuthorizedAdmin = roleNames.includes('Super Administrator') || roleNames.includes('Administrator');
+
+                if (!isAuthorizedAdmin) {
+                    await supabaseClient.auth.signOut();
+                    throw new Error('Access Denied: Your account does not hold an Administrator role.');
+                }
+
+                // 3. Log successful admin login to audit_logs
+                await supabaseClient.from('audit_logs').insert([{
+                    user_id: authData.user.id,
+                    action: 'ADMIN_LOGIN',
+                    target: email,
+                    metadata: { roles: roleNames }
+                }]);
+
+                activeAdminSession = {
+                    user: authData.user,
+                    roles: roleNames
+                };
+
+                renderFullAdminDashboard();
+            } catch (err) {
+                showAlert('adminLoginAlert', err.message || 'Invalid admin credentials.');
+                btn.disabled = false;
+                btn.innerText = 'Authenticate Admin Access';
+            }
         }
 
         // --- 3. MULTI-STEP REGISTRATION FLOW ---
@@ -217,7 +306,7 @@
                                     ${getLogoHtml("w-10 h-10")}
                                 </div>
                                 <div>
-                                    <h2 class="text-base font-bold text-blue-400">Member Registration (Step 1 of 5)</h2>
+                                    <h2 class="text-base font-bold text-blue-400">Member Registration (Step 1 of 4)</h2>
                                     <p class="text-xs text-gray-400">Personal Identification & Contact</p>
                                 </div>
                             </div>
@@ -281,15 +370,15 @@
 
         function saveRegStep1(e) {
             e.preventDefault();
-            registrationData.fullName = document.getElementById('regFullName').value;
-            registrationData.phone = document.getElementById('regPhone').value;
-            registrationData.whatsapp = document.getElementById('regWhatsapp').value;
+            registrationData.fullName = document.getElementById('regFullName').value.trim();
+            registrationData.phone = document.getElementById('regPhone').value.trim();
+            registrationData.whatsapp = document.getElementById('regWhatsapp').value.trim();
             registrationData.dob = document.getElementById('regDob').value;
-            registrationData.email = document.getElementById('regEmail').value;
-            registrationData.address = document.getElementById('regAddress').value;
-            registrationData.stateOfOrigin = document.getElementById('regStateOrigin').value;
-            registrationData.stateOfResidence = document.getElementById('regStateResidence').value;
-            registrationData.nationality = document.getElementById('regNationality').value;
+            registrationData.email = document.getElementById('regEmail').value.trim();
+            registrationData.address = document.getElementById('regAddress').value.trim();
+            registrationData.stateOfOrigin = document.getElementById('regStateOrigin').value.trim();
+            registrationData.stateOfResidence = document.getElementById('regStateResidence').value.trim();
+            registrationData.nationality = document.getElementById('regNationality').value.trim();
             renderRegistrationStep2();
         }
 
@@ -301,7 +390,7 @@
                     <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10">
                         <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
                             <div>
-                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 2 of 5)</h2>
+                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 2 of 4)</h2>
                                 <p class="text-xs text-gray-400">Gender & Fellowship Assignment</p>
                             </div>
                             <button onclick="renderRegistrationStep1()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-lg"></i></button>
@@ -363,7 +452,7 @@
                     <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10">
                         <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
                             <div>
-                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 3 of 5)</h2>
+                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 3 of 4)</h2>
                                 <p class="text-xs text-gray-400">Worker & Department Assignment</p>
                             </div>
                             <button onclick="renderRegistrationStep2()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-lg"></i></button>
@@ -405,11 +494,14 @@
 
         function toggleDeptDropdown(val) {
             const deptContainer = document.getElementById('deptContainer');
+            const deptSelect = document.getElementById('regDepartment');
             if (val === 'yes') {
                 deptContainer.classList.remove('hidden');
+                deptSelect.required = true;
             } else {
                 deptContainer.classList.add('hidden');
-                document.getElementById('regDepartment').value = '';
+                deptSelect.required = false;
+                deptSelect.value = '';
             }
         }
 
@@ -428,11 +520,13 @@
                     <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10">
                         <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
                             <div>
-                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 4 of 5)</h2>
+                                <h2 class="text-base font-bold text-blue-400">Member Registration (Step 4 of 4)</h2>
                                 <p class="text-xs text-gray-400">Join Date & Security PIN</p>
                             </div>
                             <button onclick="renderRegistrationStep3()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-lg"></i></button>
                         </div>
+
+                        <div id="regAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
 
                         <form onsubmit="saveRegStep4(event)" class="space-y-4 text-sm">
                             <div>
@@ -441,16 +535,16 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-300 mb-1">Enter 4-Digit PIN</label>
-                                <input type="password" id="regPin" maxlength="4" required placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-blue-500">
+                                <input type="password" id="regPin" maxlength="4" pattern="\\d{4}" inputmode="numeric" required placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-blue-500">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-300 mb-1">Confirm 4-Digit PIN</label>
-                                <input type="password" id="regConfirmPin" maxlength="4" required placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-blue-500">
+                                <input type="password" id="regConfirmPin" maxlength="4" pattern="\\d{4}" inputmode="numeric" required placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-blue-500">
                             </div>
 
                             <div class="pt-4 flex justify-between">
                                 <button type="button" onclick="renderRegistrationStep3()" class="card-bg hover:bg-white/5 text-gray-300 px-5 py-2.5 rounded-lg text-sm">Back</button>
-                                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition shadow-lg">
+                                <button id="regSubmitBtn" type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition shadow-lg">
                                     Save & Login <i class="fa-solid fa-check ml-1"></i>
                                 </button>
                             </div>
@@ -460,34 +554,159 @@
             `;
         }
 
-        function saveRegStep4(e) {
+        async function saveRegStep4(e) {
             e.preventDefault();
             const pin = document.getElementById('regPin').value;
             const confirmPin = document.getElementById('regConfirmPin').value;
+            const btn = document.getElementById('regSubmitBtn');
+
             if (pin !== confirmPin) {
-                alert('PIN numbers do not match! Please verify and re-enter.');
+                showAlert('regAlert', 'PIN numbers do not match! Please verify and re-enter.');
                 return;
             }
-            registrationData.dateJoined = document.getElementById('regDateJoined').value;
-            registrationData.pin = pin;
+            if (!/^\d{4}$/.test(pin)) {
+                showAlert('regAlert', 'PIN must be exactly 4 numeric digits.');
+                return;
+            }
 
-            alert(`Registration successful! Assigned to: ${registrationData.fellowship} (${registrationData.department !== 'None' ? registrationData.department + ' Dept' : 'General Worker'}). Redirecting to Login.`);
-            renderLoginPage();
+            if (!supabaseClient) {
+                showAlert('regAlert', 'Supabase keys are not configured yet in index.html.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-1"></i> Saving to Database...';
+
+            try {
+                registrationData.dateJoined = document.getElementById('regDateJoined').value;
+                const hashedPin = await hashPin(pin);
+                const generatedMemberId = `OCM/MEM/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`;
+                const formattedJoinDate = registrationData.dateJoined ? `${registrationData.dateJoined}-01` : new Date().toISOString().split('T')[0];
+
+                // 1. Insert Member Record into Supabase
+                const { data: insertedMember, error: memberError } = await supabaseClient
+                    .from('members')
+                    .insert([{
+                        member_id: generatedMemberId,
+                        full_name: registrationData.fullName,
+                        gender: registrationData.gender,
+                        phone: registrationData.phone,
+                        whatsapp: registrationData.whatsapp || null,
+                        email: registrationData.email || null,
+                        address: registrationData.address,
+                        date_of_birth: registrationData.dob,
+                        nationality: registrationData.nationality,
+                        state: registrationData.stateOfOrigin,
+                        residence_state: registrationData.stateOfResidence,
+                        is_married: registrationData.isMarried === 'yes',
+                        is_worker: registrationData.isWorker === 'yes',
+                        date_joined: formattedJoinDate,
+                        pin_code: hashedPin
+                    }])
+                    .select()
+                    .single();
+
+                if (memberError) throw memberError;
+
+                // 2. Link Member to Assigned Fellowship
+                const { data: fellowshipRow } = await supabaseClient
+                    .from('fellowships')
+                    .select('id')
+                    .eq('name', registrationData.fellowship)
+                    .single();
+
+                if (fellowshipRow) {
+                    await supabaseClient.from('member_fellowships').insert([{
+                        member_id: insertedMember.id,
+                        fellowship_id: fellowshipRow.id
+                    }]);
+                }
+
+                // 3. Link Member to Selected Department (if Worker = Yes)
+                if (registrationData.isWorker === 'yes' && registrationData.department !== 'None') {
+                    const { data: deptRow } = await supabaseClient
+                        .from('departments')
+                        .select('id')
+                        .eq('name', registrationData.department)
+                        .single();
+
+                    if (deptRow) {
+                        await supabaseClient.from('member_departments').insert([{
+                            member_id: insertedMember.id,
+                            department_id: deptRow.id
+                        }]);
+                    }
+                }
+
+                alert(`Registration saved! Your Member ID is ${generatedMemberId} (${registrationData.fellowship}). Please log in with your Phone Number and 4-digit PIN.`);
+                renderLoginPage();
+            } catch (err) {
+                showAlert('regAlert', err.message || 'Error saving registration.');
+                btn.disabled = false;
+                btn.innerHTML = 'Save & Login <i class="fa-solid fa-check ml-1"></i>';
+            }
         }
 
-        // --- 4. AUTH & DASHBOARD HANDLERS ---
-        function handleLogin() {
-            const phone = document.getElementById('loginPhone').value;
-            const pin = document.getElementById('loginPin').value;
-            if (!phone || !pin) {
-                alert('Please enter your phone number and 4-digit PIN.');
+        // --- 4. MEMBER AUTH & DASHBOARD HANDLERS ---
+        async function handleMemberLogin() {
+            const identifier = document.getElementById('loginPhone').value.trim();
+            const pin = document.getElementById('loginPin').value.trim();
+            const btn = document.getElementById('memberLoginBtn');
+
+            if (!identifier || !pin) {
+                showAlert('loginAlert', 'Please enter your Phone Number (or Member ID) and 4-digit PIN.');
                 return;
             }
-            renderMemberDashboard();
+
+            if (!supabaseClient) {
+                showAlert('loginAlert', 'Supabase keys are not configured yet in index.html.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Verifying PIN...';
+
+            try {
+                const hashedPin = await hashPin(pin);
+
+                const { data: member, error } = await supabaseClient
+                    .from('members')
+                    .select(`
+                        *,
+                        member_fellowships(fellowships(name)),
+                        member_departments(departments(name)),
+                        group_leaders(is_active, fellowships(name)),
+                        executive_assignments(is_active, role_type, fellowships(name))
+                    `)
+                    .or(`phone.eq.${identifier},member_id.eq.${identifier}`)
+                    .eq('pin_code', hashedPin)
+                    .single();
+
+                if (error || !member) {
+                    throw new Error('Invalid Phone Number/Member ID or 4-Digit PIN.');
+                }
+
+                if (member.membership_status !== 'Active') {
+                    throw new Error(`Account is currently ${member.membership_status}. Contact Administration.`);
+                }
+
+                activeMemberSession = member;
+                renderMemberDashboard();
+            } catch (err) {
+                showAlert('loginAlert', err.message || 'Login failed.');
+                btn.disabled = false;
+                btn.innerText = 'Member Login';
+            }
         }
 
         function renderMemberDashboard() {
             if (loadingTimer) clearTimeout(loadingTimer);
+            const m = activeMemberSession;
+            const fellowshipName = m?.member_fellowships?.[0]?.fellowships?.name || 'Unassigned Fellowship';
+            const deptName = m?.member_departments?.[0]?.departments?.name || 'None';
+            const isGroupLeader = (m?.group_leaders || []).some(gl => gl.is_active);
+            const activeExco = (m?.executive_assignments || []).find(ex => ex.is_active);
+
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex-1 flex flex-col h-screen overflow-hidden">
@@ -497,59 +716,164 @@
                                 ${getLogoHtml("w-9 h-9")}
                             </div>
                             <div>
-                                <h2 class="text-sm font-bold">${registrationData.fullName || 'Member Portal'}</h2>
-                                <p class="text-xs text-blue-400">${registrationData.fellowship || 'Member Dashboard'}</p>
+                                <h2 class="text-sm font-bold">${m.full_name}</h2>
+                                <p class="text-xs text-blue-400">${m.member_id} • ${fellowshipName}</p>
                             </div>
                         </div>
-                        <button onclick="renderLoginPage()" class="text-xs text-red-400 hover:underline"><i class="fa-solid fa-right-from-bracket mr-1"></i> Logout</button>
+                        <button onclick="activeMemberSession = null; renderLoginPage();" class="text-xs text-red-400 hover:underline">
+                            <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
+                        </button>
                     </header>
                     <main class="flex-1 overflow-y-auto p-6 space-y-6">
+                        <!-- DYNAMIC ROLE BUTTONS (ONLY SHOWN WHEN ASSIGNED IN DB) -->
+                        ${(isGroupLeader || activeExco) ? `
+                        <div class="flex flex-wrap justify-center gap-3">
+                            ${isGroupLeader ? `
+                                <button onclick="alert('Opening Group Leader Dashboard for ${fellowshipName}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg transition">
+                                    <i class="fa-solid fa-crown mr-1.5 text-amber-300"></i> GROUP LEADER DASHBOARD
+                                </button>
+                            ` : ''}
+                            ${activeExco ? `
+                                <button onclick="alert('Opening ${activeExco.role_type} Executive Dashboard')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg transition">
+                                    <i class="fa-solid fa-briefcase mr-1.5"></i> EXCO – ${activeExco.role_type.toUpperCase()}
+                                </button>
+                            ` : ''}
+                        </div>
+                        ` : ''}
+
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                             <div class="card-bg p-5 rounded-xl border border-white/5">
-                                <p class="text-sm text-gray-400">Current Dues</p>
-                                <h3 class="text-2xl font-bold mt-1 text-emerald-400">₦15,000</h3>
+                                <p class="text-sm text-gray-400">Fellowship & Unit</p>
+                                <h3 class="text-base font-bold mt-1 text-blue-400">${fellowshipName}</h3>
+                                <p class="text-xs text-gray-400 mt-1">Department: ${deptName}</p>
+                            </div>
+                            <div class="card-bg p-5 rounded-xl border border-white/5">
+                                <p class="text-sm text-gray-400">Current Dues Paid</p>
+                                <h3 class="text-2xl font-bold mt-1 text-emerald-400">₦0.00</h3>
                             </div>
                             <div class="card-bg p-5 rounded-xl border border-white/5">
                                 <p class="text-sm text-gray-400">Dues Arrears</p>
-                                <h3 class="text-2xl font-bold mt-1 text-red-400">₦0</h3>
-                            </div>
-                            <div class="card-bg p-5 rounded-xl border border-white/5">
-                                <p class="text-sm text-gray-400">Project Contribution</p>
-                                <h3 class="text-2xl font-bold mt-1 text-purple-400">₦25,000</h3>
+                                <h3 class="text-2xl font-bold mt-1 text-red-400">₦0.00</h3>
                             </div>
                         </div>
-                        <div class="card-bg p-8 rounded-xl border border-white/5 text-center">
-                            <h3 class="text-lg font-bold mb-2">Welcome to Omega City of Mercy Glorious Ministry</h3>
-                            <p class="text-xs text-gray-400">"Keeping record clean and safe." Your profile and financial records are fully secure.</p>
+
+                        <div class="card-bg p-6 rounded-xl border border-white/5">
+                            <h3 class="text-base font-bold mb-3">Member Profile Summary</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-300">
+                                <p><span class="text-gray-400">Phone:</span> ${m.phone}</p>
+                                <p><span class="text-gray-400">WhatsApp:</span> ${m.whatsapp || 'N/A'}</p>
+                                <p><span class="text-gray-400">Date of Birth:</span> ${m.date_of_birth}</p>
+                                <p><span class="text-gray-400">State of Origin:</span> ${m.state}</p>
+                                <p><span class="text-gray-400">Residence:</span> ${m.residence_state}, ${m.nationality}</p>
+                                <p><span class="text-gray-400">Status:</span> <span class="text-emerald-400 font-semibold">${m.membership_status}</span></p>
+                            </div>
                         </div>
                     </main>
                 </div>
             `;
         }
 
-        // Initialize application on load
-        window.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('admin') === 'true') {
-                renderFullAdminDashboard();
-            } else {
-                renderLoadingScreen();
-            }
-        });
-
-        function renderFullAdminDashboard() {
+        // --- 5. FULL SUPER ADMIN DASHBOARD (CONNECTED TO LIVE SUPABASE COUNTS) ---
+        async function renderFullAdminDashboard() {
             const container = document.getElementById('appContainer');
             container.innerHTML = `
-                <div class="flex-1 flex flex-col items-center justify-center p-6 text-center card-bg">
-                    <div class="w-16 h-16 mb-4">
-                        ${getLogoHtml("w-16 h-16")}
-                    </div>
-                    <h1 class="text-2xl font-bold text-amber-400 mb-2">Omega City Super Admin Dashboard</h1>
-                    <p class="text-sm text-gray-300 mb-6">Full administrative control panel active.</p>
-                    <button onclick="window.location.href = window.location.pathname" class="bg-blue-600 px-4 py-2 rounded text-sm">Return to Main Portal</button>
+                <div class="flex-1 flex flex-col h-screen overflow-hidden">
+                    <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
+                            <div>
+                                <h2 class="text-sm font-bold text-amber-400">OMEGA CITY SUPER ADMIN DASHBOARD</h2>
+                                <p class="text-xs text-gray-400">${activeAdminSession?.user?.email || 'Authenticated Admin'}</p>
+                            </div>
+                        </div>
+                        <button onclick="adminLogout()" class="text-xs text-red-400 hover:underline">
+                            <i class="fa-solid fa-right-from-bracket mr-1"></i> Admin Logout
+                        </button>
+                    </header>
+                    <main class="flex-1 overflow-y-auto p-6 space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                            <div class="card-bg p-5 rounded-xl border border-white/5">
+                                <p class="text-sm text-gray-400">Total Registered Members</p>
+                                <h3 id="statTotalMembers" class="text-2xl font-bold mt-1 text-emerald-400">Loading...</h3>
+                            </div>
+                            <div class="card-bg p-5 rounded-xl border border-white/5">
+                                <p class="text-sm text-gray-400">Total Dues Collected</p>
+                                <h3 id="statTotalDues" class="text-2xl font-bold mt-1 text-blue-400">₦0.00</h3>
+                            </div>
+                            <div class="card-bg p-5 rounded-xl border border-white/5">
+                                <p class="text-sm text-gray-400">Active Projects</p>
+                                <h3 id="statActiveProjects" class="text-2xl font-bold mt-1 text-purple-400">0</h3>
+                            </div>
+                        </div>
+
+                        <div class="card-bg p-6 rounded-xl border border-white/5">
+                            <h3 class="text-base font-bold mb-4">Live Registered Members Directory</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr class="border-b border-white/10 text-gray-400 uppercase">
+                                            <th class="py-3 px-3">Member ID</th>
+                                            <th class="py-3 px-3">Full Name</th>
+                                            <th class="py-3 px-3">Phone</th>
+                                            <th class="py-3 px-3">Fellowship</th>
+                                            <th class="py-3 px-3">Department</th>
+                                            <th class="py-3 px-3">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminMembersTableBody" class="divide-y divide-white/5">
+                                        <tr><td colspan="6" class="py-4 text-center text-gray-400">Fetching records from Supabase...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </main>
                 </div>
             `;
+
+            loadLiveAdminStats();
         }
+
+        async function loadLiveAdminStats() {
+            if (!supabaseClient) return;
+            const { data: members, error } = await supabaseClient
+                .from('members')
+                .select(`
+                    *,
+                    member_fellowships(fellowships(name)),
+                    member_departments(departments(name))
+                `)
+                .order('created_at', { ascending: false });
+
+            if (!error && members) {
+                document.getElementById('statTotalMembers').innerText = members.length;
+                const tbody = document.getElementById('adminMembersTableBody');
+                if (members.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-gray-400">No members registered yet.</td></tr>`;
+                } else {
+                    tbody.innerHTML = members.map(m => `
+                        <tr>
+                            <td class="py-3 px-3 font-mono text-blue-400">${m.member_id}</td>
+                            <td class="py-3 px-3 font-semibold">${m.full_name}</td>
+                            <td class="py-3 px-3 text-gray-300">${m.phone}</td>
+                            <td class="py-3 px-3">${m.member_fellowships?.[0]?.fellowships?.name || '—'}</td>
+                            <td class="py-3 px-3">${m.member_departments?.[0]?.departments?.name || 'None'}</td>
+                            <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">${m.membership_status}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+
+        async function adminLogout() {
+            if (supabaseClient) await supabaseClient.auth.signOut();
+            activeAdminSession = null;
+            renderLoginPage();
+        }
+
+        // Initialize application on load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderLoadingScreen();
+        });
     </script>
 </body>
 </html>
