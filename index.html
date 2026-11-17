@@ -621,25 +621,25 @@
                                     <a href="#" onclick="switchAdminView('youth-fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Youth Fellowship</a>
                                 </div>
                             </div>
-                            <!-- DEPARTMENTS DROPDOWN (WITH ASSIGN LEADERS) -->
+                            <!-- ASSIGN LEADERS DROPDOWN (PLACED BETWEEN GROUPS AND DEPARTMENTS) -->
+                            <div>
+                                <button onclick="toggleDropdown('assignLeadersDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-amber-400 font-medium transition">
+                                    <span class="flex items-center space-x-3"><i class="fa-solid fa-user-shield w-5"></i><span>Assign Leaders</span></span>
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </button>
+                                <div id="assignLeadersDropdown" class="hidden pl-8 space-y-1">
+                                    <a href="#" onclick="switchAdminView('assign-men')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">Men Fellowship</a>
+                                    <a href="#" onclick="switchAdminView('assign-women')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">Women Fellowship</a>
+                                    <a href="#" onclick="switchAdminView('assign-youth')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">Youth Fellowship</a>
+                                </div>
+                            </div>
+                            <!-- DEPARTMENTS DROPDOWN -->
                             <div>
                                 <button onclick="toggleDropdown('deptDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                     <span class="flex items-center space-x-3"><i class="fa-solid fa-building-shield w-5"></i><span>Departments</span></span>
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
-                                <div id="deptDropdown" class="hidden pl-6 space-y-1">
-                                    <!-- ASSIGN LEADERS NESTED DROPDOWN -->
-                                    <div>
-                                        <button onclick="toggleDropdown('assignLeadersDropdown')" class="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-white/5 text-amber-400 text-xs font-semibold transition">
-                                            <span class="flex items-center space-x-2"><i class="fa-solid fa-user-shield"></i><span>Assign Leaders</span></span>
-                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                                        </button>
-                                        <div id="assignLeadersDropdown" class="hidden pl-6 space-y-1">
-                                            <a href="#" onclick="switchAdminView('assign-men')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Men Fellowship</a>
-                                            <a href="#" onclick="switchAdminView('assign-women')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Women Fellowship</a>
-                                            <a href="#" onclick="switchAdminView('assign-youth')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Youth Fellowship</a>
-                                        </div>
-                                    </div>
+                                <div id="deptDropdown" class="hidden pl-8 space-y-1">
                                     <a href="#" onclick="switchAdminView('dept-security')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Security</a>
                                     <a href="#" onclick="switchAdminView('dept-usher')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Usher</a>
                                     <a href="#" onclick="switchAdminView('dept-sanitation')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Sanitation</a>
@@ -768,7 +768,7 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
                         <div>
                             <h3 class="text-base font-bold text-amber-400">${fellowshipName} Member Directory</h3>
-                            <p class="text-xs text-gray-400">Search member names, click to assign or remove Group Leader role.</p>
+                            <p class="text-xs text-gray-400">Search member names, click action to assign or remove Group Leader role.</p>
                         </div>
                         <input type="text" id="leaderSearchInput" oninput="filterLeaderSearch()" placeholder="Search member name..." class="w-full sm:w-72 bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
                     </div>
@@ -844,7 +844,6 @@
         }
 
         function toggleLeaderDropdown(memberId) {
-            // Close all other dropdowns
             document.querySelectorAll('[id^="actionDropdown-"]').forEach(el => {
                 if (el.id !== `actionDropdown-${memberId}`) el.classList.add('hidden');
             });
@@ -855,7 +854,6 @@
         async function saveGroupLeaderRole(memberId, makeLeader) {
             try {
                 if (makeLeader) {
-                    // Check fellowship ID of member
                     const { data: mf } = await supabaseClient.from('member_fellowships').select('fellowship_id').eq('member_id', memberId).single();
                     if (mf) {
                         await supabaseClient.from('group_leaders').upsert([{
@@ -869,7 +867,6 @@
                     await supabaseClient.from('group_leaders').update({ is_active: false }).eq('member_id', memberId);
                     alert('Successfully removed Group Leader role.');
                 }
-                // Refresh list
                 switchAdminView('assign-men');
             } catch (err) {
                 alert('Error updating leader status: ' + err.message);
@@ -906,7 +903,6 @@
             const fellowshipName = m?.member_fellowships?.[0]?.fellowships?.name || 'Unassigned Fellowship';
             const deptName = m?.member_departments?.[0]?.departments?.name || 'None';
             const isGroupLeader = (m?.group_leaders || []).some(gl => gl.is_active);
-            const activeExco = (m?.executive_assignments || []).find(ex => ex.is_active);
 
             const container = document.getElementById('appContainer');
             container.innerHTML = `
@@ -924,7 +920,6 @@
                         </button>
                     </header>
                     <main class="flex-1 overflow-y-auto p-6 space-y-6">
-                        <!-- AUTOMATICALLY SHOWN GROUP LEADER BUTTON AT THE TOP CENTER -->
                         ${isGroupLeader ? `
                         <div class="flex justify-center">
                             <button onclick="renderGroupLeaderDashboard()" class="bg-amber-600 hover:bg-amber-700 text-black font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(245,158,11,0.4)] transition flex items-center space-x-2 border border-amber-300">
@@ -968,7 +963,7 @@
             `;
         }
 
-        // --- GROUP LEADER DASHBOARD (Similar to Admin Dashboard) ---
+        // --- GROUP LEADER DASHBOARD ---
         function renderGroupLeaderDashboard() {
             const m = activeMemberSession;
             const fellowshipName = m?.member_fellowships?.[0]?.fellowships?.name || 'Fellowship';
