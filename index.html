@@ -106,7 +106,7 @@
             el.classList.remove('hidden');
         }
 
-        // --- 1. LOADING SCREEN VIEW (5 Sec Countdown) ---
+        // --- 1. LOADING SCREEN VIEW ---
         function renderLoadingScreen() {
             if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
@@ -245,7 +245,7 @@
             }
         }
 
-        // --- 3. MULTI-STEP REGISTRATION FLOW ---
+        // --- 3. REGISTRATION FLOW ---
         function renderRegistrationStep1() {
             if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
@@ -293,15 +293,15 @@
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-300 mb-1">State of Origin (Compulsory)</label>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">State of Origin</label>
                                     <input type="text" id="regStateOrigin" required value="${registrationData.stateOfOrigin}" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-300 mb-1">State of Residence (Compulsory)</label>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">State of Residence</label>
                                     <input type="text" id="regStateResidence" required value="${registrationData.stateOfResidence}" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-300 mb-1">Nationality (Compulsory)</label>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Nationality</label>
                                     <input type="text" id="regNationality" required value="${registrationData.nationality || 'Nigeria'}" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                                 </div>
                             </div>
@@ -345,7 +345,7 @@
                         </div>
                         <form onsubmit="saveRegStep2(event)" class="space-y-4 text-sm">
                             <div>
-                                <label class="block text-xs font-medium text-gray-300 mb-1">Gender (Compulsory)</label>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Gender</label>
                                 <select id="regGender" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
                                     <option value="">Select Gender</option>
                                     <option value="Male" ${registrationData.gender === 'Male' ? 'selected' : ''}>Male</option>
@@ -353,7 +353,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-300 mb-1">Are you married? (Compulsory)</label>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Are you married?</label>
                                 <select id="regIsMarried" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
                                     <option value="">Select Option</option>
                                     <option value="yes" ${registrationData.isMarried === 'yes' ? 'selected' : ''}>Yes</option>
@@ -361,7 +361,7 @@
                                 </select>
                             </div>
                             <p class="text-xs text-blue-300 bg-blue-600/10 p-3 rounded-lg border border-blue-500/20">
-                                <i class="fa-solid fa-circle-info mr-1"></i> Fellowship assignment is automatically calculated: Married Male → Men Fellowship; Married Female → Women Fellowship; Unmarried → Youth Fellowship.
+                                <i class="fa-solid fa-circle-info mr-1"></i> Fellowship assignment is automatic: Married Male → Men Fellowship; Married Female → Women Fellowship; Unmarried → Youth Fellowship.
                             </p>
                             <div class="pt-4 flex justify-between">
                                 <button type="button" onclick="renderRegistrationStep1()" class="card-bg hover:bg-white/5 text-gray-300 px-5 py-2.5 rounded-lg text-sm">Back</button>
@@ -404,7 +404,7 @@
                         </div>
                         <form onsubmit="saveRegStep3(event)" class="space-y-4 text-sm">
                             <div>
-                                <label class="block text-xs font-medium text-gray-300 mb-1">Are you a worker? (Compulsory)</label>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Are you a worker?</label>
                                 <select id="regIsWorker" onchange="toggleDeptDropdown(this.value)" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
                                     <option value="">Select Option</option>
                                     <option value="yes" ${registrationData.isWorker === 'yes' ? 'selected' : ''}>Yes</option>
@@ -471,7 +471,7 @@
                         <div id="regAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
                         <form onsubmit="saveRegStep4(event)" class="space-y-4 text-sm">
                             <div>
-                                <label class="block text-xs font-medium text-gray-300 mb-1">When did you join us? (Month and Year)</label>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">When did you join us? (Month & Year)</label>
                                 <input type="month" id="regDateJoined" required value="${registrationData.dateJoined}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
                             </div>
                             <div>
@@ -500,7 +500,7 @@
             const confirmPin = document.getElementById('regConfirmPin').value;
             const btn = document.getElementById('regSubmitBtn');
             if (pin !== confirmPin) {
-                showAlert('regAlert', 'PIN numbers do not match! Please verify and re-enter.');
+                showAlert('regAlert', 'PIN numbers do not match! Please verify.');
                 return;
             }
             if (!/^\d{4}$/.test(pin)) {
@@ -565,7 +565,7 @@
             const pin = document.getElementById('loginPin').value.trim();
             const btn = document.getElementById('memberLoginBtn');
             if (!identifier || !pin) {
-                showAlert('loginAlert', 'Please enter your Phone Number (or Member ID) and 4-digit PIN.');
+                showAlert('loginAlert', 'Please enter your Phone Number / Member ID and PIN.');
                 return;
             }
             btn.disabled = true;
@@ -583,7 +583,7 @@
                 if (member.membership_status !== 'Active') throw new Error(`Account is currently ${member.membership_status}.`);
 
                 activeMemberSession = member;
-                renderMemberDashboard();
+                renderMemberDashboardShell();
             } catch (err) {
                 showAlert('loginAlert', err.message || 'Login failed.');
                 btn.disabled = false;
@@ -591,7 +591,161 @@
             }
         }
 
-        // --- 5. FULL ADMIN DASHBOARD & MASTER SIDEBAR APP SHELL ---
+        // --- 5. MEMBER DASHBOARD SHELL & SIDEBAR ---
+        function renderMemberDashboardShell() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex h-screen overflow-hidden">
+                    <!-- MEMBER SIDEBAR -->
+                    <aside id="memberSidebar" class="fixed inset-y-0 left-0 z-50 w-64 card-bg transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col">
+                        <div class="p-4 border-b border-white/10 flex items-center space-x-3">
+                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
+                            <div>
+                                <h1 class="text-xs font-bold tracking-wide uppercase text-blue-400">Omega City</h1>
+                                <p class="text-[10px] text-gray-400 italic">Member Portal</p>
+                            </div>
+                        </div>
+                        <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
+                            <a href="#" onclick="switchMemberView('dashboard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
+                                <i class="fa-solid fa-chart-pie w-5"></i><span>Dashboard</span>
+                            </a>
+                            <a href="#" onclick="switchMemberView('fellowship')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-users-rectangle w-5"></i><span>My Fellowship</span>
+                            </a>
+                            <a href="#" onclick="switchMemberView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-wallet w-5"></i><span>Dues & Payments</span>
+                            </a>
+                            <a href="#" onclick="switchMemberView('attendance')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-calendar-check w-5"></i><span>Attendance Log</span>
+                            </a>
+                            <a href="#" onclick="switchMemberView('idcard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-id-card w-5"></i><span>Digital ID Card</span>
+                            </a>
+                        </nav>
+                        <div class="p-3 m-2 card-bg rounded-xl border border-blue-500/20 text-xs">
+                            <p class="text-blue-400 font-semibold mb-0.5"><i class="fa-solid fa-user-check"></i> Active Member</p>
+                            <p class="text-gray-400 text-[10px]">Secure Supabase Session</p>
+                        </div>
+                    </aside>
+
+                    <!-- MAIN VIEWPORT -->
+                    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+                        <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
+                            <div class="flex items-center space-x-4">
+                                <button onclick="toggleMemberSidebar()" class="lg:hidden text-gray-300 hover:text-white"><i class="fa-solid fa-bars text-xl"></i></button>
+                                <h2 id="memberPageTitle" class="text-lg font-bold tracking-tight">Member Dashboard</h2>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <button onclick="activeMemberSession = null; renderLoginPage();" class="text-xs text-red-400 hover:underline">
+                                    <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
+                                </button>
+                            </div>
+                        </header>
+                        <main id="mainMemberContent" class="flex-1 overflow-y-auto p-6 space-y-6">
+                            <!-- Dynamically loaded member views -->
+                        </main>
+                    </div>
+                </div>
+            `;
+            switchMemberView('dashboard');
+        }
+
+        function toggleMemberSidebar() {
+            const sb = document.getElementById('memberSidebar');
+            if (sb) sb.classList.toggle('-translate-x-full');
+        }
+
+        function switchMemberView(view) {
+            const main = document.getElementById('mainMemberContent');
+            const title = document.getElementById('memberPageTitle');
+            const m = activeMemberSession;
+            if (!main) return;
+
+            const fellowshipName = m?.member_fellowships?.[0]?.fellowships?.name || 'Unassigned Fellowship';
+            const deptName = m?.member_departments?.[0]?.departments?.name || 'None';
+            const isGroupLeader = (m?.group_leaders || []).some(gl => gl.is_active);
+
+            if (view === 'dashboard') {
+                title.innerText = "Member Dashboard";
+                main.innerHTML = `
+                    ${isGroupLeader ? `
+                    <div class="flex justify-center">
+                        <button onclick="renderGroupLeaderDashboard()" class="bg-amber-600 hover:bg-amber-700 text-black font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(245,158,11,0.4)] transition flex items-center space-x-2 border border-amber-300">
+                            <i class="fa-solid fa-crown text-sm"></i>
+                            <span>OPEN GROUP LEADER DASHBOARD</span>
+                        </button>
+                    </div>
+                    ` : ''}
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Fellowship & Unit</p>
+                            <h3 class="text-sm sm:text-base font-bold mt-1 text-blue-400">${fellowshipName}</h3>
+                            <p class="text-[11px] text-gray-400 mt-1">Dept: ${deptName}</p>
+                        </div>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Current Dues Paid</p>
+                            <h3 class="text-lg sm:text-2xl font-bold mt-1 text-emerald-400">₦0.00</h3>
+                        </div>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Dues Arrears</p>
+                            <h3 class="text-lg sm:text-2xl font-bold mt-1 text-red-400">₦0.00</h3>
+                        </div>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Account Status</p>
+                            <h3 class="text-sm sm:text-base font-bold mt-1 text-emerald-400">${m.membership_status}</h3>
+                        </div>
+                    </div>
+                    <div class="card-bg p-6 rounded-xl border border-white/5">
+                        <h3 class="text-base font-bold mb-3">Member Profile Summary</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-300">
+                            <p><span class="text-gray-400">Member ID:</span> ${m.member_id}</p>
+                            <p><span class="text-gray-400">Full Name:</span> ${m.full_name}</p>
+                            <p><span class="text-gray-400">Phone:</span> ${m.phone}</p>
+                            <p><span class="text-gray-400">WhatsApp:</span> ${m.whatsapp || 'N/A'}</p>
+                            <p><span class="text-gray-400">Date of Birth:</span> ${m.date_of_birth}</p>
+                            <p><span class="text-gray-400">State of Origin:</span> ${m.state}</p>
+                        </div>
+                    </div>
+                `;
+            } else if (view === 'idcard') {
+                title.innerText = "Digital Membership ID Card";
+                main.innerHTML = `
+                    <div class="flex justify-center">
+                        <div class="card-bg w-full max-w-sm rounded-2xl p-6 border border-amber-500/40 shadow-2xl space-y-4 text-center relative overflow-hidden">
+                            <div class="absolute -right-10 -top-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
+                            <div class="flex justify-center mb-2">${getLogoHtml("w-16 h-16")}</div>
+                            <h3 class="text-xs font-bold tracking-widest uppercase text-amber-400">Omega City of Mercy Glorious Ministry</h3>
+                            <div class="w-24 h-24 mx-auto rounded-xl bg-blue-600/20 border-2 border-blue-400/40 flex items-center justify-center text-3xl font-extrabold text-blue-400 shadow-inner">
+                                ${m.full_name.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 class="text-base font-extrabold text-white">${m.full_name}</h4>
+                                <p class="text-xs text-blue-400 font-mono mt-0.5">${m.member_id}</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-left text-xs bg-black/30 p-3 rounded-xl border border-white/5">
+                                <p><span class="text-gray-400">Fellowship:</span> <span class="text-white">${fellowshipName}</span></p>
+                                <p><span class="text-gray-400">Department:</span> <span class="text-white">${deptName}</span></p>
+                                <p><span class="text-gray-400">Phone:</span> <span class="text-white">${m.phone}</span></p>
+                                <p><span class="text-gray-400">Status:</span> <span class="text-emerald-400 font-semibold">${m.membership_status}</span></p>
+                            </div>
+                            <p class="text-[10px] text-gray-500 italic">Official Digital Ministry Credential</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                title.innerText = view.charAt(0).toUpperCase() + view.slice(1);
+                main.innerHTML = `
+                    <div class="card-bg p-8 rounded-xl border border-white/5 text-center py-16">
+                        <i class="fa-solid fa-folder-open text-4xl text-blue-500 mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">${title.innerText} Module Active</h3>
+                        <p class="text-gray-400 text-xs">Records secured and synced with Supabase.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // --- 6. FULL ADMIN DASHBOARD & ASSIGN LEADERS ---
         function renderFullAdminDashboard() {
             const container = document.getElementById('appContainer');
             container.innerHTML = `
@@ -621,7 +775,7 @@
                                     <a href="#" onclick="switchAdminView('youth-fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Youth Fellowship</a>
                                 </div>
                             </div>
-                            <!-- ASSIGN LEADERS DROPDOWN (PLACED BETWEEN GROUPS AND DEPARTMENTS) -->
+                            <!-- ASSIGN LEADERS DROPDOWN (BETWEEN GROUPS AND DEPARTMENTS) -->
                             <div>
                                 <button onclick="toggleDropdown('assignLeadersDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-amber-400 font-medium transition">
                                     <span class="flex items-center space-x-3"><i class="fa-solid fa-user-shield w-5"></i><span>Assign Leaders</span></span>
@@ -683,7 +837,6 @@
             switchAdminView('dashboard');
         }
 
-        // Sidebar & Click-Outside Logic
         function toggleSidebar() {
             const sb = document.getElementById('sidebar');
             if (sb) sb.classList.toggle('-translate-x-full');
@@ -701,7 +854,6 @@
             if (el) el.classList.toggle('hidden');
         }
 
-        // Admin View Switcher
         function switchAdminView(view) {
             const main = document.getElementById('mainAdminContent');
             const title = document.getElementById('pageTitle');
@@ -726,14 +878,6 @@
                         <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
                             <p class="text-xs sm:text-sm text-gray-400">Dues Arrears</p>
                             <h3 class="text-lg sm:text-2xl font-bold mt-1 text-red-400">₦78,500</h3>
-                        </div>
-                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
-                            <p class="text-xs sm:text-sm text-gray-400">Total Expenses</p>
-                            <h3 class="text-lg sm:text-2xl font-bold mt-1 text-amber-400">₦125,000</h3>
-                        </div>
-                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
-                            <p class="text-xs sm:text-sm text-gray-400">Current Balance</p>
-                            <h3 class="text-lg sm:text-2xl font-bold mt-1 text-blue-500">₦356,500</h3>
                         </div>
                     </div>
                     <div class="card-bg p-6 rounded-xl border border-white/5">
@@ -760,7 +904,6 @@
             }
         }
 
-        // --- ASSIGN LEADERS DIRECTORY & SEARCH LOGIC ---
         async function renderAssignLeaderView(fellowshipName) {
             const main = document.getElementById('mainAdminContent');
             main.innerHTML = `
@@ -862,7 +1005,7 @@
                             is_active: true
                         }], { onConflict: 'member_id,fellowship_id' });
                     }
-                    alert('Successfully assigned as Group Leader! The Member Dashboard will now display the Group Leader button.');
+                    alert('Successfully assigned as Group Leader!');
                 } else {
                     await supabaseClient.from('group_leaders').update({ is_active: false }).eq('member_id', memberId);
                     alert('Successfully removed Group Leader role.');
@@ -896,73 +1039,6 @@
             });
         }
 
-        // --- 6. MEMBER DASHBOARD & GROUP LEADER DASHBOARD ---
-        function renderMemberDashboard() {
-            if (loadingTimer) clearTimeout(loadingTimer);
-            const m = activeMemberSession;
-            const fellowshipName = m?.member_fellowships?.[0]?.fellowships?.name || 'Unassigned Fellowship';
-            const deptName = m?.member_departments?.[0]?.departments?.name || 'None';
-            const isGroupLeader = (m?.group_leaders || []).some(gl => gl.is_active);
-
-            const container = document.getElementById('appContainer');
-            container.innerHTML = `
-                <div class="flex-1 flex flex-col h-screen overflow-hidden">
-                    <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
-                            <div>
-                                <h2 class="text-sm font-bold">${m.full_name}</h2>
-                                <p class="text-xs text-blue-400">${m.member_id} • ${fellowshipName}</p>
-                            </div>
-                        </div>
-                        <button onclick="activeMemberSession = null; renderLoginPage();" class="text-xs text-red-400 hover:underline">
-                            <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
-                        </button>
-                    </header>
-                    <main class="flex-1 overflow-y-auto p-6 space-y-6">
-                        ${isGroupLeader ? `
-                        <div class="flex justify-center">
-                            <button onclick="renderGroupLeaderDashboard()" class="bg-amber-600 hover:bg-amber-700 text-black font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(245,158,11,0.4)] transition flex items-center space-x-2 border border-amber-300">
-                                <i class="fa-solid fa-crown text-sm"></i>
-                                <span>OPEN GROUP LEADER DASHBOARD</span>
-                            </button>
-                        </div>
-                        ` : ''}
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
-                                <p class="text-xs sm:text-sm text-gray-400">Fellowship & Unit</p>
-                                <h3 class="text-sm sm:text-base font-bold mt-1 text-blue-400">${fellowshipName}</h3>
-                                <p class="text-[11px] text-gray-400 mt-1">Dept: ${deptName}</p>
-                            </div>
-                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
-                                <p class="text-xs sm:text-sm text-gray-400">Current Dues Paid</p>
-                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-emerald-400">₦0.00</h3>
-                            </div>
-                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
-                                <p class="text-xs sm:text-sm text-gray-400">Dues Arrears</p>
-                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-red-400">₦0.00</h3>
-                            </div>
-                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
-                                <p class="text-xs sm:text-sm text-gray-400">Account Status</p>
-                                <h3 class="text-sm sm:text-base font-bold mt-1 text-emerald-400">${m.membership_status}</h3>
-                            </div>
-                        </div>
-                        <div class="card-bg p-6 rounded-xl border border-white/5">
-                            <h3 class="text-base font-bold mb-3">Member Profile Summary</h3>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-300">
-                                <p><span class="text-gray-400">Phone:</span> ${m.phone}</p>
-                                <p><span class="text-gray-400">WhatsApp:</span> ${m.whatsapp || 'N/A'}</p>
-                                <p><span class="text-gray-400">Date of Birth:</span> ${m.date_of_birth}</p>
-                                <p><span class="text-gray-400">State of Origin:</span> ${m.state}</p>
-                                <p><span class="text-gray-400">Status:</span> <span class="text-emerald-400 font-semibold">${m.membership_status}</span></p>
-                            </div>
-                        </div>
-                    </main>
-                </div>
-            `;
-        }
-
         // --- GROUP LEADER DASHBOARD ---
         function renderGroupLeaderDashboard() {
             const m = activeMemberSession;
@@ -978,7 +1054,7 @@
                                 <p class="text-xs text-gray-400">Leader: ${m.full_name}</p>
                             </div>
                         </div>
-                        <button onclick="renderMemberDashboard()" class="text-xs text-blue-400 hover:underline">
+                        <button onclick="renderMemberDashboardShell()" class="text-xs text-blue-400 hover:underline">
                             <i class="fa-solid fa-arrow-left mr-1"></i> Back to Member Dashboard
                         </button>
                     </header>
