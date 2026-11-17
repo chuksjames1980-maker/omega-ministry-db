@@ -106,7 +106,6 @@
         let loadingTimer = null;
         let modalCallback = null;
 
-        // Professional In-App Modal Handler
         function showModal(title, message, callback = null, isSuccess = true) {
             const modal = document.getElementById('customModal');
             const titleEl = document.getElementById('modalTitle');
@@ -137,7 +136,6 @@
             }
         }
 
-        // PIN SHA-256 helper
         async function hashPin(pin) {
             const encoder = new TextEncoder();
             const data = encoder.encode("OCM_SALT_" + pin);
@@ -220,7 +218,7 @@
             `;
         }
 
-        // --- 2.1. MAIN ADMIN LOGIN MODAL WITH FORGOT PASSWORD ---
+        // --- 2.1. MAIN ADMIN LOGIN MODAL ---
         function renderAdminLoginModal() {
             if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
@@ -241,9 +239,6 @@
                             <div>
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Password</label>
                                 <input type="password" id="adminPassword" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
-                            </div>
-                            <div class="flex justify-end">
-                                <button onclick="renderAdminForgotPassword()" class="text-xs text-amber-400 hover:underline">Forgot Password?</button>
                             </div>
                             <button id="adminAuthBtn" onclick="handleAdminLogin()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
                                 Authenticate Admin Access
@@ -270,7 +265,6 @@
             btn.disabled = true;
             btn.innerText = 'Authenticating...';
             try {
-                // Check admin table in Supabase
                 const { data: adminRow, error: adminErr } = await supabaseClient
                     .from('admin_users')
                     .select('*')
@@ -289,110 +283,6 @@
                 btn.disabled = false;
                 btn.innerText = 'Authenticate Admin Access';
             }
-        }
-
-        function renderAdminForgotPassword() {
-            const container = document.getElementById('appContainer');
-            container.innerHTML = `
-                <div class="flex-1 flex items-center justify-center p-4">
-                    <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-amber-500/30">
-                        <div class="text-center mb-6">
-                            <div class="mb-3">${getLogoHtml("w-16 h-16")}</div>
-                            <h2 class="text-lg font-bold text-amber-400">Admin Password Recovery</h2>
-                            <p class="text-xs text-gray-400">Enter your email to receive a reset code</p>
-                        </div>
-                        <div id="forgotAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Email</label>
-                                <input type="email" id="forgotEmail" placeholder="admin@omegacity.org" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
-                            </div>
-                            <button onclick="sendAdminResetCode()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
-                                Send Reset Code
-                            </button>
-                            <div class="text-center pt-3">
-                                <button onclick="renderAdminLoginModal()" class="text-xs text-gray-400 hover:text-white">
-                                    <i class="fa-solid fa-arrow-left mr-1"></i> Back to Admin Login
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function sendAdminResetCode() {
-            const email = document.getElementById('forgotEmail').value.trim();
-            if (!email) {
-                showAlert('forgotAlert', 'Please enter your admin email.');
-                return;
-            }
-            const { data: adminRow } = await supabaseClient.from('admin_users').select('*').eq('email', email).single();
-            if (!adminRow) {
-                showAlert('forgotAlert', 'Admin email not found in database.');
-                return;
-            }
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
-            await supabaseClient.from('admin_users').update({ reset_code: code }).eq('email', email);
-            
-            showModal("Reset Code Sent", `A password reset code has been sent to ${email}. (Demo Code: ${code})`, () => {
-                renderAdminResetPassword(email);
-            });
-        }
-
-        function renderAdminResetPassword(email) {
-            const container = document.getElementById('appContainer');
-            container.innerHTML = `
-                <div class="flex-1 flex items-center justify-center p-4">
-                    <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-amber-500/30">
-                        <div class="text-center mb-6">
-                            <div class="mb-3">${getLogoHtml("w-16 h-16")}</div>
-                            <h2 class="text-lg font-bold text-amber-400">Set New Password</h2>
-                            <p class="text-xs text-gray-400">Enter reset code and your new password</p>
-                        </div>
-                        <div id="resetAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">6-Digit Reset Code</label>
-                                <input type="text" id="resetCode" maxlength="6" placeholder="123456" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white tracking-widest focus:outline-none focus:border-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">New Password</label>
-                                <input type="password" id="newPassword" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">Confirm New Password</label>
-                                <input type="password" id="confirmNewPassword" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
-                            </div>
-                            <button onclick="verifyAndResetAdminPassword('${email}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
-                                Update Password & Login
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function verifyAndResetAdminPassword(email) {
-            const code = document.getElementById('resetCode').value.trim();
-            const pass = document.getElementById('newPassword').value;
-            const confirmPass = document.getElementById('confirmNewPassword').value;
-
-            if (pass !== confirmPass) {
-                showAlert('resetAlert', 'Passwords do not match.');
-                return;
-            }
-
-            const { data: adminRow } = await supabaseClient.from('admin_users').select('*').eq('email', email).single();
-            if (!adminRow || adminRow.reset_code !== code) {
-                showAlert('resetAlert', 'Invalid reset code.');
-                return;
-            }
-
-            await supabaseClient.from('admin_users').update({ password: pass, reset_code: null }).eq('email', email);
-            showModal("Password Updated", "Your new password is now active. Please log in.", () => {
-                renderAdminLoginModal();
-            });
         }
 
         // --- 3. REGISTRATION FLOW ---
@@ -727,7 +617,7 @@
                 const hashedPin = await hashPin(pin);
                 const { data: member, error } = await supabaseClient
                     .from('members')
-                    .select(`*, member_fellowships(fellowships(name)), member_departments(departments(name)), group_leaders(is_active, fellowships(name)), executive_assignments(is_active, role_type, fellowships(name))`)
+                    .select(`*, member_fellowships(fellowships(name)), member_departments(departments(name)), group_leaders(is_active, fellowships(name)), report_takers(is_active)`)
                     .or(`phone.eq.${identifier},member_id.eq.${identifier}`)
                     .eq('pin_code', hashedPin)
                     .single();
@@ -745,7 +635,7 @@
             }
         }
 
-        // --- 5. MEMBER DASHBOARD SHELL & CLICK-OUTSIDE SIDEBAR CLOSING ---
+        // --- 5. MEMBER DASHBOARD SHELL ---
         function renderMemberDashboardShell() {
             const container = document.getElementById('appContainer');
             container.innerHTML = `
@@ -835,18 +725,25 @@
             const fellowshipName = m?.member_fellowships?.[0]?.fellowships?.name || 'Unassigned Fellowship';
             const deptName = m?.member_departments?.[0]?.departments?.name || 'None';
             const isGroupLeader = (m?.group_leaders || []).some(gl => gl.is_active);
+            const isReportTaker = (m?.report_takers || []).some(rt => rt.is_active);
 
             if (view === 'dashboard') {
                 title.innerText = "Member Dashboard";
                 main.innerHTML = `
-                    ${isGroupLeader ? `
-                    <div class="flex justify-center">
+                    <div class="flex flex-wrap gap-3 justify-center">
+                        ${isGroupLeader ? `
                         <button onclick="renderGroupLeaderDashboard()" class="bg-amber-600 hover:bg-amber-700 text-black font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(245,158,11,0.4)] transition flex items-center space-x-2 border border-amber-300">
                             <i class="fa-solid fa-crown text-sm"></i>
                             <span>OPEN GROUP LEADER DASHBOARD</span>
                         </button>
+                        ` : ''}
+                        ${isReportTaker ? `
+                        <button onclick="renderReportTakerForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(16,185,129,0.4)] transition flex items-center space-x-2 border border-emerald-300">
+                            <i class="fa-solid fa-file-pen text-sm"></i>
+                            <span>REPORT TAKER: SUBMIT YOUR REPORT</span>
+                        </button>
+                        ` : ''}
                     </div>
-                    ` : ''}
 
                     <div class="grid grid-cols-2 gap-4">
                         <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
@@ -916,7 +813,165 @@
             }
         }
 
-        // --- 6. FULL ADMIN DASHBOARD & PROFILE / SETTINGS ---
+        // --- REPORT TAKER SUBMISSION FORM WITH LIVE BALANCE CALCULATION ---
+        function renderReportTakerForm() {
+            const main = document.getElementById('mainMemberContent');
+            const title = document.getElementById('memberPageTitle');
+            title.innerText = "Submit Service Population Report";
+
+            main.innerHTML = `
+                <div class="card-bg w-full max-w-2xl mx-auto p-6 rounded-2xl border border-emerald-500/30 space-y-6">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-emerald-400">Service Population & Attendance Report</h3>
+                            <p class="text-xs text-gray-400">Submitted by: ${activeMemberSession.full_name}</p>
+                        </div>
+                        <button onclick="switchMemberView('dashboard')" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left mr-1"></i> Back</button>
+                    </div>
+                    <form onsubmit="submitPopulationReport(event)" class="space-y-4 text-sm">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Day of Service</label>
+                                <select id="repDay" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500">
+                                    <option value="">Select Day</option>
+                                    <option value="Sunday">Sunday</option>
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday">Saturday</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Program Name</label>
+                                <input type="text" id="repProgram" required placeholder="e.g. Sunday Service / Revival" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1">Sermon Topic</label>
+                            <input type="text" id="repTopic" required placeholder="Enter sermon topic..." class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Auditorium Figure</label>
+                                <input type="number" id="repAuditorium" oninput="calculatePopulationBalance()" required min="0" value="0" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Children Figure</label>
+                                <input type="number" id="repChildren" oninput="calculatePopulationBalance()" required min="0" value="0" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Workers Figure</label>
+                                <input type="number" id="repWorkers" oninput="calculatePopulationBalance()" required min="0" value="0" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Vehicle Count</label>
+                                <input type="number" id="repVehicle" min="0" value="0" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Keke Count</label>
+                                <input type="number" id="repKeke" min="0" value="0" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Bike Count</label>
+                                <input type="number" id="repBike" min="0" value="0" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+
+                        <!-- LIVE CALCULATION DISPLAY -->
+                        <div class="card-bg p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <p class="text-[10px] text-gray-400">Total Population</p>
+                                <h4 id="calcPopTotal" class="text-base font-bold text-white">0</h4>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-400">Total Workers</p>
+                                <h4 id="calcWorkerTotal" class="text-base font-bold text-amber-400">0</h4>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-400">Net Balance (Pop - Workers)</p>
+                                <h4 id="calcNetBalance" class="text-base font-bold text-emerald-400">0</h4>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1">Remark / Report Details</label>
+                            <textarea id="repRemark" rows="3" placeholder="Enter service remarks or observations..." class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"></textarea>
+                        </div>
+                        <div class="pt-2 flex justify-end">
+                            <button type="submit" id="submitReportBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl text-sm transition shadow-lg">
+                                Submit Report to Admin <i class="fa-solid fa-paper-plane ml-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            calculatePopulationBalance();
+        }
+
+        function calculatePopulationBalance() {
+            const aud = parseInt(document.getElementById('repAuditorium')?.value || 0);
+            const child = parseInt(document.getElementById('repChildren')?.value || 0);
+            const workers = parseInt(document.getElementById('repWorkers')?.value || 0);
+
+            const totalPop = aud + child;
+            const balance = totalPop - workers;
+
+            const popEl = document.getElementById('calcPopTotal');
+            const workerEl = document.getElementById('calcWorkerTotal');
+            const balEl = document.getElementById('calcNetBalance');
+
+            if (popEl) popEl.innerText = totalPop.toLocaleString();
+            if (workerEl) workerEl.innerText = workers.toLocaleString();
+            if (balEl) balEl.innerText = balance.toLocaleString();
+        }
+
+        async function submitPopulationReport(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitReportBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-1"></i> Submitting...';
+
+            try {
+                const aud = parseInt(document.getElementById('repAuditorium').value || 0);
+                const child = parseInt(document.getElementById('repChildren').value || 0);
+                const workers = parseInt(document.getElementById('repWorkers').value || 0);
+                const totalPop = aud + child;
+                const netBalance = totalPop - workers;
+
+                const payload = {
+                    member_id: activeMemberSession.id,
+                    taker_name: activeMemberSession.full_name,
+                    day: document.getElementById('repDay').value,
+                    program: document.getElementById('repProgram').value.trim(),
+                    topic: document.getElementById('repTopic').value.trim(),
+                    auditorium: aud,
+                    children: child,
+                    workers: workers,
+                    total_population: totalPop,
+                    net_balance: netBalance,
+                    vehicle: parseInt(document.getElementById('repVehicle').value || 0),
+                    keke: parseInt(document.getElementById('repKeke').value || 0),
+                    bike: parseInt(document.getElementById('repBike').value || 0),
+                    remark: document.getElementById('repRemark').value.trim(),
+                    submitted_at: new Date().toISOString()
+                };
+
+                const { error } = await supabaseClient.from('population_reports').insert([payload]);
+                if (error) throw error;
+
+                showModal("Report Submitted Successfully", "Your service population report has been successfully transmitted to the Admin Dashboard.", () => {
+                    switchMemberView('dashboard');
+                });
+            } catch (err) {
+                showModal("Submission Error", err.message || 'Error saving report.', null, false);
+                btn.disabled = false;
+                btn.innerHTML = 'Submit Report to Admin <i class="fa-solid fa-paper-plane ml-1"></i>';
+            }
+        }
+
+        // --- 6. FULL ADMIN DASHBOARD & REPORTS / ASSIGN REPORT TAKER ---
         function renderFullAdminDashboard() {
             const admin = activeAdminSession || { full_name: 'Administrator', avatar_url: '' };
             const container = document.getElementById('appContainer');
@@ -938,6 +993,17 @@
                             <a href="#" onclick="switchAdminView('profile')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-user-gear w-5"></i><span>Profile</span>
                             </a>
+                            <!-- REPORTS DROPDOWN -->
+                            <div>
+                                <button onclick="toggleDropdown('reportsDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                    <span class="flex items-center space-x-3"><i class="fa-solid fa-file-lines w-5"></i><span>Reports</span></span>
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </button>
+                                <div id="reportsDropdown" class="hidden pl-6 space-y-1">
+                                    <a href="#" onclick="switchAdminView('population-report')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Population Report</a>
+                                    <a href="#" onclick="switchAdminView('assign-report-taker')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Assign Population Taker</a>
+                                </div>
+                            </div>
                             <!-- GROUPS DROPDOWN -->
                             <div>
                                 <button onclick="toggleDropdown('groupsDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
@@ -950,7 +1016,7 @@
                                     <a href="#" onclick="switchAdminView('youth-fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Youth Fellowship</a>
                                 </div>
                             </div>
-                            <!-- DEPARTMENTS DROPDOWN (WITH ASSIGN LEADERS NESTED INSIDE) -->
+                            <!-- DEPARTMENTS DROPDOWN -->
                             <div>
                                 <button onclick="toggleDropdown('deptDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                     <span class="flex items-center space-x-3"><i class="fa-solid fa-building-shield w-5"></i><span>Departments</span></span>
@@ -1008,7 +1074,6 @@
                                 <h2 id="pageTitle" class="text-lg font-bold tracking-tight">Admin Dashboard</h2>
                             </div>
                             <div class="flex items-center space-x-4">
-                                <!-- Top Right Corner Admin Avatar & Name -->
                                 <div class="flex items-center space-x-3 cursor-pointer" onclick="switchAdminView('profile')">
                                     <div id="headerAvatarContainer" class="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center overflow-hidden font-bold text-amber-400">
                                         ${admin.avatar_url ? `<img src="${admin.avatar_url}" class="w-full h-full object-cover">` : admin.full_name.charAt(0)}
@@ -1078,137 +1143,12 @@
                 `;
                 initChart();
                 loadAdminMemberCount();
-            } else if (view === 'profile') {
-                title.innerText = "Administrator Profile";
-                main.innerHTML = `
-                    <div class="card-bg w-full max-w-xl p-6 rounded-xl border border-amber-500/30 space-y-6">
-                        <div class="flex items-center space-x-4 border-b border-white/10 pb-4">
-                            <div class="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center overflow-hidden text-2xl font-bold text-amber-400">
-                                ${admin.avatar_url ? `<img src="${admin.avatar_url}" class="w-full h-full object-cover">` : (admin.full_name ? admin.full_name.charAt(0) : 'A')}
-                            </div>
-                            <div>
-                                <h3 class="text-base font-bold text-white">${admin.full_name || 'Admin'}</h3>
-                                <p class="text-xs text-amber-400">${admin.email}</p>
-                            </div>
-                        </div>
-                        <form onsubmit="updateAdminProfile(event)" class="space-y-4 text-sm">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">Full Name</label>
-                                <input type="text" id="profFullName" value="${admin.full_name || ''}" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Phone Number</label>
-                                    <input type="tel" id="profPhone" value="${admin.phone || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-300 mb-1">WhatsApp Number</label>
-                                    <input type="tel" id="profWhatsapp" value="${admin.whatsapp || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Date of Birth</label>
-                                    <input type="date" id="profDob" value="${admin.dob || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Profile Picture URL / Upload</label>
-                                    <input type="text" id="profAvatar" value="${admin.avatar_url || ''}" placeholder="https://image-url.com/pic.jpg" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
-                                </div>
-                            </div>
-                            <div class="pt-2 flex justify-end">
-                                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-black font-bold px-6 py-2.5 rounded-lg text-sm transition shadow-lg">
-                                    Save Profile Changes
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                `;
-            } else if (view === 'set-pin') {
-                title.innerText = "Change Login PIN";
-                main.innerHTML = `
-                    <div class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4">
-                        <h3 class="text-base font-bold text-amber-400">Security PIN Update</h3>
-                        <p class="text-xs text-gray-400">Enter a new 8-digit login PIN.</p>
-                        <div class="space-y-3 text-sm">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">New 8-Digit PIN</label>
-                                <input type="password" id="newAdminPin" maxlength="8" pattern="\\d{8}" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">Confirm New 8-Digit PIN</label>
-                                <input type="password" id="confirmAdminPin" maxlength="8" pattern="\\d{8}" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-amber-500">
-                            </div>
-                            <button onclick="saveNewAdminPin()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition">
-                                Save New PIN
-                            </button>
-                        </div>
-                    </div>
-                `;
-            } else if (view === 'set-email') {
-                title.innerText = "Change Login Email";
-                main.innerHTML = `
-                    <div id="emailStep1Container" class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4">
-                        <h3 class="text-base font-bold text-amber-400">Update Administrator Email</h3>
-                        <p class="text-xs text-gray-400">Current email: <span class="text-white">${admin.email}</span></p>
-                        <div class="space-y-3 text-sm">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">New Login Email</label>
-                                <input type="email" id="newAdminEmail" placeholder="newadmin@omegacity.org" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
-                            </div>
-                            <button onclick="sendEmailChangeCode()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition">
-                                Send Code
-                            </button>
-                        </div>
-                    </div>
-                    <div id="emailStep2Container" class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4 hidden">
-                        <h3 class="text-base font-bold text-amber-400">Enter Verification Code</h3>
-                        <p class="text-xs text-gray-400">Enter the 6-digit code sent to your new email.</p>
-                        <div class="space-y-3 text-sm">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">6-Digit Code</label>
-                                <input type="text" id="emailChangeCode" maxlength="6" placeholder="123456" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-amber-500">
-                            </div>
-                            <button onclick="verifyAndSaveNewEmail()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm transition">
-                                Verify & Save Email
-                            </button>
-                        </div>
-                    </div>
-                `;
-            } else if (view === 'set-theme') {
-                title.innerText = "Change Theme";
-                main.innerHTML = `
-                    <div class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4">
-                        <h3 class="text-base font-bold text-amber-400">Appearance Settings</h3>
-                        <p class="text-xs text-gray-400">Select your preferred system theme.</p>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="showModal('Theme Updated', 'Dark Deep Navy theme active.')" class="p-4 rounded-xl border border-blue-500 bg-[#070b19] text-white font-bold text-xs">Deep Navy (Default)</button>
-                            <button onclick="showModal('Theme Updated', 'Midnight Obsidian theme active.')" class="p-4 rounded-xl border border-white/10 bg-black text-white font-bold text-xs">Pure Obsidian</button>
-                        </div>
-                    </div>
-                `;
-            } else if (view === 'set-sound') {
-                title.innerText = "Change Notification Sound";
-                main.innerHTML = `
-                    <div class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4">
-                        <h3 class="text-base font-bold text-amber-400">Notification Alert Sounds</h3>
-                        <p class="text-xs text-gray-400">Choose alert tone for payments and registrations.</p>
-                        <div class="space-y-2 text-xs">
-                            <label class="flex items-center space-x-3 p-3 rounded-lg card-bg cursor-pointer hover:bg-white/5">
-                                <input type="radio" name="sound" checked class="text-amber-500"> <span>Chime Bell (Default)</span>
-                            </label>
-                            <label class="flex items-center space-x-3 p-3 rounded-lg card-bg cursor-pointer hover:bg-white/5">
-                                <input type="radio" name="sound" class="text-amber-500"> <span>Soft Digital Beep</span>
-                            </label>
-                            <label class="flex items-center space-x-3 p-3 rounded-lg card-bg cursor-pointer hover:bg-white/5">
-                                <input type="radio" name="sound" class="text-amber-500"> <span>Celestial Harp</span>
-                            </label>
-                        </div>
-                        <button onclick="showModal('Settings Saved', 'Notification sound preference updated.')" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition">
-                            Save Preference
-                        </button>
-                    </div>
-                `;
+            } else if (view === 'population-report') {
+                title.innerText = "Population Reports";
+                renderAdminPopulationReportsView();
+            } else if (view === 'assign-report-taker') {
+                title.innerText = "Assign Population Report Takers";
+                renderAssignReportTakerView();
             } else if (view.startsWith('assign-')) {
                 const fellowshipKey = view.replace('assign-', '');
                 const fellowshipName = fellowshipKey === 'men' ? 'Men Fellowship' : fellowshipKey === 'women' ? 'Women Fellowship' : 'Youth Fellowship';
@@ -1226,120 +1166,129 @@
             }
         }
 
-        async function updateAdminProfile(e) {
-            e.preventDefault();
-            const fullName = document.getElementById('profFullName').value.trim();
-            const phone = document.getElementById('profPhone').value.trim();
-            const whatsapp = document.getElementById('profWhatsapp').value.trim();
-            const dob = document.getElementById('profDob').value;
-            const avatarUrl = document.getElementById('profAvatar').value.trim();
-
-            const { error } = await supabaseClient
-                .from('admin_users')
-                .update({ full_name: fullName, phone, whatsapp, dob, avatar_url: avatarUrl })
-                .eq('id', activeAdminSession.id);
-
-            if (error) {
-                showModal('Error', error.message, null, false);
-                return;
-            }
-
-            activeAdminSession.full_name = fullName;
-            activeAdminSession.phone = phone;
-            activeAdminSession.whatsapp = whatsapp;
-            activeAdminSession.dob = dob;
-            activeAdminSession.avatar_url = avatarUrl;
-            localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
-
-            showModal('Success', 'Admin profile updated successfully. Avatar updated at top right.', () => {
-                renderFullAdminDashboard();
-            });
-        }
-
-        async function saveNewAdminPin() {
-            const pin1 = document.getElementById('newAdminPin').value;
-            const pin2 = document.getElementById('confirmAdminPin').value;
-            if (pin1 !== pin2 || !/^\d{8}$/.test(pin1)) {
-                showModal('Error', 'PIN must be exactly 8 numeric digits and match confirmation.', null, false);
-                return;
-            }
-            await supabaseClient.from('admin_users').update({ login_pin: pin1 }).eq('id', activeAdminSession.id);
-            showModal('Success', '8-digit login PIN updated successfully.');
-        }
-
-        async function sendEmailChangeCode() {
-            const newEmail = document.getElementById('newAdminEmail').value.trim();
-            if (!newEmail) {
-                showModal('Error', 'Please enter a valid email address.', null, false);
-                return;
-            }
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
-            window.pendingNewAdminEmail = newEmail;
-            await supabaseClient.from('admin_users').update({ reset_code: code }).eq('id', activeAdminSession.id);
-            
-            document.getElementById('emailStep1Container').classList.add('hidden');
-            document.getElementById('emailStep2Container').classList.remove('hidden');
-            showModal('Code Sent', `Verification code sent to ${newEmail}. (Demo Code: ${code})`);
-        }
-
-        async function verifyAndSaveNewEmail() {
-            const code = document.getElementById('emailChangeCode').value.trim();
-            const { data: adminRow } = await supabaseClient.from('admin_users').select('*').eq('id', activeAdminSession.id).single();
-            if (!adminRow || adminRow.reset_code !== code) {
-                showModal('Error', 'Invalid verification code.', null, false);
-                return;
-            }
-            const newEmail = window.pendingNewAdminEmail;
-            await supabaseClient.from('admin_users').update({ email: newEmail, reset_code: null }).eq('id', activeAdminSession.id);
-            activeAdminSession.email = newEmail;
-            localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
-            showModal('Success', 'Login email changed successfully. Old email is now inactive.', () => {
-                renderFullAdminDashboard();
-            });
-        }
-
-        async function renderAssignLeaderView(fellowshipName) {
+        // --- ADMIN POPULATION REPORT DIRECTORY & READ-ONLY VIEWER ---
+        async function renderAdminPopulationReportsView() {
             const main = document.getElementById('mainAdminContent');
             main.innerHTML = `
                 <div class="card-bg p-6 rounded-xl border border-white/5 space-y-4">
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
                         <div>
-                            <h3 class="text-base font-bold text-amber-400">${fellowshipName} Member Directory</h3>
-                            <p class="text-xs text-gray-400">Search member names, click to assign or remove Group Leader role.</p>
+                            <h3 class="text-base font-bold text-amber-400">Submitted Population Reports</h3>
+                            <p class="text-xs text-gray-400">Select a date using the calendar picker or view reports (Read-only)</p>
                         </div>
-                        <input type="text" id="leaderSearchInput" oninput="filterLeaderSearch()" placeholder="Search member name..." class="w-full sm:w-72 bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                        <input type="date" id="reportDateFilter" onchange="filterPopulationReportsByDate()" class="bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
                     </div>
-                    <div id="leaderListContainer" class="divide-y divide-white/5 overflow-x-auto">
-                        <p class="py-4 text-center text-gray-400 text-xs">Loading members...</p>
+                    <div id="populationReportListContainer" class="divide-y divide-white/5 overflow-x-auto">
+                        <p class="py-4 text-center text-gray-400 text-xs">Loading reports...</p>
                     </div>
                 </div>
             `;
 
-            const { data: fellowshipRow } = await supabaseClient.from('fellowships').select('id').eq('name', fellowshipName).single();
-            if (!fellowshipRow) {
-                document.getElementById('leaderListContainer').innerHTML = `<p class="py-4 text-center text-gray-400 text-xs">Fellowship not found in database.</p>`;
+            const { data: reports, error } = await supabaseClient
+                .from('population_reports')
+                .select('*')
+                .order('submitted_at', { ascending: false });
+
+            if (error) {
+                document.getElementById('populationReportListContainer').innerHTML = `<p class="py-4 text-center text-red-400 text-xs">Error loading reports: ${error.message}</p>`;
                 return;
             }
 
-            const { data: memberLinks } = await supabaseClient
-                .from('member_fellowships')
-                .select('member_id, members(*), group_leaders(is_active)')
-                .eq('fellowship_id', fellowshipRow.id);
-
-            window.currentFellowshipMembers = (memberLinks || []).map(ml => ({
-                ...ml.members,
-                isGroupLeader: (ml.members.group_leaders || []).some(gl => gl.is_active)
-            }));
-
-            displayMemberList(window.currentFellowshipMembers, "");
+            window.allPopulationReports = reports || [];
+            displayPopulationReportList(window.allPopulationReports);
         }
 
-        function displayMemberList(members, searchQuery) {
-            const container = document.getElementById('leaderListContainer');
+        function displayPopulationReportList(reports) {
+            const container = document.getElementById('populationReportListContainer');
+            if (!container) return;
+
+            if (reports.length === 0) {
+                container.innerHTML = `<p class="py-4 text-center text-gray-400 text-xs">No population reports found.</p>`;
+                return;
+            }
+
+            container.innerHTML = reports.map(r => {
+                const subDate = new Date(r.submitted_at).toLocaleString();
+                return `
+                    <div class="py-3 px-4 flex items-center justify-between hover:bg-white/5 transition rounded-lg cursor-pointer" onclick="viewPopulationReportDetails('${r.id}')">
+                        <div>
+                            <h4 class="text-sm font-semibold text-white">${r.program} (${r.day})</h4>
+                            <p class="text-[11px] text-gray-400">Submitted by: <span class="text-amber-400">${r.taker_name}</span> • ${subDate}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold text-emerald-400">Pop: ${r.total_population}</span>
+                            <p class="text-[10px] text-gray-400">Balance: ${r.net_balance}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterPopulationReportsByDate() {
+            const dateVal = document.getElementById('reportDateFilter').value;
+            if (!dateVal) {
+                displayPopulationReportList(window.allPopulationReports);
+                return;
+            }
+            const filtered = (window.allPopulationReports || []).filter(r => r.submitted_at.startsWith(dateVal));
+            displayPopulationReportList(filtered);
+        }
+
+        async function viewPopulationReportDetails(reportId) {
+            const report = (window.allPopulationReports || []).find(r => r.id === reportId);
+            if (!report) return;
+
+            const subDate = new Date(report.submitted_at).toLocaleString();
+            showModal(
+                `Report: ${report.program} (${report.day})`,
+                `Submitted By: ${report.taker_name}\nDate & Time: ${subDate}\nTopic: ${report.topic}\n\nAuditorium: ${report.auditorium}\nChildren: ${report.children}\nWorkers: ${report.workers}\nTotal Population: ${report.total_population}\nNet Balance (Pop - Workers): ${report.net_balance}\n\nVehicles: ${report.vehicle} | Kekes: ${report.keke} | Bikes: ${report.bike}\n\nRemark: ${report.remark || 'None'}\n\n[Note: This record is secured and cannot be edited by anyone.]`,
+                null,
+                true
+            );
+        }
+
+        // --- ASSIGN POPULATION TAKER (FETCHING ALL DEPARTMENTS) ---
+        async function renderAssignReportTakerView() {
+            const main = document.getElementById('mainAdminContent');
+            main.innerHTML = `
+                <div class="card-bg p-6 rounded-xl border border-white/5 space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <div>
+                            <h3 class="text-base font-bold text-amber-400">Department Member Directory</h3>
+                            <p class="text-xs text-gray-400">Search workers across Security, Usher, Sanitation, Choir, Technical, Children Teacher.</p>
+                        </div>
+                        <input type="text" id="takerSearchInput" oninput="filterTakerSearch()" placeholder="Search member name..." class="w-full sm:w-72 bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div id="takerListContainer" class="divide-y divide-white/5 overflow-x-auto">
+                        <p class="py-4 text-center text-gray-400 text-xs">Loading department members...</p>
+                    </div>
+                </div>
+            `;
+
+            const { data: memberDepts, error } = await supabaseClient
+                .from('member_departments')
+                .select('member_id, members(*), departments(name), report_takers(is_active)');
+
+            if (error) {
+                document.getElementById('takerListContainer').innerHTML = `<p class="py-4 text-center text-red-400 text-xs">Error: ${error.message}</p>`;
+                return;
+            }
+
+            window.allDepartmentMembers = (memberDepts || []).map(md => ({
+                ...md.members,
+                departmentName: md.departments?.name || 'Worker',
+                isReportTaker: (md.members.report_takers || []).some(rt => rt.is_active)
+            }));
+
+            displayTakerMemberList(window.allDepartmentMembers, "");
+        }
+
+        function displayTakerMemberList(members, searchQuery) {
+            const container = document.getElementById('takerListContainer');
             if (!container) return;
 
             if (members.length === 0) {
-                container.innerHTML = `<p class="py-4 text-center text-gray-400 text-xs">No members found in this fellowship.</p>`;
+                container.innerHTML = `<p class="py-4 text-center text-gray-400 text-xs">No department members found.</p>`;
                 return;
             }
 
@@ -1353,19 +1302,19 @@
                             </div>
                             <div>
                                 <h4 class="text-sm font-semibold ${nameMatch ? 'text-amber-300 font-bold' : 'text-white'}">${m.full_name}</h4>
-                                <p class="text-[11px] text-gray-400">${m.member_id} • Phone: ${m.phone} ${m.isGroupLeader ? '• <span class="text-amber-400 font-semibold">Group Leader</span>' : ''}</p>
+                                <p class="text-[11px] text-gray-400">Dept: <span class="text-blue-400">${m.departmentName}</span> • Phone: ${m.phone} ${m.isReportTaker ? '• <span class="text-emerald-400 font-semibold">Report Taker</span>' : ''}</p>
                             </div>
                         </div>
                         <div class="relative">
-                            <button onclick="toggleLeaderDropdown('${m.id}')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                            <button onclick="toggleTakerDropdown('${m.id}')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
                                 Action <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
                             </button>
-                            <div id="actionDropdown-${m.id}" class="hidden absolute right-0 mt-2 w-48 card-bg border border-white/10 rounded-xl shadow-2xl z-50 p-2 space-y-1">
-                                <button onclick="saveGroupLeaderRole('${m.id}', true)" class="w-full text-left px-3 py-2 text-xs rounded hover:bg-emerald-500/20 text-emerald-400 font-medium transition">
-                                    <i class="fa-solid fa-crown mr-1.5"></i> Group Leader
+                            <div id="takerDropdown-${m.id}" class="hidden absolute right-0 mt-2 w-48 card-bg border border-white/10 rounded-xl shadow-2xl z-50 p-2 space-y-1">
+                                <button onclick="saveReportTakerRole('${m.id}', true)" class="w-full text-left px-3 py-2 text-xs rounded hover:bg-emerald-500/20 text-emerald-400 font-medium transition">
+                                    <i class="fa-solid fa-file-pen mr-1.5"></i> Assign Report Taker
                                 </button>
-                                <button onclick="saveGroupLeaderRole('${m.id}', false)" class="w-full text-left px-3 py-2 text-xs rounded hover:bg-red-500/20 text-red-400 font-medium transition">
-                                    <i class="fa-solid fa-user-minus mr-1.5"></i> Remove as Leader
+                                <button onclick="saveReportTakerRole('${m.id}', false)" class="w-full text-left px-3 py-2 text-xs rounded hover:bg-red-500/20 text-red-400 font-medium transition">
+                                    <i class="fa-solid fa-user-minus mr-1.5"></i> Remove
                                 </button>
                             </div>
                         </div>
@@ -1374,39 +1323,35 @@
             }).join('');
         }
 
-        function filterLeaderSearch() {
-            const query = document.getElementById('leaderSearchInput').value.trim();
-            const filtered = (window.currentFellowshipMembers || []).filter(m => m.full_name.toLowerCase().includes(query.toLowerCase()));
-            displayMemberList(filtered, query);
+        function filterTakerSearch() {
+            const query = document.getElementById('takerSearchInput').value.trim();
+            const filtered = (window.allDepartmentMembers || []).filter(m => m.full_name.toLowerCase().includes(query.toLowerCase()));
+            displayTakerMemberList(filtered, query);
         }
 
-        function toggleLeaderDropdown(memberId) {
-            document.querySelectorAll('[id^="actionDropdown-"]').forEach(el => {
-                if (el.id !== `actionDropdown-${memberId}`) el.classList.add('hidden');
+        function toggleTakerDropdown(memberId) {
+            document.querySelectorAll('[id^="takerDropdown-"]').forEach(el => {
+                if (el.id !== `takerDropdown-${memberId}`) el.classList.add('hidden');
             });
-            const drop = document.getElementById(`actionDropdown-${memberId}`);
+            const drop = document.getElementById(`takerDropdown-${memberId}`);
             if (drop) drop.classList.toggle('hidden');
         }
 
-        async function saveGroupLeaderRole(memberId, makeLeader) {
+        async function saveReportTakerRole(memberId, makeTaker) {
             try {
-                if (makeLeader) {
-                    const { data: mf } = await supabaseClient.from('member_fellowships').select('fellowship_id').eq('member_id', memberId).single();
-                    if (mf) {
-                        await supabaseClient.from('group_leaders').upsert([{
-                            member_id: memberId,
-                            fellowship_id: mf.fellowship_id,
-                            is_active: true
-                        }], { onConflict: 'member_id,fellowship_id' });
-                    }
-                    showModal("Role Assigned", "Successfully assigned as Group Leader!");
+                if (makeTaker) {
+                    await supabaseClient.from('report_takers').upsert([{
+                        member_id: memberId,
+                        is_active: true
+                    }], { onConflict: 'member_id' });
+                    showModal("Role Assigned", "Successfully assigned as Population Report Taker! The submission card is now active on their dashboard.");
                 } else {
-                    await supabaseClient.from('group_leaders').update({ is_active: false }).eq('member_id', memberId);
-                    showModal("Role Revoked", "Successfully removed Group Leader role.");
+                    await supabaseClient.from('report_takers').update({ is_active: false }).eq('member_id', memberId);
+                    showModal("Role Revoked", "Successfully removed Report Taker role.");
                 }
-                switchAdminView('assign-men');
+                switchAdminView('assign-report-taker');
             } catch (err) {
-                showModal("Error", 'Error updating leader status: ' + err.message, null, false);
+                showModal("Error", 'Error updating role: ' + err.message, null, false);
             }
         }
 
