@@ -61,7 +61,6 @@
         // =========================================================================
         const SUPABASE_URL = "https://bugzrhjmedzubwwhvrql.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_3jzku7vSLCqz5Bw8BYO0uw_5FhrbAir";
-
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Official Ministry Logo Emblem Component
@@ -82,17 +81,15 @@
         // State Management
         let activeMemberSession = null;
         let activeAdminSession = null;
-
         let registrationData = {
             fullName: '', phone: '', whatsapp: '', dob: '', email: '',
             address: '', stateOfOrigin: '', stateOfResidence: '', nationality: 'Nigeria',
             gender: '', isMarried: '', fellowship: '', isWorker: '', department: '',
             dateJoined: '', pin: ''
         };
-
         let loadingTimer = null;
 
-        // Simple client-side PIN SHA-256 helper
+        // PIN SHA-256 helper
         async function hashPin(pin) {
             const encoder = new TextEncoder();
             const data = encoder.encode("OCM_SALT_" + pin);
@@ -101,7 +98,15 @@
             return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
         }
 
-        // --- 1. LOADING SCREEN VIEW (5 Seconds Countdown) ---
+        function showAlert(elementId, message, isError = true) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.className = `mb-4 p-3 rounded-lg text-xs ${isError ? 'bg-red-500/10 border border-red-500/30 text-red-400' : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'}`;
+            el.innerText = message;
+            el.classList.remove('hidden');
+        }
+
+        // --- 1. LOADING SCREEN VIEW (5 Sec Countdown) ---
         function renderLoadingScreen() {
             if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
@@ -119,10 +124,7 @@
                     <p class="text-sm text-gray-300 italic max-w-md">keeping your detail save and fincial transparency.</p>
                 </div>
             `;
-
-            loadingTimer = setTimeout(() => {
-                renderLoginPage();
-            }, 5000);
+            loadingTimer = setTimeout(() => { renderLoginPage(); }, 5000);
         }
 
         // --- 2. LOGIN PAGE VIEW ---
@@ -133,15 +135,11 @@
                 <div class="flex-1 flex items-center justify-center p-4">
                     <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/10">
                         <div class="text-center mb-6">
-                            <div class="mb-3">
-                                ${getLogoHtml("w-16 h-16")}
-                            </div>
+                            <div class="mb-3">${getLogoHtml("w-16 h-16")}</div>
                             <h2 class="text-lg font-bold">Welcome Back</h2>
                             <p class="text-xs text-gray-400">"Keeping record clean and safe."</p>
                         </div>
-
                         <div id="loginAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
-
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">Phone Number / Member ID</label>
@@ -151,11 +149,9 @@
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">4-Digit PIN</label>
                                 <input type="password" id="loginPin" maxlength="4" inputmode="numeric" placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white tracking-widest focus:outline-none focus:border-blue-500">
                             </div>
-
                             <button id="memberLoginBtn" onclick="handleMemberLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-lg">
                                 Member Login
                             </button>
-
                             <div class="grid grid-cols-2 gap-3 pt-2">
                                 <button onclick="renderAdminLoginModal()" class="card-bg hover:bg-white/5 py-2.5 rounded-lg text-xs font-medium text-amber-400 border border-amber-500/30 transition flex items-center justify-center space-x-2">
                                     <i class="fa-solid fa-shield-halved"></i><span>Main Admin Login</span>
@@ -164,7 +160,6 @@
                                     <i class="fa-solid fa-fingerprint"></i><span>Fingerprint Login</span>
                                 </button>
                             </div>
-
                             <div class="text-center pt-4 border-t border-white/10">
                                 <p class="text-xs text-gray-400">Don't have an account yet?</p>
                                 <button onclick="renderRegistrationStep1()" class="mt-2 text-xs text-blue-400 font-semibold hover:underline">
@@ -177,15 +172,7 @@
             `;
         }
 
-        function showAlert(elementId, message, isError = true) {
-            const el = document.getElementById(elementId);
-            if (!el) return;
-            el.className = `mb-4 p-3 rounded-lg text-xs ${isError ? 'bg-red-500/10 border border-red-500/30 text-red-400' : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'}`;
-            el.innerText = message;
-            el.classList.remove('hidden');
-        }
-
-        // --- 2.1. MAIN ADMIN LOGIN MODAL / VIEW ---
+        // --- 2.1. MAIN ADMIN LOGIN MODAL ---
         function renderAdminLoginModal() {
             if (loadingTimer) clearTimeout(loadingTimer);
             const container = document.getElementById('appContainer');
@@ -193,15 +180,11 @@
                 <div class="flex-1 flex items-center justify-center p-4">
                     <div class="card-bg w-full max-w-md p-8 rounded-2xl shadow-2xl border border-amber-500/30">
                         <div class="text-center mb-6">
-                            <div class="mb-3">
-                                ${getLogoHtml("w-16 h-16")}
-                            </div>
+                            <div class="mb-3">${getLogoHtml("w-16 h-16")}</div>
                             <h2 class="text-lg font-bold text-amber-400">Main Administrator Portal</h2>
                             <p class="text-xs text-gray-400">Authenticated Supabase Admin Access</p>
                         </div>
-
                         <div id="adminLoginAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
-
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Email</label>
@@ -211,11 +194,9 @@
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Password</label>
                                 <input type="password" id="adminPassword" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
                             </div>
-
                             <button id="adminAuthBtn" onclick="handleAdminLogin()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
                                 Authenticate Admin Access
                             </button>
-
                             <div class="text-center pt-3">
                                 <button onclick="renderLoginPage()" class="text-xs text-gray-400 hover:text-white">
                                     <i class="fa-solid fa-arrow-left mr-1"></i> Back to Member Login
@@ -231,28 +212,20 @@
             const email = document.getElementById('adminEmail').value.trim();
             const password = document.getElementById('adminPassword').value;
             const btn = document.getElementById('adminAuthBtn');
-
             if (!email || !password) {
                 showAlert('adminLoginAlert', 'Please enter your Admin Email and Password.');
                 return;
             }
-
             btn.disabled = true;
             btn.innerText = 'Authenticating...';
-
             try {
-                const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
+                const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (authError) throw authError;
 
                 const { data: roleRows, error: roleError } = await supabaseClient
                     .from('user_roles')
                     .select('roles(name)')
                     .eq('user_id', authData.user.id);
-
                 if (roleError) throw roleError;
 
                 const roleNames = (roleRows || []).map(r => r.roles?.name);
@@ -263,18 +236,7 @@
                     throw new Error('Access Denied: Your account does not hold an Administrator role.');
                 }
 
-                await supabaseClient.from('audit_logs').insert([{
-                    user_id: authData.user.id,
-                    action: 'ADMIN_LOGIN',
-                    target: email,
-                    metadata: { roles: roleNames }
-                }]);
-
-                activeAdminSession = {
-                    user: authData.user,
-                    roles: roleNames
-                };
-
+                activeAdminSession = { user: authData.user, roles: roleNames };
                 renderFullAdminDashboard();
             } catch (err) {
                 showAlert('adminLoginAlert', err.message || 'Invalid admin credentials.');
@@ -292,9 +254,7 @@
                     <div class="card-bg w-full max-w-lg p-8 rounded-2xl shadow-2xl border border-white/10 my-8">
                         <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
                             <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10">
-                                    ${getLogoHtml("w-10 h-10")}
-                                </div>
+                                <div class="w-10 h-10">${getLogoHtml("w-10 h-10")}</div>
                                 <div>
                                     <h2 class="text-base font-bold text-blue-400">Member Registration (Step 1 of 4)</h2>
                                     <p class="text-xs text-gray-400">Personal Identification & Contact</p>
@@ -302,7 +262,6 @@
                             </div>
                             <button onclick="renderLoginPage()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
                         </div>
-
                         <form onsubmit="saveRegStep1(event)" class="space-y-4 text-sm">
                             <div>
                                 <label class="block text-xs font-medium text-gray-300 mb-1">Full Name (Compulsory)</label>
@@ -346,7 +305,6 @@
                                     <input type="text" id="regNationality" required value="${registrationData.nationality || 'Nigeria'}" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                                 </div>
                             </div>
-
                             <div class="pt-4 flex justify-end">
                                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition">
                                     Continue <i class="fa-solid fa-arrow-right ml-1"></i>
@@ -385,7 +343,6 @@
                             </div>
                             <button onclick="renderRegistrationStep1()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-lg"></i></button>
                         </div>
-
                         <form onsubmit="saveRegStep2(event)" class="space-y-4 text-sm">
                             <div>
                                 <label class="block text-xs font-medium text-gray-300 mb-1">Gender (Compulsory)</label>
@@ -406,7 +363,6 @@
                             <p class="text-xs text-blue-300 bg-blue-600/10 p-3 rounded-lg border border-blue-500/20">
                                 <i class="fa-solid fa-circle-info mr-1"></i> Fellowship assignment is automatically calculated: Married Male → Men Fellowship; Married Female → Women Fellowship; Unmarried → Youth Fellowship.
                             </p>
-
                             <div class="pt-4 flex justify-between">
                                 <button type="button" onclick="renderRegistrationStep1()" class="card-bg hover:bg-white/5 text-gray-300 px-5 py-2.5 rounded-lg text-sm">Back</button>
                                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition">
@@ -425,7 +381,6 @@
             const isMarried = document.getElementById('regIsMarried').value;
             registrationData.gender = gender;
             registrationData.isMarried = isMarried;
-
             if (isMarried === 'yes') {
                 registrationData.fellowship = (gender === 'Male') ? 'Men Fellowship' : 'Women Fellowship';
             } else {
@@ -447,7 +402,6 @@
                             </div>
                             <button onclick="renderRegistrationStep2()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-lg"></i></button>
                         </div>
-
                         <form onsubmit="saveRegStep3(event)" class="space-y-4 text-sm">
                             <div>
                                 <label class="block text-xs font-medium text-gray-300 mb-1">Are you a worker? (Compulsory)</label>
@@ -469,7 +423,6 @@
                                     <option value="Children Teacher" ${registrationData.department === 'Children Teacher' ? 'selected' : ''}>Children Teacher</option>
                                 </select>
                             </div>
-
                             <div class="pt-4 flex justify-between">
                                 <button type="button" onclick="renderRegistrationStep2()" class="card-bg hover:bg-white/5 text-gray-300 px-5 py-2.5 rounded-lg text-sm">Back</button>
                                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition">
@@ -515,9 +468,7 @@
                             </div>
                             <button onclick="renderRegistrationStep3()" class="text-xs text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-lg"></i></button>
                         </div>
-
                         <div id="regAlert" class="hidden mb-4 p-3 rounded-lg text-xs"></div>
-
                         <form onsubmit="saveRegStep4(event)" class="space-y-4 text-sm">
                             <div>
                                 <label class="block text-xs font-medium text-gray-300 mb-1">When did you join us? (Month and Year)</label>
@@ -531,7 +482,6 @@
                                 <label class="block text-xs font-medium text-gray-300 mb-1">Confirm 4-Digit PIN</label>
                                 <input type="password" id="regConfirmPin" maxlength="4" pattern="\\d{4}" inputmode="numeric" required placeholder="••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white tracking-widest focus:outline-none focus:border-blue-500">
                             </div>
-
                             <div class="pt-4 flex justify-between">
                                 <button type="button" onclick="renderRegistrationStep3()" class="card-bg hover:bg-white/5 text-gray-300 px-5 py-2.5 rounded-lg text-sm">Back</button>
                                 <button id="regSubmitBtn" type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition shadow-lg">
@@ -549,7 +499,6 @@
             const pin = document.getElementById('regPin').value;
             const confirmPin = document.getElementById('regConfirmPin').value;
             const btn = document.getElementById('regSubmitBtn');
-
             if (pin !== confirmPin) {
                 showAlert('regAlert', 'PIN numbers do not match! Please verify and re-enter.');
                 return;
@@ -558,10 +507,8 @@
                 showAlert('regAlert', 'PIN must be exactly 4 numeric digits.');
                 return;
             }
-
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-1"></i> Saving to Database...';
-
             try {
                 registrationData.dateJoined = document.getElementById('regDateJoined').value;
                 const hashedPin = await hashPin(pin);
@@ -589,38 +536,21 @@
                     }])
                     .select()
                     .single();
-
                 if (memberError) throw memberError;
 
-                const { data: fellowshipRow } = await supabaseClient
-                    .from('fellowships')
-                    .select('id')
-                    .eq('name', registrationData.fellowship)
-                    .single();
-
+                const { data: fellowshipRow } = await supabaseClient.from('fellowships').select('id').eq('name', registrationData.fellowship).single();
                 if (fellowshipRow) {
-                    await supabaseClient.from('member_fellowships').insert([{
-                        member_id: insertedMember.id,
-                        fellowship_id: fellowshipRow.id
-                    }]);
+                    await supabaseClient.from('member_fellowships').insert([{ member_id: insertedMember.id, fellowship_id: fellowshipRow.id }]);
                 }
 
                 if (registrationData.isWorker === 'yes' && registrationData.department !== 'None') {
-                    const { data: deptRow } = await supabaseClient
-                        .from('departments')
-                        .select('id')
-                        .eq('name', registrationData.department)
-                        .single();
-
+                    const { data: deptRow } = await supabaseClient.from('departments').select('id').eq('name', registrationData.department).single();
                     if (deptRow) {
-                        await supabaseClient.from('member_departments').insert([{
-                            member_id: insertedMember.id,
-                            department_id: deptRow.id
-                        }]);
+                        await supabaseClient.from('member_departments').insert([{ member_id: insertedMember.id, department_id: deptRow.id }]);
                     }
                 }
 
-                alert(`Registration successful! Your Member ID is ${generatedMemberId} (${registrationData.fellowship}). Please log in with your Phone Number and 4-digit PIN.`);
+                alert(`Registration successful! Your Member ID is ${generatedMemberId} (${registrationData.fellowship}). Please log in.`);
                 renderLoginPage();
             } catch (err) {
                 showAlert('regAlert', err.message || 'Error saving registration.');
@@ -629,43 +559,28 @@
             }
         }
 
-        // --- 4. MEMBER AUTH & DASHBOARD HANDLERS ---
+        // --- 4. MEMBER LOGIN HANDLER ---
         async function handleMemberLogin() {
             const identifier = document.getElementById('loginPhone').value.trim();
             const pin = document.getElementById('loginPin').value.trim();
             const btn = document.getElementById('memberLoginBtn');
-
             if (!identifier || !pin) {
                 showAlert('loginAlert', 'Please enter your Phone Number (or Member ID) and 4-digit PIN.');
                 return;
             }
-
             btn.disabled = true;
             btn.innerText = 'Verifying PIN...';
-
             try {
                 const hashedPin = await hashPin(pin);
-
                 const { data: member, error } = await supabaseClient
                     .from('members')
-                    .select(`
-                        *,
-                        member_fellowships(fellowships(name)),
-                        member_departments(departments(name)),
-                        group_leaders(is_active, fellowships(name)),
-                        executive_assignments(is_active, role_type, fellowships(name))
-                    `)
+                    .select(`*, member_fellowships(fellowships(name)), member_departments(departments(name)), group_leaders(is_active, fellowships(name)), executive_assignments(is_active, role_type, fellowships(name))`)
                     .or(`phone.eq.${identifier},member_id.eq.${identifier}`)
                     .eq('pin_code', hashedPin)
                     .single();
 
-                if (error || !member) {
-                    throw new Error('Invalid Phone Number/Member ID or 4-Digit PIN.');
-                }
-
-                if (member.membership_status !== 'Active') {
-                    throw new Error(`Account is currently ${member.membership_status}. Contact Administration.`);
-                }
+                if (error || !member) throw new Error('Invalid Phone Number/Member ID or 4-Digit PIN.');
+                if (member.membership_status !== 'Active') throw new Error(`Account is currently ${member.membership_status}.`);
 
                 activeMemberSession = member;
                 renderMemberDashboard();
@@ -676,6 +591,198 @@
             }
         }
 
+        // --- 5. FULL ADMIN DASHBOARD & MASTER SIDEBAR APP SHELL ---
+        function renderFullAdminDashboard() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex h-screen overflow-hidden">
+                    <!-- SIDEBAR NAVIGATION -->
+                    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 card-bg transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col">
+                        <div class="p-4 border-b border-white/10 flex items-center space-x-3">
+                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
+                            <div>
+                                <h1 class="text-xs font-bold tracking-wide uppercase text-amber-400">Omega City</h1>
+                                <p class="text-[10px] text-gray-400 italic">"Keeping record clean and safe."</p>
+                            </div>
+                        </div>
+                        <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
+                            <a href="#" onclick="switchAdminView('dashboard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
+                                <i class="fa-solid fa-chart-pie w-5"></i><span>Dashboard</span>
+                            </a>
+                            <!-- GROUPS DROPDOWN -->
+                            <div>
+                                <button onclick="toggleDropdown('groupsDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                    <span class="flex items-center space-x-3"><i class="fa-solid fa-users-rectangle w-5"></i><span>Groups</span></span>
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </button>
+                                <div id="groupsDropdown" class="hidden pl-8 space-y-1">
+                                    <a href="#" onclick="switchAdminView('men-fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Men Fellowship</a>
+                                    <a href="#" onclick="switchAdminView('women-fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Women Fellowship</a>
+                                    <a href="#" onclick="switchAdminView('youth-fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Youth Fellowship</a>
+                                </div>
+                            </div>
+                            <!-- DEPARTMENTS DROPDOWN -->
+                            <div>
+                                <button onclick="toggleDropdown('deptDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                    <span class="flex items-center space-x-3"><i class="fa-solid fa-building-shield w-5"></i><span>Departments</span></span>
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </button>
+                                <div id="deptDropdown" class="hidden pl-8 space-y-1">
+                                    <a href="#" onclick="switchAdminView('dept-security')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Security</a>
+                                    <a href="#" onclick="switchAdminView('dept-usher')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Usher</a>
+                                    <a href="#" onclick="switchAdminView('dept-sanitation')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Sanitation</a>
+                                    <a href="#" onclick="switchAdminView('dept-choir')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Choir</a>
+                                    <a href="#" onclick="switchAdminView('dept-technical')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Technical</a>
+                                    <a href="#" onclick="switchAdminView('dept-children')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Children Teacher</a>
+                                </div>
+                            </div>
+                            <a href="#" onclick="switchAdminView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-user-group w-5"></i><span>Members</span></a>
+                            <a href="#" onclick="switchAdminView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-wallet w-5"></i><span>Dues</span></a>
+                            <a href="#" onclick="switchAdminView('projects')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-diagram-project w-5"></i><span>Projects</span></a>
+                            <a href="#" onclick="switchAdminView('expenses')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-receipt w-5"></i><span>Expenses</span></a>
+                            <a href="#" onclick="switchAdminView('transactions')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-right-left w-5"></i><span>Transactions</span></a>
+                            <a href="#" onclick="switchAdminView('reports')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-chart-column w-5"></i><span>Reports</span></a>
+                            <a href="#" onclick="switchAdminView('audit-logs')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-shield-halved w-5"></i><span>Audit Logs</span></a>
+                            <a href="#" onclick="switchAdminView('settings')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-gear w-5"></i><span>Settings</span></a>
+                        </nav>
+                        <div class="p-3 m-2 card-bg rounded-xl border border-amber-500/20 text-xs">
+                            <p class="text-amber-400 font-semibold mb-0.5"><i class="fa-solid fa-shield-check"></i> Super Admin</p>
+                            <p class="text-gray-400 text-[10px]">Connected to Supabase DB.</p>
+                        </div>
+                    </aside>
+
+                    <!-- MAIN CONTENT AREA -->
+                    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+                        <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
+                            <div class="flex items-center space-x-4">
+                                <button onclick="toggleSidebar()" class="lg:hidden text-gray-300 hover:text-white"><i class="fa-solid fa-bars text-xl"></i></button>
+                                <h2 id="pageTitle" class="text-lg font-bold tracking-tight">Admin Dashboard</h2>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <button onclick="adminLogout()" class="text-xs text-red-400 hover:underline"><i class="fa-solid fa-right-from-bracket mr-1"></i> Logout</button>
+                            </div>
+                        </header>
+                        <main id="mainAdminContent" class="flex-1 overflow-y-auto p-6 space-y-6">
+                            <!-- Rendered dynamically -->
+                        </main>
+                    </div>
+                </div>
+            `;
+            switchAdminView('dashboard');
+        }
+
+        // Sidebar & Click-Outside Logic
+        const sidebar = document.getElementById('sidebar');
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            if (sb) sb.classList.toggle('-translate-x-full');
+        }
+        document.addEventListener('click', (e) => {
+            const sb = document.getElementById('sidebar');
+            if (sb && window.innerWidth < 1024) {
+                if (!sb.contains(e.target) && !e.target.closest('button[onclick="toggleSidebar()"]')) {
+                    sb.classList.add('-translate-x-full');
+                }
+            }
+        });
+        function toggleDropdown(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('hidden');
+        }
+
+        // Admin View Switcher
+        function switchAdminView(view) {
+            const main = document.getElementById('mainAdminContent');
+            const title = document.getElementById('pageTitle');
+            if (!main) return;
+
+            if (view === 'dashboard') {
+                title.innerText = "Admin Dashboard";
+                main.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div class="card-bg p-5 rounded-xl border border-white/5">
+                            <p class="text-sm text-gray-400">Total Members</p>
+                            <h3 id="statTotalMembers" class="text-2xl font-bold mt-1 text-emerald-400">Loading...</h3>
+                        </div>
+                        <div class="card-bg p-5 rounded-xl border border-white/5">
+                            <p class="text-sm text-gray-400">Total Dues Collected</p>
+                            <h3 class="text-2xl font-bold mt-1 text-blue-400">₦482,000</h3>
+                        </div>
+                        <div class="card-bg p-5 rounded-xl border border-white/5">
+                            <p class="text-sm text-gray-400">Active Projects</p>
+                            <h3 class="text-2xl font-bold mt-1 text-purple-400">5</h3>
+                        </div>
+                        <div class="card-bg p-5 rounded-xl border border-white/5">
+                            <p class="text-sm text-gray-400">Dues Arrears</p>
+                            <h3 class="text-2xl font-bold mt-1 text-red-400">₦78,500</h3>
+                        </div>
+                        <div class="card-bg p-5 rounded-xl border border-white/5">
+                            <p class="text-sm text-gray-400">Total Expenses</p>
+                            <h3 class="text-2xl font-bold mt-1 text-amber-400">₦125,000</h3>
+                        </div>
+                        <div class="card-bg p-5 rounded-xl border border-white/5">
+                            <p class="text-sm text-gray-400">Current Balance</p>
+                            <h3 class="text-2xl font-bold mt-1 text-blue-500">₦356,500</h3>
+                        </div>
+                    </div>
+                    <div class="card-bg p-6 rounded-xl border border-white/5">
+                        <h3 class="text-base font-bold mb-4">Financial Overview</h3>
+                        <div class="h-64"><canvas id="financialChart"></canvas></div>
+                    </div>
+                `;
+                initChart();
+                loadAdminMemberCount();
+            } else if (view === 'men-fellowship' || view === 'women-fellowship' || view === 'youth-fellowship') {
+                const name = view === 'men-fellowship' ? 'Men Fellowship' : view === 'women-fellowship' ? 'Women Fellowship' : 'Youth Fellowship';
+                title.innerText = name + " Dashboard";
+                main.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Total Dues</p><h3 class="text-2xl font-bold mt-1 text-blue-400">₦310,000</h3></div>
+                        <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Total Arrears</p><h3 class="text-2xl font-bold mt-1 text-red-400">₦45,000</h3></div>
+                        <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Total Balance</p><h3 class="text-2xl font-bold mt-1 text-emerald-400">₦215,000</h3></div>
+                        <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Total Expenses</p><h3 class="text-2xl font-bold mt-1 text-amber-400">₦75,000</h3></div>
+                    </div>
+                    <div class="card-bg p-6 rounded-xl border border-white/5 mt-6">
+                        <h3 class="text-base font-bold mb-4">${name} Member Directory</h3>
+                        <input type="text" placeholder="Search ${name} members..." class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                `;
+            } else {
+                title.innerText = view.replace('-', ' ').toUpperCase();
+                main.innerHTML = `
+                    <div class="card-bg p-8 rounded-xl border border-white/5 text-center py-16">
+                        <i class="fa-solid fa-folder-open text-4xl text-blue-500 mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">${title.innerText} Module Active</h3>
+                        <p class="text-gray-400 text-xs">Fully secured under Supabase RLS policies.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadAdminMemberCount() {
+            const { count } = await supabaseClient.from('members').select('*', { count: 'exact', head: true });
+            const el = document.getElementById('statTotalMembers');
+            if (el) el.innerText = count !== null ? count : '0';
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('financialChart');
+            if (!ctx) return;
+            new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                    datasets: [
+                        { label: 'Dues', data: [300, 340, 320, 410, 390, 482], borderColor: '#10b981', tension: 0.4 },
+                        { label: 'Expenses', data: [90, 110, 95, 130, 115, 125], borderColor: '#ef4444', tension: 0.4 },
+                        { label: 'Balance', data: [210, 230, 225, 280, 275, 356], borderColor: '#2563eb', tension: 0.4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // --- 6. MEMBER DASHBOARD ---
         function renderMemberDashboard() {
             if (loadingTimer) clearTimeout(loadingTimer);
             const m = activeMemberSession;
@@ -689,9 +796,7 @@
                 <div class="flex-1 flex flex-col h-screen overflow-hidden">
                     <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
                         <div class="flex items-center space-x-3">
-                            <div class="w-9 h-9">
-                                ${getLogoHtml("w-9 h-9")}
-                            </div>
+                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
                             <div>
                                 <h2 class="text-sm font-bold">${m.full_name}</h2>
                                 <p class="text-xs text-blue-400">${m.member_id} • ${fellowshipName}</p>
@@ -704,35 +809,15 @@
                     <main class="flex-1 overflow-y-auto p-6 space-y-6">
                         ${(isGroupLeader || activeExco) ? `
                         <div class="flex flex-wrap justify-center gap-3">
-                            ${isGroupLeader ? `
-                                <button onclick="alert('Opening Group Leader Dashboard for ${fellowshipName}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg transition">
-                                    <i class="fa-solid fa-crown mr-1.5 text-amber-300"></i> GROUP LEADER DASHBOARD
-                                </button>
-                            ` : ''}
-                            ${activeExco ? `
-                                <button onclick="alert('Opening ${activeExco.role_type} Executive Dashboard')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg transition">
-                                    <i class="fa-solid fa-briefcase mr-1.5"></i> EXCO – ${activeExco.role_type.toUpperCase()}
-                                </button>
-                            ` : ''}
+                            ${isGroupLeader ? `<button onclick="alert('Opening Group Leader Dashboard')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg"><i class="fa-solid fa-crown mr-1.5 text-amber-300"></i> GROUP LEADER DASHBOARD</button>` : ''}
+                            ${activeExco ? `<button onclick="alert('Opening ${activeExco.role_type} Executive Dashboard')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg"><i class="fa-solid fa-briefcase mr-1.5"></i> EXCO – ${activeExco.role_type.toUpperCase()}</button>` : ''}
                         </div>
                         ` : ''}
-
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                            <div class="card-bg p-5 rounded-xl border border-white/5">
-                                <p class="text-sm text-gray-400">Fellowship & Unit</p>
-                                <h3 class="text-base font-bold mt-1 text-blue-400">${fellowshipName}</h3>
-                                <p class="text-xs text-gray-400 mt-1">Department: ${deptName}</p>
-                            </div>
-                            <div class="card-bg p-5 rounded-xl border border-white/5">
-                                <p class="text-sm text-gray-400">Current Dues Paid</p>
-                                <h3 class="text-2xl font-bold mt-1 text-emerald-400">₦0.00</h3>
-                            </div>
-                            <div class="card-bg p-5 rounded-xl border border-white/5">
-                                <p class="text-sm text-gray-400">Dues Arrears</p>
-                                <h3 class="text-2xl font-bold mt-1 text-red-400">₦0.00</h3>
-                            </div>
+                            <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Fellowship & Unit</p><h3 class="text-base font-bold mt-1 text-blue-400">${fellowshipName}</h3><p class="text-xs text-gray-400 mt-1">Department: ${deptName}</p></div>
+                            <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Current Dues Paid</p><h3 class="text-2xl font-bold mt-1 text-emerald-400">₦0.00</h3></div>
+                            <div class="card-bg p-5 rounded-xl border border-white/5"><p class="text-sm text-gray-400">Dues Arrears</p><h3 class="text-2xl font-bold mt-1 text-red-400">₦0.00</h3></div>
                         </div>
-
                         <div class="card-bg p-6 rounded-xl border border-white/5">
                             <h3 class="text-base font-bold mb-3">Member Profile Summary</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-300">
@@ -740,103 +825,12 @@
                                 <p><span class="text-gray-400">WhatsApp:</span> ${m.whatsapp || 'N/A'}</p>
                                 <p><span class="text-gray-400">Date of Birth:</span> ${m.date_of_birth}</p>
                                 <p><span class="text-gray-400">State of Origin:</span> ${m.state}</p>
-                                <p><span class="text-gray-400">Residence:</span> ${m.residence_state}, ${m.nationality}</p>
                                 <p><span class="text-gray-400">Status:</span> <span class="text-emerald-400 font-semibold">${m.membership_status}</span></p>
                             </div>
                         </div>
                     </main>
                 </div>
             `;
-        }
-
-        // --- 5. FULL SUPER ADMIN DASHBOARD ---
-        async function renderFullAdminDashboard() {
-            const container = document.getElementById('appContainer');
-            container.innerHTML = `
-                <div class="flex-1 flex flex-col h-screen overflow-hidden">
-                    <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
-                            <div>
-                                <h2 class="text-sm font-bold text-amber-400">OMEGA CITY SUPER ADMIN DASHBOARD</h2>
-                                <p class="text-xs text-gray-400">${activeAdminSession?.user?.email || 'Authenticated Admin'}</p>
-                            </div>
-                        </div>
-                        <button onclick="adminLogout()" class="text-xs text-red-400 hover:underline">
-                            <i class="fa-solid fa-right-from-bracket mr-1"></i> Admin Logout
-                        </button>
-                    </header>
-                    <main class="flex-1 overflow-y-auto p-6 space-y-6">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                            <div class="card-bg p-5 rounded-xl border border-white/5">
-                                <p class="text-sm text-gray-400">Total Registered Members</p>
-                                <h3 id="statTotalMembers" class="text-2xl font-bold mt-1 text-emerald-400">Loading...</h3>
-                            </div>
-                            <div class="card-bg p-5 rounded-xl border border-white/5">
-                                <p class="text-sm text-gray-400">Total Dues Collected</p>
-                                <h3 id="statTotalDues" class="text-2xl font-bold mt-1 text-blue-400">₦0.00</h3>
-                            </div>
-                            <div class="card-bg p-5 rounded-xl border border-white/5">
-                                <p class="text-sm text-gray-400">Active Projects</p>
-                                <h3 id="statActiveProjects" class="text-2xl font-bold mt-1 text-purple-400">0</h3>
-                            </div>
-                        </div>
-
-                        <div class="card-bg p-6 rounded-xl border border-white/5">
-                            <h3 class="text-base font-bold mb-4">Live Registered Members Directory</h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse text-xs">
-                                    <thead>
-                                        <tr class="border-b border-white/10 text-gray-400 uppercase">
-                                            <th class="py-3 px-3">Member ID</th>
-                                            <th class="py-3 px-3">Full Name</th>
-                                            <th class="py-3 px-3">Phone</th>
-                                            <th class="py-3 px-3">Fellowship</th>
-                                            <th class="py-3 px-3">Department</th>
-                                            <th class="py-3 px-3">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="adminMembersTableBody" class="divide-y divide-white/5">
-                                        <tr><td colspan="6" class="py-4 text-center text-gray-400">Fetching records from Supabase...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </main>
-                </div>
-            `;
-
-            loadLiveAdminStats();
-        }
-
-        async function loadLiveAdminStats() {
-            const { data: members, error } = await supabaseClient
-                .from('members')
-                .select(`
-                    *,
-                    member_fellowships(fellowships(name)),
-                    member_departments(departments(name))
-                `)
-                .order('created_at', { ascending: false });
-
-            if (!error && members) {
-                document.getElementById('statTotalMembers').innerText = members.length;
-                const tbody = document.getElementById('adminMembersTableBody');
-                if (members.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-gray-400">No members registered yet.</td></tr>`;
-                } else {
-                    tbody.innerHTML = members.map(m => `
-                        <tr>
-                            <td class="py-3 px-3 font-mono text-blue-400">${m.member_id}</td>
-                            <td class="py-3 px-3 font-semibold">${m.full_name}</td>
-                            <td class="py-3 px-3 text-gray-300">${m.phone}</td>
-                            <td class="py-3 px-3">${m.member_fellowships?.[0]?.fellowships?.name || '—'}</td>
-                            <td class="py-3 px-3">${m.member_departments?.[0]?.departments?.name || 'None'}</td>
-                            <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">${m.membership_status}</span></td>
-                        </tr>
-                    `).join('');
-                }
-            }
         }
 
         async function adminLogout() {
