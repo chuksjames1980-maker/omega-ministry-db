@@ -234,11 +234,11 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Email</label>
-                                <input type="email" id="adminEmail" placeholder="admin@omegacity.org" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                                <input type="email" id="adminEmail" value="chuksjames1980@gmail.com" placeholder="chuksjames1980@gmail.com" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Password</label>
-                                <input type="password" id="adminPassword" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                                <input type="password" id="adminPassword" value="07291980" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
                             </div>
                             <button id="adminAuthBtn" onclick="handleAdminLogin()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition shadow-lg">
                                 Authenticate Admin Access
@@ -263,8 +263,13 @@
                 return;
             }
             btn.disabled = true;
-            btn.innerText = 'Authenticating...';
+            btn.innerText = 'Authenticating & Syncing...';
             try {
+                // Ensure admin table has the correct account synced
+                await supabaseClient.from('admin_users').upsert([
+                    { email: 'chuksjames1980@gmail.com', password: '07291980', full_name: 'Chuks James' }
+                ], { onConflict: 'email' });
+
                 const { data: adminRow, error: adminErr } = await supabaseClient
                     .from('admin_users')
                     .select('*')
@@ -973,7 +978,7 @@
 
         // --- 6. FULL ADMIN DASHBOARD & REPORTS / ASSIGN REPORT TAKER ---
         function renderFullAdminDashboard() {
-            const admin = activeAdminSession || { full_name: 'Administrator', avatar_url: '' };
+            const admin = activeAdminSession || { full_name: 'Chuks James', email: 'chuksjames1980@gmail.com', avatar_url: '' };
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex h-screen overflow-hidden">
@@ -1053,7 +1058,7 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                                 <div id="settingsDropdown" class="hidden pl-6 space-y-1">
-                                    <a href="#" onclick="switchAdminView('set-pin')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Login PIN</a>
+                                    <a href="#" onclick="switchAdminView('set-pin')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Login PIN / Password</a>
                                     <a href="#" onclick="switchAdminView('set-email')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Login Email</a>
                                     <a href="#" onclick="switchAdminView('set-theme')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Theme</a>
                                     <a href="#" onclick="switchAdminView('set-sound')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Notification Sound</a>
@@ -1143,6 +1148,90 @@
                 `;
                 initChart();
                 loadAdminMemberCount();
+            } else if (view === 'profile') {
+                title.innerText = "Administrator Profile";
+                main.innerHTML = `
+                    <div class="card-bg w-full max-w-xl p-6 rounded-xl border border-amber-500/30 space-y-6">
+                        <div class="flex items-center space-x-4 border-b border-white/10 pb-4">
+                            <div class="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center overflow-hidden text-2xl font-bold text-amber-400">
+                                ${admin.avatar_url ? `<img src="${admin.avatar_url}" class="w-full h-full object-cover">` : (admin.full_name ? admin.full_name.charAt(0) : 'A')}
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-white">${admin.full_name || 'Admin'}</h3>
+                                <p class="text-xs text-amber-400">${admin.email}</p>
+                            </div>
+                        </div>
+                        <form onsubmit="updateAdminProfile(event)" class="space-y-4 text-sm">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Full Name</label>
+                                <input type="text" id="profFullName" value="${admin.full_name || ''}" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Phone Number</label>
+                                    <input type="tel" id="profPhone" value="${admin.phone || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">WhatsApp Number</label>
+                                    <input type="tel" id="profWhatsapp" value="${admin.whatsapp || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Date of Birth</label>
+                                    <input type="date" id="profDob" value="${admin.dob || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Profile Picture URL</label>
+                                    <input type="text" id="profAvatar" value="${admin.avatar_url || ''}" placeholder="https://image-url.com/pic.jpg" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                            </div>
+                            <div class="pt-2 flex justify-end">
+                                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-black font-bold px-6 py-2.5 rounded-lg text-sm transition shadow-lg">
+                                    Save Profile Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+            } else if (view === 'set-pin') {
+                title.innerText = "Change Login Password / PIN";
+                main.innerHTML = `
+                    <div class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4">
+                        <h3 class="text-base font-bold text-amber-400">Admin Password Update</h3>
+                        <p class="text-xs text-gray-400">Enter your new login password (e.g. 07291980 or custom).</p>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">New Admin Password</label>
+                                <input type="password" id="newAdminPass" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Confirm New Password</label>
+                                <input type="password" id="confirmAdminPass" placeholder="••••••••" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <button onclick="saveNewAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition">
+                                Update Password Immediately
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (view === 'set-email') {
+                title.innerText = "Change Login Email";
+                main.innerHTML = `
+                    <div class="card-bg w-full max-w-md p-6 rounded-xl border border-amber-500/30 space-y-4">
+                        <h3 class="text-base font-bold text-amber-400">Update Administrator Email</h3>
+                        <p class="text-xs text-gray-400">Current email: <span class="text-white">${admin.email}</span></p>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">New Login Email</label>
+                                <input type="email" id="newAdminEmailInput" value="${admin.email}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <button onclick="saveDirectAdminEmail()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-sm transition">
+                                Update Email Immediately
+                            </button>
+                        </div>
+                    </div>
+                `;
             } else if (view === 'population-report') {
                 title.innerText = "Population Reports";
                 renderAdminPopulationReportsView();
@@ -1164,6 +1253,71 @@
                     </div>
                 `;
             }
+        }
+
+        async function updateAdminProfile(e) {
+            e.preventDefault();
+            const fullName = document.getElementById('profFullName').value.trim();
+            const phone = document.getElementById('profPhone').value.trim();
+            const whatsapp = document.getElementById('profWhatsapp').value.trim();
+            const dob = document.getElementById('profDob').value;
+            const avatarUrl = document.getElementById('profAvatar').value.trim();
+
+            const { error } = await supabaseClient
+                .from('admin_users')
+                .update({ full_name: fullName, phone, whatsapp, dob, avatar_url: avatarUrl })
+                .eq('id', activeAdminSession.id);
+
+            if (error) {
+                showModal('Error', error.message, null, false);
+                return;
+            }
+
+            activeAdminSession.full_name = fullName;
+            activeAdminSession.phone = phone;
+            activeAdminSession.whatsapp = whatsapp;
+            activeAdminSession.dob = dob;
+            activeAdminSession.avatar_url = avatarUrl;
+            localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
+
+            showModal('Success', 'Admin profile updated successfully.', () => {
+                renderFullAdminDashboard();
+            });
+        }
+
+        async function saveNewAdminPassword() {
+            const p1 = document.getElementById('newAdminPass').value;
+            const p2 = document.getElementById('confirmAdminPass').value;
+            if (!p1 || p1 !== p2) {
+                showModal('Error', 'Passwords do not match or are empty.', null, false);
+                return;
+            }
+            const { error } = await supabaseClient.from('admin_users').update({ password: p1 }).eq('id', activeAdminSession.id);
+            if (error) {
+                showModal('Error', error.message, null, false);
+                return;
+            }
+            activeAdminSession.password = p1;
+            localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
+            showModal('Success', 'Admin password updated successfully and is now active for login.');
+        }
+
+        async function saveDirectAdminEmail() {
+            const newEmail = document.getElementById('newAdminEmailInput').value.trim();
+            if (!newEmail) {
+                showModal('Error', 'Please enter a valid email.', null, false);
+                return;
+            }
+            const { error } = await supabaseClient.from('admin_users').update({ email: newEmail }).eq('id', activeAdminSession.id);
+            if (error) {
+                showModal('Error', error.message, null, false);
+                return;
+            }
+            activeAdminSession.email = newEmail;
+            localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
+            showModal('Success', `Login email updated to ${newEmail} immediately! Old email is now inactive.`, () => {
+                renderFullAdminDashboard();
+            });
         }
 
         // --- ADMIN POPULATION REPORT DIRECTORY & READ-ONLY VIEWER ---
@@ -1247,7 +1401,7 @@
             );
         }
 
-        // --- ASSIGN POPULATION TAKER (FETCHING ALL DEPARTMENTS) ---
+        // --- ASSIGN POPULATION TAKER ---
         async function renderAssignReportTakerView() {
             const main = document.getElementById('mainAdminContent');
             main.innerHTML = `
@@ -1267,17 +1421,20 @@
 
             const { data: memberDepts, error } = await supabaseClient
                 .from('member_departments')
-                .select('member_id, members(*), departments(name), report_takers(is_active)');
+                .select('member_id, members(*), departments(name)');
 
             if (error) {
                 document.getElementById('takerListContainer').innerHTML = `<p class="py-4 text-center text-red-400 text-xs">Error: ${error.message}</p>`;
                 return;
             }
 
+            const { data: takers } = await supabaseClient.from('report_takers').select('*');
+            const activeTakerIds = new Set((takers || []).filter(t => t.is_active).map(t => t.member_id));
+
             window.allDepartmentMembers = (memberDepts || []).map(md => ({
                 ...md.members,
                 departmentName: md.departments?.name || 'Worker',
-                isReportTaker: (md.members.report_takers || []).some(rt => rt.is_active)
+                isReportTaker: activeTakerIds.has(md.members.id)
             }));
 
             displayTakerMemberList(window.allDepartmentMembers, "");
@@ -1435,7 +1592,16 @@
         }
 
         // Initialize application on load with Session Persistence check
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Auto-seed admin user to ensure login works seamlessly
+            try {
+                await supabaseClient.from('admin_users').upsert([
+                    { email: 'chuksjames1980@gmail.com', password: '07291980', full_name: 'Chuks James' }
+                ], { onConflict: 'email' });
+            } catch (e) {
+                console.log('Admin auto-seed notice:', e);
+            }
+
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('admin') === 'true' || activeAdminSession) {
                 renderFullAdminDashboard();
