@@ -62,11 +62,34 @@
             </div>
             <div>
                 <h3 id="modalTitle" class="text-base font-bold text-white mb-1">Notification</h3>
-                <p id="modalMessage" class="text-xs text-gray-300 leading-relaxed"></p>
+                <p id="modalMessage" class="text-xs text-gray-300 leading-relaxed whitespace-pre-line"></p>
             </div>
             <button onclick="closeCustomModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg">
                 Proceed / Dismiss
             </button>
+        </div>
+    </div>
+
+    <!-- EDIT MEMBER NAME MODAL OVERLAY -->
+    <div id="editMemberModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs hidden p-4">
+        <div class="card-bg w-full max-w-sm rounded-2xl p-6 border border-blue-500/30 shadow-2xl space-y-4">
+            <div>
+                <h3 class="text-base font-bold text-white mb-1">Edit Member Name</h3>
+                <p class="text-xs text-gray-400">Update the selected member's full name.</p>
+            </div>
+            <input type="hidden" id="editMemberIdInput">
+            <div>
+                <label class="block text-xs font-semibold text-gray-300 mb-1">Full Name</label>
+                <input type="text" id="editMemberNameInput" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button type="button" onclick="closeEditMemberModal()" class="card-bg hover:bg-white/5 text-gray-300 font-semibold py-2.5 rounded-xl text-xs transition">
+                    Cancel
+                </button>
+                <button type="button" id="saveEditMemberBtn" onclick="saveEditedMemberName()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg">
+                    Save Name
+                </button>
+            </div>
         </div>
     </div>
 
@@ -97,6 +120,7 @@
         // State Management & LocalStorage Persistence
         let activeMemberSession = JSON.parse(localStorage.getItem('ocm_member_session')) || null;
         let activeAdminSession = JSON.parse(localStorage.getItem('ocm_admin_session')) || null;
+        let activeFellowshipContext = null;
         let registrationData = {
             fullName: '', phone: '', whatsapp: '', dob: '', email: '',
             address: '', stateOfOrigin: '', stateOfResidence: '', nationality: 'Nigeria',
@@ -111,7 +135,7 @@
             const titleEl = document.getElementById('modalTitle');
             const msgEl = document.getElementById('modalMessage');
             const iconEl = document.getElementById('modalIcon');
-            
+
             titleEl.innerText = title;
             msgEl.innerText = message;
             modalCallback = callback;
@@ -134,6 +158,68 @@
                 modalCallback();
                 modalCallback = null;
             }
+        }
+
+        function openEditMemberModal(memberId, currentName) {
+            document.getElementById('editMemberIdInput').value = memberId;
+            document.getElementById('editMemberNameInput').value = currentName;
+            document.getElementById('editMemberModal').classList.remove('hidden');
+        }
+
+        function closeEditMemberModal() {
+            document.getElementById('editMemberModal').classList.add('hidden');
+        }
+
+        async function saveEditedMemberName() {
+            const memberId = document.getElementById('editMemberIdInput').value;
+            const newName = document.getElementById('editMemberNameInput').value.trim();
+            const btn = document.getElementById('saveEditMemberBtn');
+
+            if (!newName) {
+                showModal('Validation Error', 'Member name cannot be empty.', null, false);
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+
+            const { error } = await supabaseClient
+                .from('members')
+                .update({ full_name: newName })
+                .eq('id', memberId);
+
+            btn.disabled = false;
+            btn.innerText = 'Save Name';
+
+            if (error) {
+                showModal('Update Failed', error.message, null, false);
+                return;
+            }
+
+            closeEditMemberModal();
+            showModal('Name Updated', `Member name updated to "${newName}".`, () => {
+                if (activeFellowshipContext) {
+                    loadFellowshipGroupMembers(activeFellowshipContext);
+                }
+            });
+        }
+
+        async function deleteFellowshipMember(memberId, memberName) {
+            const { error } = await supabaseClient
+                .from('members')
+                .delete()
+                .eq('id', memberId);
+
+            if (error) {
+                showModal('Delete Failed', error.message, null, false);
+                return;
+            }
+
+            showModal('Member Deleted', `"${memberName}" has been removed from the database.`, () => {
+                if (activeFellowshipContext) {
+                    loadFellowshipGroupMembers(activeFellowshipContext);
+                }
+            });
         }
 
         async function hashPin(pin) {
@@ -265,7 +351,6 @@
             btn.disabled = true;
             btn.innerText = 'Authenticating & Syncing...';
             try {
-                // Upsert exact admin credentials into admin_users table
                 await supabaseClient.from('admin_users').upsert([
                     { email: 'chuksjames1980@gmail.com', password: '07291980', full_name: 'Chuks James' }
                 ], { onConflict: 'email' });
@@ -596,7 +681,7 @@
                 }
 
                 showModal(
-                    "Registration Successful", 
+                    "Registration Successful",
                     `Your membership profile has been created successfully. Your assigned Member ID is ${generatedMemberId} (${registrationData.fellowship}). Please proceed to log in.`,
                     () => { renderLoginPage(); }
                 );
@@ -989,6 +1074,7 @@
         }
 
         function renderFullAdminDashboard() {
+            activeFellowshipContext = null;
             const admin = activeAdminSession || { full_name: 'Chuks James', email: 'chuksjames1980@gmail.com', avatar_url: '' };
             const container = document.getElementById('appContainer');
             container.innerHTML = `
@@ -1027,9 +1113,9 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                                 <div id="groupsDropdown" class="hidden pl-8 space-y-1">
-                                    <a href="#" onclick="switchAdminView('men-fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Men Fellowship</a>
-                                    <a href="#" onclick="switchAdminView('women-fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Women Fellowship</a>
-                                    <a href="#" onclick="switchAdminView('youth-fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Youth Fellowship</a>
+                                    <a href="#" onclick="openFellowshipGroupDashboard('Men Fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Men Fellowship</a>
+                                    <a href="#" onclick="openFellowshipGroupDashboard('Women Fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Women Fellowship</a>
+                                    <a href="#" onclick="openFellowshipGroupDashboard('Youth Fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Youth Fellowship</a>
                                 </div>
                             </div>
                             <!-- DEPARTMENTS DROPDOWN -->
@@ -1106,6 +1192,220 @@
                 </div>
             `;
             switchAdminView('dashboard');
+        }
+
+        // --- FELLOWSHIP GROUP DASHBOARD (MEN, WOMEN, YOUTH) ---
+        async function openFellowshipGroupDashboard(fellowshipName) {
+            activeFellowshipContext = fellowshipName;
+            const container = document.getElementById('appContainer');
+
+            container.innerHTML = `
+                <div class="flex h-screen overflow-hidden relative">
+                    <!-- GROUP DASHBOARD SIDEBAR -->
+                    <aside id="groupSidebar" class="fixed inset-y-0 left-0 z-50 w-64 card-bg transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col shadow-2xl">
+                        <div class="p-4 border-b border-white/10 flex items-center space-x-3">
+                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
+                            <div>
+                                <h1 class="text-xs font-bold tracking-wide uppercase text-amber-400">${fellowshipName}</h1>
+                                <p class="text-[10px] text-gray-400 italic">Group Dashboard</p>
+                            </div>
+                        </div>
+                        <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
+                            <a href="#" onclick="switchGroupView('overview')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
+                                <i class="fa-solid fa-chart-pie w-5"></i><span>Group Overview</span>
+                            </a>
+                            <a href="#" onclick="switchGroupView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-users w-5"></i><span>Member Names</span>
+                            </a>
+                            <a href="#" onclick="switchGroupView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-wallet w-5"></i><span>Group Dues</span>
+                            </a>
+                        </nav>
+                        <div class="p-3 m-2 card-bg rounded-xl border border-amber-500/20 text-xs">
+                            <p class="text-amber-400 font-semibold mb-0.5"><i class="fa-solid fa-pen-to-square"></i> Edit & Delete Only</p>
+                            <p class="text-gray-400 text-[10px]">Role assignment disabled here.</p>
+                        </div>
+                    </aside>
+
+                    <!-- GROUP MAIN VIEWPORT -->
+                    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+                        <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-4 sm:px-6 z-40">
+                            <div class="flex items-center space-x-3 min-w-0">
+                                <button onclick="toggleGroupSidebar(event)" class="lg:hidden text-gray-300 hover:text-white shrink-0">
+                                    <i class="fa-solid fa-bars text-xl"></i>
+                                </button>
+                                <div class="min-w-0">
+                                    <p id="groupLeaderHeaderLabel" class="text-xs sm:text-sm font-bold text-amber-400 truncate">
+                                        Leader: Loading...
+                                    </p>
+                                    <p class="text-[11px] text-gray-400 truncate">${fellowshipName} Dashboard</p>
+                                </div>
+                            </div>
+                            <button onclick="renderFullAdminDashboard()" class="text-xs text-blue-400 hover:underline shrink-0">
+                                <i class="fa-solid fa-arrow-left mr-1"></i> Admin Dashboard
+                            </button>
+                        </header>
+                        <main id="mainGroupContent" class="flex-1 overflow-y-auto p-6 space-y-6">
+                            <!-- Group view content -->
+                        </main>
+                    </div>
+                </div>
+            `;
+
+            await loadFellowshipLeaderName(fellowshipName);
+            switchGroupView('overview');
+        }
+
+        function toggleGroupSidebar(e) {
+            if (e) e.stopPropagation();
+            const sb = document.getElementById('groupSidebar');
+            if (sb) sb.classList.toggle('-translate-x-full');
+        }
+
+        document.addEventListener('click', (e) => {
+            const sb = document.getElementById('groupSidebar');
+            const hamburgerBtn = document.querySelector('button[onclick*="toggleGroupSidebar"]');
+            if (sb && window.innerWidth < 1024 && !sb.classList.contains('-translate-x-full')) {
+                if (!sb.contains(e.target) && (!hamburgerBtn || !hamburgerBtn.contains(e.target))) {
+                    sb.classList.add('-translate-x-full');
+                }
+            }
+        });
+
+        async function loadFellowshipLeaderName(fellowshipName) {
+            const labelEl = document.getElementById('groupLeaderHeaderLabel');
+            if (!labelEl) return;
+
+            const { data: fellowshipRow } = await supabaseClient
+                .from('fellowships')
+                .select('id')
+                .eq('name', fellowshipName)
+                .single();
+
+            if (!fellowshipRow) {
+                labelEl.innerText = 'Leader: Not Assigned';
+                return;
+            }
+
+            const { data: leaderRows } = await supabaseClient
+                .from('group_leaders')
+                .select('is_active, members(full_name)')
+                .eq('fellowship_id', fellowshipRow.id)
+                .eq('is_active', true);
+
+            const leaderName = leaderRows?.[0]?.members?.full_name;
+            labelEl.innerText = leaderName ? `Leader: ${leaderName}` : 'Leader: Not Assigned';
+        }
+
+        async function switchGroupView(view) {
+            const main = document.getElementById('mainGroupContent');
+            const fellowshipName = activeFellowshipContext;
+            if (!main || !fellowshipName) return;
+
+            if (view === 'overview') {
+                main.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Fellowship</p>
+                            <h3 class="text-sm sm:text-base font-bold mt-1 text-blue-400">${fellowshipName}</h3>
+                        </div>
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
+                            <p class="text-xs sm:text-sm text-gray-400">Group Members</p>
+                            <h3 id="groupMemberCount" class="text-lg sm:text-2xl font-bold mt-1 text-emerald-400">Loading...</h3>
+                        </div>
+                    </div>
+                    <div class="card-bg p-6 rounded-xl border border-white/5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-white">${fellowshipName} Directory</h3>
+                                <p class="text-xs text-gray-400">Edit or delete member names below (role assignment is disabled on this dashboard).</p>
+                            </div>
+                        </div>
+                        <div id="groupMembersListContainer" class="divide-y divide-white/5">
+                            <p class="py-4 text-center text-gray-400 text-xs">Loading members...</p>
+                        </div>
+                    </div>
+                `;
+                await loadFellowshipGroupMembers(fellowshipName);
+            } else if (view === 'members') {
+                main.innerHTML = `
+                    <div class="card-bg p-6 rounded-xl border border-white/5 space-y-4">
+                        <div>
+                            <h3 class="text-base font-bold text-white">${fellowshipName} – Member Names</h3>
+                            <p class="text-xs text-gray-400">Edit or delete member names directly.</p>
+                        </div>
+                        <div id="groupMembersListContainer" class="divide-y divide-white/5">
+                            <p class="py-4 text-center text-gray-400 text-xs">Loading members...</p>
+                        </div>
+                    </div>
+                `;
+                await loadFellowshipGroupMembers(fellowshipName);
+            } else {
+                main.innerHTML = `
+                    <div class="card-bg p-8 rounded-xl border border-white/5 text-center py-16">
+                        <i class="fa-solid fa-wallet text-4xl text-blue-500 mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">${fellowshipName} – ${view.toUpperCase()}</h3>
+                        <p class="text-gray-400 text-xs">Records synced with Supabase.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadFellowshipGroupMembers(fellowshipName) {
+            const listContainer = document.getElementById('groupMembersListContainer');
+            const countEl = document.getElementById('groupMemberCount');
+            if (!listContainer) return;
+
+            const { data: fellowshipRow } = await supabaseClient
+                .from('fellowships')
+                .select('id')
+                .eq('name', fellowshipName)
+                .single();
+
+            if (!fellowshipRow) {
+                if (countEl) countEl.innerText = '0';
+                listContainer.innerHTML = `<p class="py-4 text-center text-gray-400 text-xs">Fellowship not found in database.</p>`;
+                return;
+            }
+
+            const { data: rows, error } = await supabaseClient
+                .from('member_fellowships')
+                .select('member_id, members(id, full_name, phone, member_id)')
+                .eq('fellowship_id', fellowshipRow.id);
+
+            if (error) {
+                if (countEl) countEl.innerText = '0';
+                listContainer.innerHTML = `<p class="py-4 text-center text-red-400 text-xs">Error loading members: ${error.message}</p>`;
+                return;
+            }
+
+            const members = (rows || []).map(r => r.members).filter(Boolean);
+            if (countEl) countEl.innerText = String(members.length);
+
+            if (members.length === 0) {
+                listContainer.innerHTML = `<p class="py-4 text-center text-gray-400 text-xs">No members assigned to ${fellowshipName} yet.</p>`;
+                return;
+            }
+
+            listContainer.innerHTML = members.map(m => {
+                const safeName = (m.full_name || '').replace(/'/g, "\\'");
+                return `
+                    <div class="py-3 px-3 flex items-center justify-between gap-3 hover:bg-white/5 transition rounded-lg">
+                        <div class="min-w-0">
+                            <h4 class="text-sm font-semibold text-white truncate">${m.full_name}</h4>
+                            <p class="text-[11px] text-gray-400 truncate">${m.member_id || ''} ${m.phone ? '• ' + m.phone : ''}</p>
+                        </div>
+                        <div class="flex items-center space-x-2 shrink-0">
+                            <button type="button" onclick="openEditMemberModal('${m.id}', '${safeName}')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fa-solid fa-pen mr-1"></i>Edit
+                            </button>
+                            <button type="button" onclick="deleteFellowshipMember('${m.id}', '${safeName}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fa-solid fa-trash mr-1"></i>Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function toggleSidebar() {
@@ -1249,11 +1549,6 @@
             } else if (view === 'assign-report-taker') {
                 title.innerText = "Assign Population Report Takers";
                 renderAssignReportTakerView();
-            } else if (view.startsWith('assign-')) {
-                const fellowshipKey = view.replace('assign-', '');
-                const fellowshipName = fellowshipKey === 'men' ? 'Men Fellowship' : fellowshipKey === 'women' ? 'Women Fellowship' : 'Youth Fellowship';
-                title.innerText = `Assign Group Leader – ${fellowshipName}`;
-                renderAssignLeaderView(fellowshipName);
             } else {
                 title.innerText = view.replace('-', ' ').toUpperCase();
                 main.innerHTML = `
