@@ -1187,58 +1187,58 @@
             if (subView === 'home') {
                 titleEl.innerText = `${data.fellowshipName} – Group Dashboard`;
                 content.innerHTML = `
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div onclick="openLeaderCardDetail('total_inflow')" class="card-bg p-5 rounded-xl border border-emerald-500/30 hover:border-emerald-400 cursor-pointer transition shadow-lg">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div onclick="openLeaderCardDetail('total_inflow')" class="card-bg p-4 sm:p-5 rounded-xl border border-emerald-500/30 hover:border-emerald-400 cursor-pointer transition shadow-lg">
                             <p class="text-xs text-gray-400">Total Inflow</p>
-                            <h3 class="text-xl font-extrabold mt-1 text-emerald-400">${formatNaira(data.totalInflow)}</h3>
+                            <h3 class="text-base sm:text-xl font-extrabold mt-1 text-emerald-400">${formatNaira(data.totalInflow)}</h3>
                             <p class="text-[10px] text-emerald-300/80 mt-2"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Click for breakdown</p>
                         </div>
 
-                        <div onclick="openLeaderCardDetail('total_dues')" class="card-bg p-5 rounded-xl border border-blue-500/30 hover:border-blue-400 cursor-pointer transition shadow-lg">
+                        <div onclick="openLeaderCardDetail('total_dues')" class="card-bg p-4 sm:p-5 rounded-xl border border-blue-500/30 hover:border-blue-400 cursor-pointer transition shadow-lg">
                             <p class="text-xs text-gray-400">Total Dues</p>
-                            <h3 class="text-xl font-extrabold mt-1 text-blue-400">${formatNaira(data.totalDues)}</h3>
+                            <h3 class="text-base sm:text-xl font-extrabold mt-1 text-blue-400">${formatNaira(data.totalDues)}</h3>
                             <p class="text-[10px] text-blue-300/80 mt-2"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Click for dues history</p>
                         </div>
 
-                        <div class="card-bg p-5 rounded-xl border border-red-500/20">
+                        <div class="card-bg p-4 sm:p-5 rounded-xl border border-red-500/20">
                             <p class="text-xs text-gray-400">Total Arrears</p>
-                            <h3 class="text-xl font-extrabold mt-1 text-red-400">${formatNaira(data.totalArrears)}</h3>
+                            <h3 class="text-base sm:text-xl font-extrabold mt-1 text-red-400">${formatNaira(data.totalArrears)}</h3>
                             <p class="text-[10px] text-gray-500 mt-2">Accumulated member monthly dues owed</p>
                         </div>
 
-                        <div onclick="openLeaderCardDetail('total_old_dues')" class="card-bg p-5 rounded-xl border border-amber-500/30 hover:border-amber-400 cursor-pointer transition shadow-lg">
+                        <div onclick="openLeaderCardDetail('total_old_dues')" class="card-bg p-4 sm:p-5 rounded-xl border border-amber-500/30 hover:border-amber-400 cursor-pointer transition shadow-lg">
                             <p class="text-xs text-gray-400">Total Old Dues</p>
-                            <h3 class="text-xl font-extrabold mt-1 text-amber-400">${formatNaira(data.totalOldDues)}</h3>
+                            <h3 class="text-base sm:text-xl font-extrabold mt-1 text-amber-400">${formatNaira(data.totalOldDues)}</h3>
                             <p class="text-[10px] text-amber-300/80 mt-2"><i class="fa-solid fa-list mr-1"></i>Click for details</p>
                         </div>
 
-                        <div onclick="openLeaderCardDetail('total_expenses')" class="card-bg p-5 rounded-xl border border-rose-500/30 hover:border-rose-400 cursor-pointer transition shadow-lg">
+                        <div onclick="openLeaderCardDetail('total_expenses')" class="card-bg p-4 sm:p-5 rounded-xl border border-rose-500/30 hover:border-rose-400 cursor-pointer transition shadow-lg">
                             <p class="text-xs text-gray-400">Total Expenses</p>
-                            <h3 class="text-xl font-extrabold mt-1 text-rose-400">${formatNaira(data.totalExpenses)}</h3>
+                            <h3 class="text-base sm:text-xl font-extrabold mt-1 text-rose-400">${formatNaira(data.totalExpenses)}</h3>
                             <p class="text-[10px] text-rose-300/80 mt-2"><i class="fa-solid fa-receipt mr-1"></i>Click for expenses list</p>
                         </div>
 
-                        <div onclick="openLeaderCardDetail('total_project_paid')" class="card-bg p-5 rounded-xl border border-purple-500/30 hover:border-purple-400 cursor-pointer transition shadow-lg">
+                        <div onclick="openLeaderCardDetail('total_project_paid')" class="card-bg p-4 sm:p-5 rounded-xl border border-purple-500/30 hover:border-purple-400 cursor-pointer transition shadow-lg">
                             <p class="text-xs text-gray-400">Total Project Paid</p>
-                            <h3 class="text-xl font-extrabold mt-1 text-purple-400">${formatNaira(data.totalProjectPaid)}</h3>
+                            <h3 class="text-base sm:text-xl font-extrabold mt-1 text-purple-400">${formatNaira(data.totalProjectPaid)}</h3>
                             <p class="text-[10px] text-purple-300/80 mt-2"><i class="fa-solid fa-diagram-project mr-1"></i>Click for projects & payment status</p>
                         </div>
 
-                        <div onclick="openLeaderCardDetail('saved_money')" class="card-bg p-5 rounded-xl border border-teal-500/30 hover:border-teal-400 cursor-pointer transition shadow-lg">
+                        <div onclick="openLeaderCardDetail('saved_money')" class="card-bg p-4 sm:p-5 rounded-xl border border-teal-500/30 hover:border-teal-400 cursor-pointer transition shadow-lg">
                             <p class="text-xs text-gray-400">Saved Money</p>
-                            <h3 class="text-xl font-extrabold mt-1 text-teal-400">${formatNaira(data.totalSavedMoney)}</h3>
+                            <h3 class="text-base sm:text-xl font-extrabold mt-1 text-teal-400">${formatNaira(data.totalSavedMoney)}</h3>
                             <p class="text-[10px] text-teal-300/80 mt-2"><i class="fa-solid fa-piggy-bank mr-1"></i>Click for saved records</p>
                         </div>
 
-                        <div onclick="openLeaderCardDetail('total_project_unpaid')" class="card-bg p-5 rounded-xl border border-orange-500/30 hover:border-orange-400 cursor-pointer transition shadow-lg">
+                        <div onclick="openLeaderCardDetail('total_project_unpaid')" class="card-bg p-4 sm:p-5 rounded-xl border border-orange-500/30 hover:border-orange-400 cursor-pointer transition shadow-lg">
                             <p class="text-xs text-gray-400">Total Project Unpaid</p>
-                            <h3 class="text-xl font-extrabold mt-1 text-orange-400">${formatNaira(data.totalProjectUnpaid)}</h3>
+                            <h3 class="text-base sm:text-xl font-extrabold mt-1 text-orange-400">${formatNaira(data.totalProjectUnpaid)}</h3>
                             <p class="text-[10px] text-orange-300/80 mt-2"><i class="fa-solid fa-hourglass-half mr-1"></i>Click for unpaid balances</p>
                         </div>
 
-                        <div onclick="openLeaderCardDetail('total_balance')" class="card-bg p-5 rounded-xl border border-cyan-500/30 hover:border-cyan-400 cursor-pointer transition shadow-lg">
+                        <div onclick="openLeaderCardDetail('total_balance')" class="card-bg p-4 sm:p-5 rounded-xl border border-cyan-500/30 hover:border-cyan-400 cursor-pointer transition shadow-lg">
                             <p class="text-xs text-gray-400">Total Balance</p>
-                            <h3 class="text-xl font-extrabold mt-1 text-cyan-400">${formatNaira(data.totalBalance)}</h3>
+                            <h3 class="text-base sm:text-xl font-extrabold mt-1 text-cyan-400">${formatNaira(data.totalBalance)}</h3>
                             <p class="text-[10px] text-cyan-300/80 mt-2"><i class="fa-solid fa-scale-balanced mr-1"></i>Click for Dues - Expenses</p>
                         </div>
                     </div>
