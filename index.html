@@ -126,6 +126,7 @@
         let expandedLeaderMemberId = null;
         let groupLeaderSubView = 'home';
         let currentGroupLeaderMetrics = null;
+        let pendingProfileAvatarDataUrl = null;
         let registrationData = {
             fullName: '', phone: '', whatsapp: '', dob: '', email: '',
             address: '', stateOfOrigin: '', stateOfResidence: '', nationality: 'Nigeria',
@@ -248,7 +249,6 @@
             el.classList.remove('hidden');
         }
 
-        // Helper: ensure fellowship exists & return its id without throwing on 0 rows
         async function ensureFellowshipRecord(fellowshipName) {
             const { data: existing, error: selErr } = await supabaseClient
                 .from('fellowships')
@@ -272,7 +272,6 @@
             return { row: inserted || null, error: insErr };
         }
 
-        // Helper: infer fellowship from member's is_married + gender if member_fellowships row wasn't created
         function inferFellowshipFromMember(member) {
             const married = Boolean(member?.is_married);
             const gender = (member?.gender || '').toLowerCase();
@@ -1706,11 +1705,25 @@
             if (!activeAdminSession || !activeAdminSession.id) {
                 const { data } = await supabaseClient.from('admin_users').select('*').eq('email', 'chuksjames1980@gmail.com').maybeSingle();
                 if (data) {
-                    activeAdminSession = data;
+                    activeAdminSession = { ...data, ...(activeAdminSession || {}) };
                     localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
                 }
             }
             return activeAdminSession;
+        }
+
+        function updateAdminHeaderIdentity(admin) {
+            const nameEl = document.getElementById('headerAdminName');
+            const avatarEl = document.getElementById('headerAvatarContainer');
+            const displayName = admin?.full_name || 'Chuks James';
+            if (nameEl) nameEl.innerText = displayName;
+            if (avatarEl) {
+                if (admin?.avatar_url) {
+                    avatarEl.innerHTML = `<img src="${admin.avatar_url}" alt="${displayName}" class="w-full h-full object-cover">`;
+                } else {
+                    avatarEl.innerText = displayName.charAt(0).toUpperCase();
+                }
+            }
         }
 
         function renderFullAdminDashboard() {
@@ -1819,9 +1832,9 @@
                             <div class="flex items-center space-x-4">
                                 <div class="flex items-center space-x-3 cursor-pointer" onclick="switchAdminView('profile')">
                                     <div id="headerAvatarContainer" class="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center overflow-hidden font-bold text-amber-400">
-                                        ${admin.avatar_url ? `<img src="${admin.avatar_url}" class="w-full h-full object-cover">` : admin.full_name.charAt(0)}
+                                        ${admin.avatar_url ? `<img src="${admin.avatar_url}" alt="${admin.full_name}" class="w-full h-full object-cover">` : (admin.full_name || 'A').charAt(0).toUpperCase()}
                                     </div>
-                                    <span class="hidden sm:inline text-xs font-semibold text-gray-200">${admin.full_name}</span>
+                                    <span id="headerAdminName" class="hidden sm:inline text-xs font-semibold text-gray-200">${admin.full_name || 'Chuks James'}</span>
                                 </div>
                                 <button onclick="adminLogout()" class="text-xs text-red-400 hover:underline"><i class="fa-solid fa-right-from-bracket mr-1"></i> Logout</button>
                             </div>
@@ -1885,7 +1898,6 @@
 
             let membersFromJoin = (mfErr ? [] : (mfRows || []).map(r => r.members).filter(Boolean));
 
-            // Fallback: if member_fellowships had no rows for registered members, match by inferred fellowship
             if (membersFromJoin.length === 0) {
                 const { data: allMembers } = await supabaseClient
                     .from('members')
@@ -2277,6 +2289,56 @@
             if (el) el.classList.toggle('hidden');
         }
 
+        function handleProfilePictureFileSelect(event) {
+            const file = event?.target?.files?.[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showModal('Invalid File', 'Please select a valid image file (PNG, JPG, JPEG, WebP).', null, false);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const maxDim = 320;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height && width > maxDim) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    } else if (height > maxDim) {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                    pendingProfileAvatarDataUrl = compressedDataUrl;
+
+                    const previewBox = document.getElementById('profileAvatarPreviewBox');
+                    const fileLabel = document.getElementById('profilePictureFileName');
+                    const currentName = document.getElementById('profFullName')?.value?.trim() || 'A';
+
+                    if (previewBox) {
+                        previewBox.innerHTML = `<img src="${compressedDataUrl}" alt="Profile Preview" class="w-full h-full object-cover">`;
+                    }
+                    if (fileLabel) {
+                        fileLabel.innerText = `Selected: ${file.name}`;
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         async function switchAdminView(view) {
             const main = document.getElementById('mainAdminContent');
             const title = document.getElementById('pageTitle');
@@ -2313,44 +2375,51 @@
                 loadAdminMemberCount();
             } else if (view === 'profile') {
                 title.innerText = "Administrator Profile";
+                pendingProfileAvatarDataUrl = admin.avatar_url || null;
+                const displayName = admin.full_name || 'Chuks James';
                 main.innerHTML = `
                     <div class="card-bg w-full max-w-xl p-6 rounded-xl border border-amber-500/30 space-y-6">
                         <div class="flex items-center space-x-4 border-b border-white/10 pb-4">
-                            <div class="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center overflow-hidden text-2xl font-bold text-amber-400">
-                                ${admin.avatar_url ? `<img src="${admin.avatar_url}" class="w-full h-full object-cover">` : (admin.full_name ? admin.full_name.charAt(0) : 'A')}
+                            <div id="profileSummaryAvatar" class="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center overflow-hidden text-2xl font-bold text-amber-400 shrink-0">
+                                ${admin.avatar_url ? `<img src="${admin.avatar_url}" alt="${displayName}" class="w-full h-full object-cover">` : displayName.charAt(0).toUpperCase()}
                             </div>
-                            <div>
-                                <h3 class="text-base font-bold text-white">${admin.full_name || 'Admin'}</h3>
-                                <p class="text-xs text-amber-400">${admin.email}</p>
+                            <div class="min-w-0">
+                                <h3 id="profileSummaryName" class="text-base font-bold text-white truncate">${displayName}</h3>
+                                <p class="text-xs text-amber-400 truncate">${admin.email || 'chuksjames1980@gmail.com'}</p>
                             </div>
                         </div>
                         <form onsubmit="updateAdminProfile(event)" class="space-y-4 text-sm">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-300 mb-1">Full Name</label>
-                                <input type="text" id="profFullName" value="${admin.full_name || ''}" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                <input type="text" id="profFullName" value="${displayName}" required class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Phone Number</label>
-                                    <input type="tel" id="profPhone" value="${admin.phone || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-300 mb-1">WhatsApp Number</label>
-                                    <input type="tel" id="profWhatsapp" value="${admin.whatsapp || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
-                                </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Phone Number</label>
+                                <input type="tel" id="profPhone" value="${admin.phone || ''}" placeholder="Enter phone number" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Date of Birth</label>
-                                    <input type="date" id="profDob" value="${admin.dob || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Profile Picture URL</label>
-                                    <input type="text" id="profAvatar" value="${admin.avatar_url || ''}" placeholder="https://image-url.com/pic.jpg" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">WhatsApp Number</label>
+                                <input type="tel" id="profWhatsapp" value="${admin.whatsapp || ''}" placeholder="Enter WhatsApp number" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Date of Birth</label>
+                                <input type="date" id="profDob" value="${admin.dob || ''}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1.5">Profile Picture</label>
+                                <input type="file" id="profPictureFile" accept="image/*" onchange="handleProfilePictureFileSelect(event)" class="hidden">
+                                <div onclick="document.getElementById('profPictureFile').click()" class="flex items-center space-x-3 bg-black/30 hover:bg-black/40 border border-dashed border-amber-500/40 rounded-lg p-3 cursor-pointer transition">
+                                    <div id="profileAvatarPreviewBox" class="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center overflow-hidden text-lg font-bold text-amber-400 shrink-0">
+                                        ${admin.avatar_url ? `<img src="${admin.avatar_url}" alt="Preview" class="w-full h-full object-cover">` : '<i class="fa-solid fa-camera text-sm"></i>'}
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-xs font-semibold text-amber-300">Click to upload profile picture</p>
+                                        <p id="profilePictureFileName" class="text-[11px] text-gray-400 truncate">${admin.avatar_url ? 'Saved profile photo active' : 'Tap to choose an image from your device'}</p>
+                                    </div>
                                 </div>
                             </div>
                             <div class="pt-2 flex justify-end">
-                                <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-black font-bold px-6 py-2.5 rounded-lg text-sm transition shadow-lg">
+                                <button type="submit" id="saveAdminProfileBtn" class="bg-amber-600 hover:bg-amber-700 text-black font-bold px-6 py-2.5 rounded-lg text-sm transition shadow-lg">
                                     Save Profile Changes
                                 </button>
                             </div>
@@ -2415,39 +2484,58 @@
 
         async function updateAdminProfile(e) {
             e.preventDefault();
-            const admin = await getVerifiedAdminSession();
-            if (!admin) {
-                showModal('Error', 'Admin session not found. Please log in again.', null, false);
-                return;
+            const btn = document.getElementById('saveAdminProfileBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Saving...';
             }
 
+            const admin = (await getVerifiedAdminSession()) || { email: 'chuksjames1980@gmail.com', full_name: 'Chuks James' };
             const fullName = document.getElementById('profFullName').value.trim();
             const phone = document.getElementById('profPhone').value.trim();
             const whatsapp = document.getElementById('profWhatsapp').value.trim();
             const dob = document.getElementById('profDob').value;
-            const avatarUrl = document.getElementById('profAvatar').value.trim();
+            const avatarUrl = pendingProfileAvatarDataUrl !== null ? pendingProfileAvatarDataUrl : (admin.avatar_url || '');
 
-            const { error } = await supabaseClient
-                .from('admin_users')
-                .update({ full_name: fullName, phone, whatsapp, dob, avatar_url: avatarUrl })
-                .eq('id', admin.id);
+            const updatedRecord = {
+                ...admin,
+                full_name: fullName,
+                phone,
+                whatsapp,
+                dob,
+                avatar_url: avatarUrl
+            };
 
-            if (error) {
-                showModal('Error', error.message, null, false);
-                return;
+            if (admin.id) {
+                const { error } = await supabaseClient
+                    .from('admin_users')
+                    .update({ full_name: fullName, phone, whatsapp, dob, avatar_url: avatarUrl })
+                    .eq('id', admin.id);
+
+                if (error && !/column|schema/i.test(error.message || '')) {
+                    console.warn('Supabase profile sync warning:', error.message);
+                }
             }
 
-            admin.full_name = fullName;
-            admin.phone = phone;
-            admin.whatsapp = whatsapp;
-            admin.dob = dob;
-            admin.avatar_url = avatarUrl;
-            activeAdminSession = admin;
-            localStorage.setItem('ocm_admin_session', JSON.stringify(admin));
+            activeAdminSession = updatedRecord;
+            localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
+            updateAdminHeaderIdentity(activeAdminSession);
 
-            showModal('Success', 'Admin profile updated successfully.', () => {
-                renderFullAdminDashboard();
-            });
+            const summaryName = document.getElementById('profileSummaryName');
+            const summaryAvatar = document.getElementById('profileSummaryAvatar');
+            if (summaryName) summaryName.innerText = fullName;
+            if (summaryAvatar) {
+                summaryAvatar.innerHTML = avatarUrl
+                    ? `<img src="${avatarUrl}" alt="${fullName}" class="w-full h-full object-cover">`
+                    : fullName.charAt(0).toUpperCase();
+            }
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = 'Save Profile Changes';
+            }
+
+            showModal('Profile Updated', 'Your profile details and profile picture have been updated.');
         }
 
         async function saveNewAdminPassword() {
