@@ -124,6 +124,8 @@
         let activeAssignLeaderFellowship = null;
         let selectedLeaderActionByMember = {};
         let expandedLeaderMemberId = null;
+        let expandedDirectoryMemberId = null;
+        let allAdminDirectoryMembers = [];
         let groupLeaderSubView = 'home';
         let currentGroupLeaderMetrics = null;
         let pendingProfileAvatarDataUrl = null;
@@ -135,6 +137,15 @@
         };
         let loadingTimer = null;
         let modalCallback = null;
+
+        function closeSidebarIfMobile(sidebarId = 'sidebar') {
+            if (window.innerWidth < 1024) {
+                const sb = document.getElementById(sidebarId);
+                if (sb && !sb.classList.contains('-translate-x-full')) {
+                    sb.classList.add('-translate-x-full');
+                }
+            }
+        }
 
         function formatNaira(amount) {
             const num = Number(amount || 0);
@@ -804,24 +815,24 @@
                             </div>
                         </div>
                         <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
-                            <a href="#" onclick="switchMemberView('dashboard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
+                            <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); switchMemberView('dashboard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
                                 <i class="fa-solid fa-chart-pie w-5"></i><span>Dashboard</span>
                             </a>
                             ${isGroupLeader ? `
-                            <a href="#" onclick="openAssignedGroupLeaderWorkspace()" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 font-semibold transition">
+                            <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); openAssignedGroupLeaderWorkspace()" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 font-semibold transition">
                                 <i class="fa-solid fa-crown w-5"></i><span>Group Dashboard</span>
                             </a>
                             ` : ''}
-                            <a href="#" onclick="switchMemberView('fellowship')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); switchMemberView('fellowship')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-users-rectangle w-5"></i><span>My Fellowship</span>
                             </a>
-                            <a href="#" onclick="switchMemberView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); switchMemberView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-wallet w-5"></i><span>Dues & Payments</span>
                             </a>
-                            <a href="#" onclick="switchMemberView('attendance')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); switchMemberView('attendance')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-calendar-check w-5"></i><span>Attendance Log</span>
                             </a>
-                            <a href="#" onclick="switchMemberView('idcard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); switchMemberView('idcard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-id-card w-5"></i><span>Digital ID Card</span>
                             </a>
                         </nav>
@@ -876,6 +887,7 @@
         }
 
         function switchMemberView(view) {
+            closeSidebarIfMobile('memberSidebar');
             const main = document.getElementById('mainMemberContent');
             const title = document.getElementById('memberPageTitle');
             const m = activeMemberSession;
@@ -975,6 +987,7 @@
 
         // --- ASSIGNED GROUP LEADER WORKSPACE (FROM MEMBER DASHBOARD SIDEBAR) ---
         async function openAssignedGroupLeaderWorkspace() {
+            closeSidebarIfMobile('memberSidebar');
             const m = activeMemberSession;
             const activeLeaderEntry = (m?.group_leaders || []).find(gl => gl.is_active);
             const fellowshipName = activeLeaderEntry?.fellowships?.name || m?.member_fellowships?.[0]?.fellowships?.name || 'Men Fellowship';
@@ -994,22 +1007,22 @@
                             </div>
                         </div>
                         <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
-                            <a href="#" onclick="switchLeaderWorkspaceView('home')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
+                            <a href="#" onclick="closeSidebarIfMobile('leaderWorkspaceSidebar'); switchLeaderWorkspaceView('home')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
                                 <i class="fa-solid fa-house w-5"></i><span>Home</span>
                             </a>
-                            <a href="#" onclick="switchLeaderWorkspaceView('assign-excos')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('leaderWorkspaceSidebar'); switchLeaderWorkspaceView('assign-excos')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-user-tie w-5"></i><span>Assign Excos</span>
                             </a>
-                            <a href="#" onclick="switchLeaderWorkspaceView('birthday-report')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('leaderWorkspaceSidebar'); switchLeaderWorkspaceView('birthday-report')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-cake-candles w-5"></i><span>Birthday Report</span>
                             </a>
-                            <a href="#" onclick="switchLeaderWorkspaceView('send-money-approval')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('leaderWorkspaceSidebar'); switchLeaderWorkspaceView('send-money-approval')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-money-bill-transfer w-5"></i><span>Send Money Approval</span>
                             </a>
-                            <a href="#" onclick="switchLeaderWorkspaceView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('leaderWorkspaceSidebar'); switchLeaderWorkspaceView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-users w-5"></i><span>Members</span>
                             </a>
-                            <a href="#" onclick="switchLeaderWorkspaceView('settings')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('leaderWorkspaceSidebar'); switchLeaderWorkspaceView('settings')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-gear w-5"></i><span>Settings</span>
                             </a>
                         </nav>
@@ -1164,6 +1177,7 @@
         }
 
         function switchLeaderWorkspaceView(subView) {
+            closeSidebarIfMobile('leaderWorkspaceSidebar');
             groupLeaderSubView = subView;
             const content = document.getElementById('leaderWorkspaceContent');
             const titleEl = document.getElementById('leaderWorkspaceTitle');
@@ -1742,10 +1756,10 @@
                             </div>
                         </div>
                         <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
-                            <a href="#" onclick="switchAdminView('dashboard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dashboard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
                                 <i class="fa-solid fa-chart-pie w-5"></i><span>Dashboard</span>
                             </a>
-                            <a href="#" onclick="switchAdminView('profile')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('profile')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-user-gear w-5"></i><span>Profile</span>
                             </a>
                             <!-- REPORTS DROPDOWN -->
@@ -1755,8 +1769,8 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                                 <div id="reportsDropdown" class="hidden pl-6 space-y-1">
-                                    <a href="#" onclick="switchAdminView('population-report')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Population Report</a>
-                                    <a href="#" onclick="switchAdminView('assign-report-taker')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Assign Population Taker</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('population-report')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Population Report</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('assign-report-taker')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Assign Population Taker</a>
                                 </div>
                             </div>
                             <!-- GROUPS DROPDOWN -->
@@ -1766,9 +1780,9 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                                 <div id="groupsDropdown" class="hidden pl-8 space-y-1">
-                                    <a href="#" onclick="openFellowshipGroupDashboard('Men Fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Men Fellowship</a>
-                                    <a href="#" onclick="openFellowshipGroupDashboard('Women Fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Women Fellowship</a>
-                                    <a href="#" onclick="openFellowshipGroupDashboard('Youth Fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Youth Fellowship</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); openFellowshipGroupDashboard('Men Fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Men Fellowship</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); openFellowshipGroupDashboard('Women Fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Women Fellowship</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); openFellowshipGroupDashboard('Youth Fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Youth Fellowship</a>
                                 </div>
                             </div>
                             <!-- ASSIGN LEADERS DROPDOWN (AFTER GROUPS) -->
@@ -1778,9 +1792,9 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                                 <div id="assignLeadersDropdown" class="hidden pl-8 space-y-1">
-                                    <a href="#" onclick="openAssignLeadersForFellowship('Men Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Men Fellowship</a>
-                                    <a href="#" onclick="openAssignLeadersForFellowship('Women Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Women Fellowship</a>
-                                    <a href="#" onclick="openAssignLeadersForFellowship('Youth Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Youth Fellowship</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); openAssignLeadersForFellowship('Men Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Men Fellowship</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); openAssignLeadersForFellowship('Women Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Women Fellowship</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); openAssignLeadersForFellowship('Youth Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Youth Fellowship</a>
                                 </div>
                             </div>
                             <!-- DEPARTMENTS DROPDOWN -->
@@ -1790,18 +1804,18 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                                 <div id="deptDropdown" class="hidden pl-6 space-y-1">
-                                    <a href="#" onclick="switchAdminView('dept-security')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Security</a>
-                                    <a href="#" onclick="switchAdminView('dept-usher')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Usher</a>
-                                    <a href="#" onclick="switchAdminView('dept-sanitation')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Sanitation</a>
-                                    <a href="#" onclick="switchAdminView('dept-choir')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Choir</a>
-                                    <a href="#" onclick="switchAdminView('dept-technical')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Technical</a>
-                                    <a href="#" onclick="switchAdminView('dept-children')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Children Teacher</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dept-security')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Security</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dept-usher')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Usher</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dept-sanitation')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Sanitation</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dept-choir')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Choir</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dept-technical')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Technical</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dept-children')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Children Teacher</a>
                                 </div>
                             </div>
-                            <a href="#" onclick="switchAdminView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-user-group w-5"></i><span>Members</span></a>
-                            <a href="#" onclick="switchAdminView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-wallet w-5"></i><span>Dues</span></a>
-                            <a href="#" onclick="switchAdminView('projects')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-diagram-project w-5"></i><span>Projects</span></a>
-                            <a href="#" onclick="switchAdminView('expenses')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-receipt w-5"></i><span>Expenses</span></a>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-user-group w-5"></i><span>Members</span></a>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-wallet w-5"></i><span>Dues</span></a>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('projects')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-diagram-project w-5"></i><span>Projects</span></a>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('expenses')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition"><i class="fa-solid fa-receipt w-5"></i><span>Expenses</span></a>
                             <!-- SETTINGS DROPDOWN -->
                             <div>
                                 <button onclick="toggleDropdown('settingsDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
@@ -1809,10 +1823,10 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                                 <div id="settingsDropdown" class="hidden pl-6 space-y-1">
-                                    <a href="#" onclick="switchAdminView('set-pin')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Login Password / PIN</a>
-                                    <a href="#" onclick="switchAdminView('set-email')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Login Email</a>
-                                    <a href="#" onclick="switchAdminView('set-theme')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Theme</a>
-                                    <a href="#" onclick="switchAdminView('set-sound')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Notification Sound</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('set-pin')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Login Password / PIN</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('set-email')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Login Email</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('set-theme')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Theme</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('set-sound')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Change Notification Sound</a>
                                 </div>
                             </div>
                         </nav>
@@ -1848,8 +1862,136 @@
             switchAdminView('dashboard');
         }
 
+        // --- ADMIN ALL MEMBERS DIRECTORY (GROUP, DEPARTMENT, SEARCH & DETAILS ON CLICK) ---
+        async function renderAllMembersDirectoryView() {
+            expandedDirectoryMemberId = null;
+            const main = document.getElementById('mainAdminContent');
+            if (!main) return;
+
+            main.innerHTML = `
+                <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-amber-400">All Ministry Members</h3>
+                            <p id="allMembersSubtitle" class="text-xs text-gray-400 mt-0.5">Showing members across fellowship groups & departments. Click any member name to view details.</p>
+                        </div>
+                        <div class="relative w-full sm:w-72">
+                            <i class="fa-solid fa-magnifying-glass text-xs text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                            <input type="text" id="allMembersSearchInput" oninput="filterAllMembersDirectory()" placeholder="Search member by name..." class="w-full bg-black/30 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+                    <div id="allMembersListContainer" class="divide-y divide-white/5">
+                        <p class="py-6 text-center text-gray-400 text-xs">Loading all members...</p>
+                    </div>
+                </div>
+            `;
+
+            const { data: membersRows, error } = await supabaseClient
+                .from('members')
+                .select(`
+                    *,
+                    member_fellowships(fellowships(name)),
+                    member_departments(departments(name))
+                `)
+                .order('full_name', { ascending: true });
+
+            const listContainer = document.getElementById('allMembersListContainer');
+            if (error) {
+                if (listContainer) {
+                    listContainer.innerHTML = `<p class="py-6 text-center text-red-400 text-xs">Failed to load members: ${error.message}</p>`;
+                }
+                return;
+            }
+
+            allAdminDirectoryMembers = (membersRows || []).map(m => {
+                const groups = (m.member_fellowships || []).map(mf => mf.fellowships?.name).filter(Boolean);
+                const groupLabel = groups.length > 0 ? groups.join(', ') : inferFellowshipFromMember(m);
+                const depts = (m.member_departments || []).map(md => md.departments?.name).filter(Boolean);
+                const deptLabel = depts.length > 0 ? depts.join(', ') : 'None (Non-Worker)';
+                return {
+                    ...m,
+                    groupLabel,
+                    deptLabel
+                };
+            });
+
+            const subtitleEl = document.getElementById('allMembersSubtitle');
+            if (subtitleEl) {
+                subtitleEl.innerText = `Total Members: ${allAdminDirectoryMembers.length} • Click any member name to view full details & department.`;
+            }
+
+            renderAllMembersDirectoryRows(allAdminDirectoryMembers);
+        }
+
+        function filterAllMembersDirectory() {
+            const q = (document.getElementById('allMembersSearchInput')?.value || '').trim().toLowerCase();
+            const filtered = q
+                ? allAdminDirectoryMembers.filter(m => (m.full_name || '').toLowerCase().includes(q))
+                : allAdminDirectoryMembers;
+            renderAllMembersDirectoryRows(filtered);
+        }
+
+        function renderAllMembersDirectoryRows(members) {
+            const container = document.getElementById('allMembersListContainer');
+            if (!container) return;
+
+            if (!members || members.length === 0) {
+                container.innerHTML = `<p class="py-6 text-center text-gray-400 text-xs">No members match your search.</p>`;
+                return;
+            }
+
+            container.innerHTML = members.map(m => {
+                const isExpanded = expandedDirectoryMemberId === m.id;
+                return `
+                    <div class="py-3 px-2">
+                        <div onclick="toggleDirectoryMemberDetails('${m.id}')" class="flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-white/5 cursor-pointer transition">
+                            <div class="flex items-center space-x-3 min-w-0">
+                                <div class="w-9 h-9 rounded-full bg-blue-600/20 border border-blue-400/30 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
+                                    ${(m.full_name || 'M').charAt(0).toUpperCase()}
+                                </div>
+                                <div class="min-w-0">
+                                    <h4 class="text-sm font-semibold text-white hover:text-amber-400 transition truncate">${m.full_name}</h4>
+                                    <p class="text-[11px] text-gray-400 truncate">
+                                        Group: <span class="text-blue-300">${m.groupLabel}</span> • Dept: <span class="text-amber-300">${m.deptLabel}</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-xs text-gray-400 shrink-0"></i>
+                        </div>
+
+                        <div id="directoryMemberDetails-${m.id}" class="${isExpanded ? '' : 'hidden'} mt-2 ml-2 mr-2 p-4 rounded-xl bg-black/30 border border-white/10 text-xs text-gray-300 space-y-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <p><span class="text-gray-400">Full Name:</span> <span class="font-semibold text-white">${m.full_name}</span></p>
+                                <p><span class="text-gray-400">Member ID:</span> <span class="font-mono text-blue-300">${m.member_id || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Fellowship Group:</span> <span class="font-semibold text-blue-400">${m.groupLabel}</span></p>
+                                <p><span class="text-gray-400">Department:</span> <span class="font-semibold text-amber-400">${m.deptLabel}</span></p>
+                                <p><span class="text-gray-400">Phone Number:</span> <span class="text-white">${m.phone || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">WhatsApp Number:</span> <span class="text-white">${m.whatsapp || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Email Address:</span> <span class="text-white">${m.email || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Date of Birth:</span> <span class="text-white">${m.date_of_birth || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Gender:</span> <span class="text-white">${m.gender || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Marital Status:</span> <span class="text-white">${m.is_married ? 'Married' : 'Single'}</span></p>
+                                <p><span class="text-gray-400">State of Origin:</span> <span class="text-white">${m.state || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">State of Residence:</span> <span class="text-white">${m.residence_state || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Nationality:</span> <span class="text-white">${m.nationality || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Date Joined:</span> <span class="text-white">${m.date_joined || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Status:</span> <span class="text-emerald-400 font-semibold">${m.membership_status || 'Active'}</span></p>
+                            </div>
+                            <p class="pt-1 border-t border-white/5"><span class="text-gray-400">Address:</span> <span class="text-white">${m.address || 'N/A'}</span></p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleDirectoryMemberDetails(memberId) {
+            expandedDirectoryMemberId = expandedDirectoryMemberId === memberId ? null : memberId;
+            filterAllMembersDirectory();
+        }
+
         // --- ASSIGN LEADERS VIEW (MEN / WOMEN / YOUTH FELLOWSHIP) ---
         async function openAssignLeadersForFellowship(fellowshipName) {
+            closeSidebarIfMobile('sidebar');
             activeAssignLeaderFellowship = fellowshipName;
             selectedLeaderActionByMember = {};
             expandedLeaderMemberId = null;
@@ -2070,6 +2212,7 @@
 
         // --- FELLOWSHIP GROUP DASHBOARD (MEN, WOMEN, YOUTH) ---
         async function openFellowshipGroupDashboard(fellowshipName) {
+            closeSidebarIfMobile('sidebar');
             activeFellowshipContext = fellowshipName;
             const container = document.getElementById('appContainer');
 
@@ -2085,13 +2228,13 @@
                             </div>
                         </div>
                         <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
-                            <a href="#" onclick="switchGroupView('overview')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
+                            <a href="#" onclick="closeSidebarIfMobile('groupSidebar'); switchGroupView('overview')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
                                 <i class="fa-solid fa-chart-pie w-5"></i><span>Group Overview</span>
                             </a>
-                            <a href="#" onclick="switchGroupView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('groupSidebar'); switchGroupView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-users w-5"></i><span>Member Names</span>
                             </a>
-                            <a href="#" onclick="switchGroupView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                            <a href="#" onclick="closeSidebarIfMobile('groupSidebar'); switchGroupView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-wallet w-5"></i><span>Group Dues</span>
                             </a>
                         </nav>
@@ -2167,6 +2310,7 @@
         }
 
         async function switchGroupView(view) {
+            closeSidebarIfMobile('groupSidebar');
             const main = document.getElementById('mainGroupContent');
             const fellowshipName = activeFellowshipContext;
             if (!main || !fellowshipName) return;
@@ -2325,7 +2469,6 @@
 
                     const previewBox = document.getElementById('profileAvatarPreviewBox');
                     const fileLabel = document.getElementById('profilePictureFileName');
-                    const currentName = document.getElementById('profFullName')?.value?.trim() || 'A';
 
                     if (previewBox) {
                         previewBox.innerHTML = `<img src="${compressedDataUrl}" alt="Profile Preview" class="w-full h-full object-cover">`;
@@ -2340,6 +2483,7 @@
         }
 
         async function switchAdminView(view) {
+            closeSidebarIfMobile('sidebar');
             const main = document.getElementById('mainAdminContent');
             const title = document.getElementById('pageTitle');
             const admin = await getVerifiedAdminSession() || {};
@@ -2426,6 +2570,9 @@
                         </form>
                     </div>
                 `;
+            } else if (view === 'members') {
+                title.innerText = "Members Directory";
+                await renderAllMembersDirectoryView();
             } else if (view === 'set-pin') {
                 title.innerText = "Change Login Password / PIN";
                 main.innerHTML = `
