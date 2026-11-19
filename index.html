@@ -1118,6 +1118,18 @@
                                     <a href="#" onclick="openFellowshipGroupDashboard('Youth Fellowship')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Youth Fellowship</a>
                                 </div>
                             </div>
+                            <!-- ASSIGN LEADERS DROPDOWN (AFTER GROUPS) -->
+                            <div>
+                                <button onclick="toggleDropdown('assignLeadersDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-amber-400 font-semibold transition">
+                                    <span class="flex items-center space-x-3"><i class="fa-solid fa-user-shield w-5"></i><span>Assign Leaders</span></span>
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </button>
+                                <div id="assignLeadersDropdown" class="hidden pl-8 space-y-1">
+                                    <a href="#" onclick="switchAdminView('assign-men')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Men Fellowship</a>
+                                    <a href="#" onclick="switchAdminView('assign-women')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Women Fellowship</a>
+                                    <a href="#" onclick="switchAdminView('assign-youth')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Youth Fellowship</a>
+                                </div>
+                            </div>
                             <!-- DEPARTMENTS DROPDOWN -->
                             <div>
                                 <button onclick="toggleDropdown('deptDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
@@ -1125,17 +1137,6 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                                 <div id="deptDropdown" class="hidden pl-6 space-y-1">
-                                    <div>
-                                        <button onclick="toggleDropdown('assignLeadersDropdown')" class="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-white/5 text-amber-400 text-xs font-semibold transition">
-                                            <span class="flex items-center space-x-2"><i class="fa-solid fa-user-shield"></i><span>Assign Leaders</span></span>
-                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                                        </button>
-                                        <div id="assignLeadersDropdown" class="hidden pl-6 space-y-1">
-                                            <a href="#" onclick="switchAdminView('assign-men')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Men Fellowship</a>
-                                            <a href="#" onclick="switchAdminView('assign-women')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Women Fellowship</a>
-                                            <a href="#" onclick="switchAdminView('assign-youth')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Youth Fellowship</a>
-                                        </div>
-                                    </div>
                                     <a href="#" onclick="switchAdminView('dept-security')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Security</a>
                                     <a href="#" onclick="switchAdminView('dept-usher')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Usher</a>
                                     <a href="#" onclick="switchAdminView('dept-sanitation')" class="block py-1.5 text-xs text-gray-400 hover:text-white transition">Sanitation</a>
