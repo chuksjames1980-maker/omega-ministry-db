@@ -56,13 +56,13 @@
 
     <!-- CUSTOM PROFESSIONAL MODAL POPUP OVERLAY -->
     <div id="customModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs hidden p-4">
-        <div class="card-bg w-full max-w-sm rounded-2xl p-6 border border-amber-500/30 shadow-2xl text-center space-y-4 animate-slide-in">
+        <div class="card-bg w-full max-w-md rounded-2xl p-6 border border-amber-500/30 shadow-2xl text-center space-y-4 animate-slide-in max-h-[85vh] overflow-y-auto">
             <div id="modalIcon" class="w-12 h-12 mx-auto rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
                 <i class="fa-solid fa-circle-check"></i>
             </div>
             <div>
                 <h3 id="modalTitle" class="text-base font-bold text-white mb-1">Notification</h3>
-                <p id="modalMessage" class="text-xs text-gray-300 leading-relaxed whitespace-pre-line"></p>
+                <div id="modalMessage" class="text-xs text-gray-300 leading-relaxed whitespace-pre-line text-left bg-black/25 p-3 rounded-xl border border-white/5"></div>
             </div>
             <button onclick="closeCustomModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg">
                 Proceed / Dismiss
@@ -121,6 +121,11 @@
         let activeMemberSession = JSON.parse(localStorage.getItem('ocm_member_session')) || null;
         let activeAdminSession = JSON.parse(localStorage.getItem('ocm_admin_session')) || null;
         let activeFellowshipContext = null;
+        let activeAssignLeaderFellowship = null;
+        let selectedLeaderActionByMember = {};
+        let expandedLeaderMemberId = null;
+        let groupLeaderSubView = 'home';
+        let currentGroupLeaderMetrics = null;
         let registrationData = {
             fullName: '', phone: '', whatsapp: '', dob: '', email: '',
             address: '', stateOfOrigin: '', stateOfResidence: '', nationality: 'Nigeria',
@@ -130,6 +135,11 @@
         let loadingTimer = null;
         let modalCallback = null;
 
+        function formatNaira(amount) {
+            const num = Number(amount || 0);
+            return '₦' + num.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
         function showModal(title, message, callback = null, isSuccess = true) {
             const modal = document.getElementById('customModal');
             const titleEl = document.getElementById('modalTitle');
@@ -137,7 +147,7 @@
             const iconEl = document.getElementById('modalIcon');
 
             titleEl.innerText = title;
-            msgEl.innerText = message;
+            msgEl.innerHTML = message;
             modalCallback = callback;
 
             if (isSuccess) {
@@ -693,6 +703,19 @@
         }
 
         // --- 4. MEMBER LOGIN HANDLER ---
+        async function refreshMemberSession(memberId) {
+            const { data: member } = await supabaseClient
+                .from('members')
+                .select(`*, member_fellowships(fellowships(id, name)), member_departments(departments(id, name)), group_leaders(id, is_active, fellowship_id, fellowships(id, name)), report_takers(is_active)`)
+                .eq('id', memberId)
+                .single();
+            if (member) {
+                activeMemberSession = member;
+                localStorage.setItem('ocm_member_session', JSON.stringify(member));
+            }
+            return member;
+        }
+
         async function handleMemberLogin() {
             const identifier = document.getElementById('loginPhone').value.trim();
             const pin = document.getElementById('loginPin').value.trim();
@@ -707,7 +730,7 @@
                 const hashedPin = await hashPin(pin);
                 const { data: member, error } = await supabaseClient
                     .from('members')
-                    .select(`*, member_fellowships(fellowships(name)), member_departments(departments(name)), group_leaders(is_active, fellowships(name)), report_takers(is_active)`)
+                    .select(`*, member_fellowships(fellowships(id, name)), member_departments(departments(id, name)), group_leaders(id, is_active, fellowship_id, fellowships(id, name)), report_takers(is_active)`)
                     .or(`phone.eq.${identifier},member_id.eq.${identifier}`)
                     .eq('pin_code', hashedPin)
                     .single();
@@ -726,7 +749,15 @@
         }
 
         // --- 5. MEMBER DASHBOARD SHELL ---
-        function renderMemberDashboardShell() {
+        async function renderMemberDashboardShell() {
+            if (activeMemberSession?.id) {
+                await refreshMemberSession(activeMemberSession.id);
+            }
+            const m = activeMemberSession;
+            const activeLeaderEntry = (m?.group_leaders || []).find(gl => gl.is_active);
+            const isGroupLeader = Boolean(activeLeaderEntry);
+            const isReportTaker = (m?.report_takers || []).some(rt => rt.is_active);
+
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex h-screen overflow-hidden relative">
@@ -743,6 +774,11 @@
                             <a href="#" onclick="switchMemberView('dashboard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
                                 <i class="fa-solid fa-chart-pie w-5"></i><span>Dashboard</span>
                             </a>
+                            ${isGroupLeader ? `
+                            <a href="#" onclick="openAssignedGroupLeaderWorkspace()" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 font-semibold transition">
+                                <i class="fa-solid fa-crown w-5"></i><span>Group Dashboard</span>
+                            </a>
+                            ` : ''}
                             <a href="#" onclick="switchMemberView('fellowship')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-users-rectangle w-5"></i><span>My Fellowship</span>
                             </a>
@@ -757,7 +793,7 @@
                             </a>
                         </nav>
                         <div class="p-3 m-2 card-bg rounded-xl border border-blue-500/20 text-xs">
-                            <p class="text-blue-400 font-semibold mb-0.5"><i class="fa-solid fa-user-check"></i> Active Member</p>
+                            <p class="text-blue-400 font-semibold mb-0.5"><i class="fa-solid fa-user-check"></i> ${isGroupLeader ? 'Group Leader' : 'Active Member'}</p>
                             <p class="text-gray-400 text-[10px]">Secure Supabase Session</p>
                         </div>
                     </aside>
@@ -812,9 +848,10 @@
             const m = activeMemberSession;
             if (!main) return;
 
-            const fellowshipName = m?.member_fellowships?.[0]?.fellowships?.name || 'Unassigned Fellowship';
+            const activeLeaderEntry = (m?.group_leaders || []).find(gl => gl.is_active);
+            const fellowshipName = activeLeaderEntry?.fellowships?.name || m?.member_fellowships?.[0]?.fellowships?.name || 'Unassigned Fellowship';
             const deptName = m?.member_departments?.[0]?.departments?.name || 'None';
-            const isGroupLeader = (m?.group_leaders || []).some(gl => gl.is_active);
+            const isGroupLeader = Boolean(activeLeaderEntry);
             const isReportTaker = (m?.report_takers || []).some(rt => rt.is_active);
 
             if (view === 'dashboard') {
@@ -822,7 +859,7 @@
                 main.innerHTML = `
                     <div class="flex flex-wrap gap-3 justify-center">
                         ${isGroupLeader ? `
-                        <button onclick="renderGroupLeaderDashboard()" class="bg-amber-600 hover:bg-amber-700 text-black font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(245,158,11,0.4)] transition flex items-center space-x-2 border border-amber-300">
+                        <button onclick="openAssignedGroupLeaderWorkspace()" class="bg-amber-600 hover:bg-amber-700 text-black font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(245,158,11,0.4)] transition flex items-center space-x-2 border border-amber-300">
                             <i class="fa-solid fa-crown text-sm"></i>
                             <span>OPEN GROUP LEADER DASHBOARD</span>
                         </button>
@@ -901,6 +938,584 @@
                     </div>
                 `;
             }
+        }
+
+        // --- ASSIGNED GROUP LEADER WORKSPACE (FROM MEMBER DASHBOARD SIDEBAR) ---
+        async function openAssignedGroupLeaderWorkspace() {
+            const m = activeMemberSession;
+            const activeLeaderEntry = (m?.group_leaders || []).find(gl => gl.is_active);
+            const fellowshipName = activeLeaderEntry?.fellowships?.name || m?.member_fellowships?.[0]?.fellowships?.name || 'Men Fellowship';
+            const fellowshipId = activeLeaderEntry?.fellowship_id || m?.member_fellowships?.[0]?.fellowships?.id || null;
+            groupLeaderSubView = 'home';
+
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex h-screen overflow-hidden relative">
+                    <!-- GROUP LEADER SIDEBAR -->
+                    <aside id="leaderWorkspaceSidebar" class="fixed inset-y-0 left-0 z-50 w-64 card-bg transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col shadow-2xl">
+                        <div class="p-4 border-b border-white/10 flex items-center space-x-3">
+                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
+                            <div>
+                                <h1 class="text-xs font-bold tracking-wide uppercase text-amber-400">${fellowshipName}</h1>
+                                <p class="text-[10px] text-gray-400 italic">Group Leader Dashboard</p>
+                            </div>
+                        </div>
+                        <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
+                            <a href="#" onclick="switchLeaderWorkspaceView('home')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
+                                <i class="fa-solid fa-house w-5"></i><span>Home</span>
+                            </a>
+                            <a href="#" onclick="switchLeaderWorkspaceView('assign-excos')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-user-tie w-5"></i><span>Assign Excos</span>
+                            </a>
+                            <a href="#" onclick="switchLeaderWorkspaceView('birthday-report')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-cake-candles w-5"></i><span>Birthday Report</span>
+                            </a>
+                            <a href="#" onclick="switchLeaderWorkspaceView('send-money-approval')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-money-bill-transfer w-5"></i><span>Send Money Approval</span>
+                            </a>
+                            <a href="#" onclick="switchLeaderWorkspaceView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-users w-5"></i><span>Members</span>
+                            </a>
+                            <a href="#" onclick="switchLeaderWorkspaceView('settings')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-gear w-5"></i><span>Settings</span>
+                            </a>
+                        </nav>
+                        <div class="p-3 m-2 card-bg rounded-xl border border-amber-500/20 text-xs">
+                            <p class="text-amber-400 font-semibold mb-0.5"><i class="fa-solid fa-crown"></i> ${m.full_name}</p>
+                            <p class="text-gray-400 text-[10px]">Assigned Group Leader</p>
+                        </div>
+                    </aside>
+
+                    <!-- GROUP LEADER MAIN VIEWPORT -->
+                    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+                        <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-4 sm:px-6 z-40">
+                            <div class="flex items-center space-x-3 min-w-0">
+                                <button onclick="toggleLeaderWorkspaceSidebar(event)" class="lg:hidden text-gray-300 hover:text-white shrink-0">
+                                    <i class="fa-solid fa-bars text-xl"></i>
+                                </button>
+                                <div class="min-w-0">
+                                    <h2 id="leaderWorkspaceTitle" class="text-sm sm:text-base font-bold text-amber-400 truncate">${fellowshipName} – Group Dashboard</h2>
+                                    <p class="text-[11px] text-gray-400 truncate">Leader: ${m.full_name}</p>
+                                </div>
+                            </div>
+                            <button onclick="renderMemberDashboardShell()" class="text-xs text-blue-400 hover:underline shrink-0">
+                                <i class="fa-solid fa-arrow-left mr-1"></i> Member Dashboard
+                            </button>
+                        </header>
+                        <main id="leaderWorkspaceContent" class="flex-1 overflow-y-auto p-6 space-y-6">
+                            <!-- Loaded dynamically -->
+                        </main>
+                    </div>
+                </div>
+            `;
+
+            await loadGroupLeaderFinancialData(fellowshipName, fellowshipId);
+            switchLeaderWorkspaceView('home');
+        }
+
+        function toggleLeaderWorkspaceSidebar(e) {
+            if (e) e.stopPropagation();
+            const sb = document.getElementById('leaderWorkspaceSidebar');
+            if (sb) sb.classList.toggle('-translate-x-full');
+        }
+
+        document.addEventListener('click', (e) => {
+            const sb = document.getElementById('leaderWorkspaceSidebar');
+            const hamburgerBtn = document.querySelector('button[onclick*="toggleLeaderWorkspaceSidebar"]');
+            if (sb && window.innerWidth < 1024 && !sb.classList.contains('-translate-x-full')) {
+                if (!sb.contains(e.target) && (!hamburgerBtn || !hamburgerBtn.contains(e.target))) {
+                    sb.classList.add('-translate-x-full');
+                }
+            }
+        });
+
+        async function loadGroupLeaderFinancialData(fellowshipName, fellowshipId) {
+            let resolvedFellowshipId = fellowshipId;
+            if (!resolvedFellowshipId && fellowshipName) {
+                const { data: fRow } = await supabaseClient.from('fellowships').select('id').eq('name', fellowshipName).single();
+                resolvedFellowshipId = fRow?.id || null;
+            }
+
+            let groupMembers = [];
+            if (resolvedFellowshipId) {
+                const { data: mfRows } = await supabaseClient
+                    .from('member_fellowships')
+                    .select('member_id, members(id, full_name, phone, date_of_birth)')
+                    .eq('fellowship_id', resolvedFellowshipId);
+                groupMembers = (mfRows || []).map(r => r.members).filter(Boolean);
+            }
+
+            const duesHistory = [
+                { date: '2026-01-15', amount: 45000 },
+                { date: '2026-02-14', amount: 52000 },
+                { date: '2026-03-18', amount: 48500 },
+                { date: '2026-04-12', amount: 60000 }
+            ];
+            const totalDues = duesHistory.reduce((sum, item) => sum + Number(item.amount), 0);
+
+            const oldDuesItems = [
+                { label: '2025 Brought-Forward Dues', date: '2025-12-28', amount: 35000 },
+                { label: 'Previous Quarter Arrears Recovered', date: '2026-01-20', amount: 15000 }
+            ];
+            const totalOldDues = oldDuesItems.reduce((sum, item) => sum + Number(item.amount), 0);
+
+            const expensesList = [
+                { title: 'Fellowship Welfare & Visitation', date: '2026-02-10', amount: 22000 },
+                { title: 'Group Meeting Refreshment & Printing', date: '2026-03-22', amount: 18500 },
+                { title: 'Outreach Logistics', date: '2026-04-05', amount: 14000 }
+            ];
+            const totalExpenses = expensesList.reduce((sum, item) => sum + Number(item.amount), 0);
+
+            const memberNamesList = groupMembers.length > 0
+                ? groupMembers.map(gm => gm.full_name)
+                : ['Samuel Okafor', 'Grace Eze', 'Daniel Musa', 'Esther Obi'];
+
+            const halfIndex = Math.max(1, Math.ceil(memberNamesList.length / 2));
+            const defaultPaidMembers = memberNamesList.slice(0, halfIndex);
+            const defaultUnpaidMembers = memberNamesList.slice(halfIndex);
+
+            const projectsList = [
+                {
+                    topic: `${fellowshipName} Hall Chairs & Sound Project`,
+                    targetPerMember: 20000,
+                    paidEntries: defaultPaidMembers.map((name, idx) => ({ name, amount: 20000, date: `2026-03-0${(idx % 9) + 1}` })),
+                    unpaidEntries: defaultUnpaidMembers.map(name => ({ name, balanceDue: 20000 }))
+                },
+                {
+                    topic: 'Annual Fellowship Retreat & Outreach Fund',
+                    targetPerMember: 10000,
+                    paidEntries: defaultPaidMembers.slice(0, Math.max(1, defaultPaidMembers.length - 1)).map((name, idx) => ({ name, amount: 10000, date: `2026-04-0${(idx % 9) + 1}` })),
+                    unpaidEntries: [
+                        ...(defaultPaidMembers.length > 1 ? [{ name: defaultPaidMembers[defaultPaidMembers.length - 1], balanceDue: 10000 }] : []),
+                        ...defaultUnpaidMembers.map(name => ({ name, balanceDue: 10000 }))
+                    ]
+                }
+            ];
+
+            const totalProjectPaid = projectsList.reduce((sum, proj) => {
+                return sum + proj.paidEntries.reduce((pSum, p) => pSum + Number(p.amount), 0);
+            }, 0);
+
+            const totalProjectUnpaid = projectsList.reduce((sum, proj) => {
+                return sum + proj.unpaidEntries.reduce((uSum, u) => uSum + Number(u.balanceDue), 0);
+            }, 0);
+
+            const totalInflow = totalDues + totalProjectPaid + totalOldDues;
+            const totalArrears = Math.max(1, memberNamesList.length) * 5000;
+            const totalBalance = totalDues - totalExpenses;
+
+            const savedMoneyList = [
+                { amount: 50000, date: '2026-02-25', approvalName: 'Chuks James' },
+                { amount: 40000, date: '2026-04-15', approvalName: 'Chuks James' }
+            ];
+            const totalSavedMoney = savedMoneyList.reduce((sum, s) => sum + Number(s.amount), 0);
+
+            currentGroupLeaderMetrics = {
+                fellowshipName,
+                groupMembers,
+                duesHistory,
+                totalDues,
+                totalArrears,
+                oldDuesItems,
+                totalOldDues,
+                expensesList,
+                totalExpenses,
+                projectsList,
+                totalProjectPaid,
+                totalProjectUnpaid,
+                totalInflow,
+                savedMoneyList,
+                totalSavedMoney,
+                totalBalance
+            };
+        }
+
+        function switchLeaderWorkspaceView(subView) {
+            groupLeaderSubView = subView;
+            const content = document.getElementById('leaderWorkspaceContent');
+            const titleEl = document.getElementById('leaderWorkspaceTitle');
+            const data = currentGroupLeaderMetrics;
+            if (!content || !data) return;
+
+            if (subView === 'home') {
+                titleEl.innerText = `${data.fellowshipName} – Group Dashboard`;
+                content.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- 1. TOTAL INFLOW (CLICKABLE) -->
+                        <div onclick="openLeaderCardDetail('total_inflow')" class="card-bg p-5 rounded-xl border border-emerald-500/30 hover:border-emerald-400 cursor-pointer transition shadow-lg">
+                            <p class="text-xs text-gray-400">Total Inflow</p>
+                            <h3 class="text-xl font-extrabold mt-1 text-emerald-400">${formatNaira(data.totalInflow)}</h3>
+                            <p class="text-[10px] text-emerald-300/80 mt-2"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Click for breakdown</p>
+                        </div>
+
+                        <!-- 2. TOTAL DUES (CLICKABLE) -->
+                        <div onclick="openLeaderCardDetail('total_dues')" class="card-bg p-5 rounded-xl border border-blue-500/30 hover:border-blue-400 cursor-pointer transition shadow-lg">
+                            <p class="text-xs text-gray-400">Total Dues</p>
+                            <h3 class="text-xl font-extrabold mt-1 text-blue-400">${formatNaira(data.totalDues)}</h3>
+                            <p class="text-[10px] text-blue-300/80 mt-2"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Click for dues history</p>
+                        </div>
+
+                        <!-- 3. TOTAL ARREARS (NOT CLICKABLE) -->
+                        <div class="card-bg p-5 rounded-xl border border-red-500/20">
+                            <p class="text-xs text-gray-400">Total Arrears</p>
+                            <h3 class="text-xl font-extrabold mt-1 text-red-400">${formatNaira(data.totalArrears)}</h3>
+                            <p class="text-[10px] text-gray-500 mt-2">Accumulated member monthly dues owed</p>
+                        </div>
+
+                        <!-- 4. TOTAL OLD DUES (CLICKABLE) -->
+                        <div onclick="openLeaderCardDetail('total_old_dues')" class="card-bg p-5 rounded-xl border border-amber-500/30 hover:border-amber-400 cursor-pointer transition shadow-lg">
+                            <p class="text-xs text-gray-400">Total Old Dues</p>
+                            <h3 class="text-xl font-extrabold mt-1 text-amber-400">${formatNaira(data.totalOldDues)}</h3>
+                            <p class="text-[10px] text-amber-300/80 mt-2"><i class="fa-solid fa-list mr-1"></i>Click for details</p>
+                        </div>
+
+                        <!-- 5. TOTAL EXPENSES (CLICKABLE) -->
+                        <div onclick="openLeaderCardDetail('total_expenses')" class="card-bg p-5 rounded-xl border border-rose-500/30 hover:border-rose-400 cursor-pointer transition shadow-lg">
+                            <p class="text-xs text-gray-400">Total Expenses</p>
+                            <h3 class="text-xl font-extrabold mt-1 text-rose-400">${formatNaira(data.totalExpenses)}</h3>
+                            <p class="text-[10px] text-rose-300/80 mt-2"><i class="fa-solid fa-receipt mr-1"></i>Click for expenses list</p>
+                        </div>
+
+                        <!-- 6. TOTAL PROJECT PAID (CLICKABLE) -->
+                        <div onclick="openLeaderCardDetail('total_project_paid')" class="card-bg p-5 rounded-xl border border-purple-500/30 hover:border-purple-400 cursor-pointer transition shadow-lg">
+                            <p class="text-xs text-gray-400">Total Project Paid</p>
+                            <h3 class="text-xl font-extrabold mt-1 text-purple-400">${formatNaira(data.totalProjectPaid)}</h3>
+                            <p class="text-[10px] text-purple-300/80 mt-2"><i class="fa-solid fa-diagram-project mr-1"></i>Click for projects & payment status</p>
+                        </div>
+
+                        <!-- 7. SAVED MONEY (CLICKABLE) -->
+                        <div onclick="openLeaderCardDetail('saved_money')" class="card-bg p-5 rounded-xl border border-teal-500/30 hover:border-teal-400 cursor-pointer transition shadow-lg">
+                            <p class="text-xs text-gray-400">Saved Money</p>
+                            <h3 class="text-xl font-extrabold mt-1 text-teal-400">${formatNaira(data.totalSavedMoney)}</h3>
+                            <p class="text-[10px] text-teal-300/80 mt-2"><i class="fa-solid fa-piggy-bank mr-1"></i>Click for saved records</p>
+                        </div>
+
+                        <!-- 8. TOTAL PROJECT UNPAID (CLICKABLE) -->
+                        <div onclick="openLeaderCardDetail('total_project_unpaid')" class="card-bg p-5 rounded-xl border border-orange-500/30 hover:border-orange-400 cursor-pointer transition shadow-lg">
+                            <p class="text-xs text-gray-400">Total Project Unpaid</p>
+                            <h3 class="text-xl font-extrabold mt-1 text-orange-400">${formatNaira(data.totalProjectUnpaid)}</h3>
+                            <p class="text-[10px] text-orange-300/80 mt-2"><i class="fa-solid fa-hourglass-half mr-1"></i>Click for unpaid balances</p>
+                        </div>
+
+                        <!-- 9. TOTAL BALANCE (CLICKABLE) -->
+                        <div onclick="openLeaderCardDetail('total_balance')" class="card-bg p-5 rounded-xl border border-cyan-500/30 hover:border-cyan-400 cursor-pointer transition shadow-lg">
+                            <p class="text-xs text-gray-400">Total Balance</p>
+                            <h3 class="text-xl font-extrabold mt-1 text-cyan-400">${formatNaira(data.totalBalance)}</h3>
+                            <p class="text-[10px] text-cyan-300/80 mt-2"><i class="fa-solid fa-scale-balanced mr-1"></i>Click for Dues - Expenses</p>
+                        </div>
+                    </div>
+                    <div id="leaderCardDrilldownPanel" class="hidden card-bg p-6 rounded-2xl border border-amber-500/30 space-y-4"></div>
+                `;
+            } else if (subView === 'assign-excos') {
+                titleEl.innerText = `${data.fellowshipName} – Assign Excos`;
+                content.innerHTML = `
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4 max-w-xl">
+                        <h3 class="text-base font-bold text-amber-400">Assign Group Executives (${data.fellowshipName})</h3>
+                        <p class="text-xs text-gray-400">Select a group member and executive office to assign.</p>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">Select Member</label>
+                                <select id="excoMemberSelect" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
+                                    ${(data.groupMembers || []).map(gm => `<option value="${gm.full_name}">${gm.full_name}</option>`).join('') || '<option value="Group Member">Group Member</option>'}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">Executive Position</label>
+                                <select id="excoRoleSelect" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
+                                    <option value="Assistant Leader">Assistant Leader</option>
+                                    <option value="Secretary">Secretary</option>
+                                    <option value="Financial Secretary">Financial Secretary</option>
+                                    <option value="Treasurer">Treasurer</option>
+                                    <option value="PRO">PRO</option>
+                                </select>
+                            </div>
+                            <button onclick="saveGroupExcoAssignment()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg text-xs transition">
+                                Save Exco Assignment
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (subView === 'birthday-report') {
+                titleEl.innerText = `${data.fellowshipName} – Birthday Report`;
+                const membersWithDob = data.groupMembers || [];
+                content.innerHTML = `
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4">
+                        <h3 class="text-base font-bold text-amber-400">Fellowship Birthday Report</h3>
+                        <div class="divide-y divide-white/5 text-xs">
+                            ${membersWithDob.length > 0 ? membersWithDob.map(gm => `
+                                <div class="py-3 flex items-center justify-between">
+                                    <span class="font-semibold text-white">${gm.full_name}</span>
+                                    <span class="text-amber-300"><i class="fa-solid fa-cake-candles mr-1"></i>${gm.date_of_birth || 'Not set'}</span>
+                                </div>
+                            `).join('') : '<p class="py-4 text-gray-400">No group members found for birthday report.</p>'}
+                        </div>
+                    </div>
+                `;
+            } else if (subView === 'send-money-approval') {
+                titleEl.innerText = `${data.fellowshipName} – Send Money Approval`;
+                content.innerHTML = `
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4 max-w-xl">
+                        <h3 class="text-base font-bold text-amber-400">Send Money Approval Request to Admin</h3>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">Amount (₦)</label>
+                                <input type="number" id="approvalAmountInput" min="1" placeholder="e.g. 25000" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">Purpose / Note</label>
+                                <input type="text" id="approvalPurposeInput" placeholder="e.g. Remittance of saved fellowship dues" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
+                            </div>
+                            <button onclick="submitMoneyApprovalRequest()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-lg text-xs transition">
+                                Submit for Admin Approval
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (subView === 'members') {
+                titleEl.innerText = `${data.fellowshipName} – Members`;
+                const list = data.groupMembers || [];
+                content.innerHTML = `
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4">
+                        <h3 class="text-base font-bold text-amber-400">${data.fellowshipName} Members (${list.length})</h3>
+                        <div class="divide-y divide-white/5 text-xs">
+                            ${list.length > 0 ? list.map(gm => `
+                                <div class="py-3 flex items-center justify-between">
+                                    <div>
+                                        <p class="font-semibold text-white">${gm.full_name}</p>
+                                        <p class="text-gray-400">${gm.phone || ''}</p>
+                                    </div>
+                                    <span class="text-emerald-400 font-semibold">Active</span>
+                                </div>
+                            `).join('') : '<p class="py-4 text-gray-400">No members in this group yet.</p>'}
+                        </div>
+                    </div>
+                `;
+            } else if (subView === 'settings') {
+                titleEl.innerText = `${data.fellowshipName} – Settings`;
+                content.innerHTML = `
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-3 max-w-xl">
+                        <h3 class="text-base font-bold text-amber-400">Group Leader Settings</h3>
+                        <p class="text-xs text-gray-300">Fellowship Group: <span class="font-semibold text-white">${data.fellowshipName}</span></p>
+                        <p class="text-xs text-gray-300">Group Leader: <span class="font-semibold text-white">${activeMemberSession.full_name}</span></p>
+                        <p class="text-xs text-gray-400">Role assignments and system rules are managed centrally through the Main Admin Portal.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function saveGroupExcoAssignment() {
+            const memberName = document.getElementById('excoMemberSelect')?.value || 'Member';
+            const roleName = document.getElementById('excoRoleSelect')?.value || 'Exco';
+            showModal('Exco Assigned', `${memberName} has been assigned as ${roleName} for ${currentGroupLeaderMetrics.fellowshipName}.`);
+        }
+
+        function submitMoneyApprovalRequest() {
+            const amt = Number(document.getElementById('approvalAmountInput')?.value || 0);
+            const purpose = document.getElementById('approvalPurposeInput')?.value.trim() || 'Fellowship remittance';
+            if (amt <= 0) {
+                showModal('Invalid Amount', 'Please enter a valid amount greater than zero.', null, false);
+                return;
+            }
+            showModal('Approval Sent', `Request to send ${formatNaira(amt)} (${purpose}) has been submitted for Admin approval.`);
+        }
+
+        function openLeaderCardDetail(cardKey) {
+            const data = currentGroupLeaderMetrics;
+            const panel = document.getElementById('leaderCardDrilldownPanel');
+            if (!data || !panel) return;
+
+            panel.classList.remove('hidden');
+
+            if (cardKey === 'total_dues') {
+                panel.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <h4 class="text-sm font-bold text-blue-400">Dues History (Dates & Amounts Only)</h4>
+                        <button onclick="document.getElementById('leaderCardDrilldownPanel').classList.add('hidden')" class="text-xs text-gray-400 hover:text-white">Close</button>
+                    </div>
+                    <div class="divide-y divide-white/5 text-xs">
+                        ${data.duesHistory.map(d => `
+                            <div class="py-2.5 flex items-center justify-between">
+                                <span class="text-gray-300"><i class="fa-solid fa-calendar-day mr-2 text-blue-400"></i>${d.date}</span>
+                                <span class="font-bold text-emerald-400">${formatNaira(d.amount)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="pt-2 border-t border-white/10 flex justify-between text-xs font-bold">
+                        <span class="text-gray-300">Total Dues</span>
+                        <span class="text-blue-400">${formatNaira(data.totalDues)}</span>
+                    </div>
+                `;
+            } else if (cardKey === 'total_inflow') {
+                panel.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <h4 class="text-sm font-bold text-emerald-400">Total Inflow Breakdown</h4>
+                        <button onclick="document.getElementById('leaderCardDrilldownPanel').classList.add('hidden')" class="text-xs text-gray-400 hover:text-white">Close</button>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between py-1.5 border-b border-white/5">
+                            <span class="text-gray-300">Total Dues</span>
+                            <span class="font-semibold text-blue-400">${formatNaira(data.totalDues)}</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 border-b border-white/5">
+                            <span class="text-gray-300">Total Project Paid</span>
+                            <span class="font-semibold text-purple-400">${formatNaira(data.totalProjectPaid)}</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 border-b border-white/5">
+                            <span class="text-gray-300">Total Old Dues</span>
+                            <span class="font-semibold text-amber-400">${formatNaira(data.totalOldDues)}</span>
+                        </div>
+                        <div class="flex justify-between pt-2 text-sm font-extrabold">
+                            <span class="text-white">Total Inflow (Total Amount)</span>
+                            <span class="text-emerald-400">${formatNaira(data.totalInflow)}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (cardKey === 'total_old_dues') {
+                panel.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <h4 class="text-sm font-bold text-amber-400">Total Old Dues Breakdown</h4>
+                        <button onclick="document.getElementById('leaderCardDrilldownPanel').classList.add('hidden')" class="text-xs text-gray-400 hover:text-white">Close</button>
+                    </div>
+                    <div class="divide-y divide-white/5 text-xs">
+                        ${data.oldDuesItems.map(item => `
+                            <div class="py-2.5 flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold text-white">${item.label}</p>
+                                    <p class="text-[10px] text-gray-400">${item.date}</p>
+                                </div>
+                                <span class="font-bold text-amber-400">${formatNaira(item.amount)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="pt-2 border-t border-white/10 flex justify-between text-xs font-bold">
+                        <span class="text-gray-300">Total Old Dues</span>
+                        <span class="text-amber-400">${formatNaira(data.totalOldDues)}</span>
+                    </div>
+                `;
+            } else if (cardKey === 'total_expenses') {
+                panel.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <h4 class="text-sm font-bold text-rose-400">All Expenses So Far</h4>
+                        <button onclick="document.getElementById('leaderCardDrilldownPanel').classList.add('hidden')" class="text-xs text-gray-400 hover:text-white">Close</button>
+                    </div>
+                    <div class="divide-y divide-white/5 text-xs">
+                        ${data.expensesList.map(exp => `
+                            <div class="py-2.5 flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold text-white">${exp.title}</p>
+                                    <p class="text-[10px] text-gray-400">${exp.date}</p>
+                                </div>
+                                <span class="font-bold text-rose-400">${formatNaira(exp.amount)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="pt-2 border-t border-white/10 flex justify-between text-sm font-extrabold">
+                        <span class="text-white">Total Expenses</span>
+                        <span class="text-rose-400">${formatNaira(data.totalExpenses)}</span>
+                    </div>
+                `;
+            } else if (cardKey === 'total_project_paid') {
+                panel.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <h4 class="text-sm font-bold text-purple-400">Projects Paid – Topics & Member Payment Status</h4>
+                        <button onclick="document.getElementById('leaderCardDrilldownPanel').classList.add('hidden')" class="text-xs text-gray-400 hover:text-white">Close</button>
+                    </div>
+                    <div class="space-y-4 text-xs">
+                        ${data.projectsList.map(proj => `
+                            <div class="bg-black/25 p-4 rounded-xl border border-white/5 space-y-2">
+                                <h5 class="font-bold text-white text-sm">Topic: ${proj.topic}</h5>
+                                <div>
+                                    <p class="text-emerald-400 font-semibold mb-1">People Who Have Paid:</p>
+                                    <ul class="list-disc list-inside text-gray-200 space-y-0.5">
+                                        ${proj.paidEntries.length > 0 ? proj.paidEntries.map(p => `<li>${p.name} — ${formatNaira(p.amount)} (${p.date})</li>`).join('') : '<li>None recorded yet</li>'}
+                                    </ul>
+                                </div>
+                                <div>
+                                    <p class="text-orange-400 font-semibold mb-1">People Yet to Pay:</p>
+                                    <ul class="list-disc list-inside text-gray-300 space-y-0.5">
+                                        ${proj.unpaidEntries.length > 0 ? proj.unpaidEntries.map(u => `<li>${u.name} — Balance Due: ${formatNaira(u.balanceDue)}</li>`).join('') : '<li>All members paid</li>'}
+                                    </ul>
+                                </div>
+                            </div>
+                        `).join('')}
+                        <div class="pt-2 border-t border-white/10 flex justify-between text-sm font-extrabold">
+                            <span class="text-white">Total Amount Paid Across Projects</span>
+                            <span class="text-purple-400">${formatNaira(data.totalProjectPaid)}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (cardKey === 'total_project_unpaid') {
+                const allUnpaid = [];
+                data.projectsList.forEach(proj => {
+                    proj.unpaidEntries.forEach(u => {
+                        allUnpaid.push({ topic: proj.topic, name: u.name, balanceDue: u.balanceDue });
+                    });
+                });
+                panel.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <h4 class="text-sm font-bold text-orange-400">Total Project Unpaid & Members Yet to Balance Up</h4>
+                        <button onclick="document.getElementById('leaderCardDrilldownPanel').classList.add('hidden')" class="text-xs text-gray-400 hover:text-white">Close</button>
+                    </div>
+                    <div class="space-y-3 text-xs">
+                        <div class="flex justify-between bg-orange-500/10 border border-orange-500/20 p-3 rounded-xl font-bold">
+                            <span class="text-orange-200">Total Money Yet to Pay</span>
+                            <span class="text-orange-400 text-sm">${formatNaira(data.totalProjectUnpaid)}</span>
+                        </div>
+                        <div class="divide-y divide-white/5">
+                            ${allUnpaid.length > 0 ? allUnpaid.map(item => `
+                                <div class="py-2 flex items-center justify-between">
+                                    <div>
+                                        <p class="font-semibold text-white">${item.name}</p>
+                                        <p class="text-[10px] text-gray-400">${item.topic}</p>
+                                    </div>
+                                    <span class="font-bold text-orange-400">${formatNaira(item.balanceDue)}</span>
+                                </div>
+                            `).join('') : '<p class="py-2 text-gray-400">No unpaid project balances.</p>'}
+                        </div>
+                    </div>
+                `;
+            } else if (cardKey === 'saved_money') {
+                panel.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <h4 class="text-sm font-bold text-teal-400">Saved Money Sent to Admin</h4>
+                        <button onclick="document.getElementById('leaderCardDrilldownPanel').classList.add('hidden')" class="text-xs text-gray-400 hover:text-white">Close</button>
+                    </div>
+                    <div class="divide-y divide-white/5 text-xs">
+                        ${data.savedMoneyList.map(s => `
+                            <div class="py-2.5 flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold text-white">Amount: <span class="text-teal-400">${formatNaira(s.amount)}</span></p>
+                                    <p class="text-[10px] text-gray-400">Date: ${s.date} • Approval Name: <span class="text-amber-300">${s.approvalName}</span></p>
+                                </div>
+                                <span class="text-emerald-400 font-semibold">Approved</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (cardKey === 'total_balance') {
+                panel.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <h4 class="text-sm font-bold text-cyan-400">Total Balance (Total Dues - Total Expenses)</h4>
+                        <button onclick="document.getElementById('leaderCardDrilldownPanel').classList.add('hidden')" class="text-xs text-gray-400 hover:text-white">Close</button>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between py-1.5 border-b border-white/5">
+                            <span class="text-gray-300">Total Dues</span>
+                            <span class="font-semibold text-blue-400">${formatNaira(data.totalDues)}</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 border-b border-white/5">
+                            <span class="text-gray-300">Total Expenses</span>
+                            <span class="font-semibold text-rose-400">- ${formatNaira(data.totalExpenses)}</span>
+                        </div>
+                        <div class="flex justify-between pt-2 text-sm font-extrabold">
+                            <span class="text-white">Total Balance</span>
+                            <span class="text-cyan-400">${formatNaira(data.totalBalance)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         // --- REPORT TAKER SUBMISSION FORM ---
@@ -1061,7 +1676,7 @@
             }
         }
 
-        // --- 6. FULL ADMIN DASHBOARD & REPORTS / ASSIGN REPORT TAKER ---
+        // --- 6. FULL ADMIN DASHBOARD & REPORTS / ASSIGN REPORT TAKER / ASSIGN LEADERS ---
         async function getVerifiedAdminSession() {
             if (!activeAdminSession || !activeAdminSession.id) {
                 const { data } = await supabaseClient.from('admin_users').select('*').eq('email', 'chuksjames1980@gmail.com').single();
@@ -1125,9 +1740,9 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                                 <div id="assignLeadersDropdown" class="hidden pl-8 space-y-1">
-                                    <a href="#" onclick="switchAdminView('assign-men')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Men Fellowship</a>
-                                    <a href="#" onclick="switchAdminView('assign-women')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Women Fellowship</a>
-                                    <a href="#" onclick="switchAdminView('assign-youth')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Youth Fellowship</a>
+                                    <a href="#" onclick="openAssignLeadersForFellowship('Men Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Men Fellowship</a>
+                                    <a href="#" onclick="openAssignLeadersForFellowship('Women Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Women Fellowship</a>
+                                    <a href="#" onclick="openAssignLeadersForFellowship('Youth Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Youth Fellowship</a>
                                 </div>
                             </div>
                             <!-- DEPARTMENTS DROPDOWN -->
@@ -1193,6 +1808,218 @@
                 </div>
             `;
             switchAdminView('dashboard');
+        }
+
+        // --- ASSIGN LEADERS VIEW (MEN / WOMEN / YOUTH FELLOWSHIP) ---
+        async function openAssignLeadersForFellowship(fellowshipName) {
+            activeAssignLeaderFellowship = fellowshipName;
+            selectedLeaderActionByMember = {};
+            expandedLeaderMemberId = null;
+
+            const main = document.getElementById('mainAdminContent');
+            const title = document.getElementById('pageTitle');
+            if (!main) return;
+
+            title.innerText = `Assign Leaders – ${fellowshipName}`;
+            main.innerHTML = `
+                <div class="card-bg p-6 rounded-2xl border border-amber-500/20 space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-amber-400">${fellowshipName} – Group Leader Assignment</h3>
+                            <p id="currentFellowshipLeaderStatus" class="text-xs text-gray-400 mt-0.5">Current Group Leader: Loading...</p>
+                        </div>
+                        <input type="text" id="leaderMemberSearchInput" oninput="filterAssignLeaderMembers()" placeholder="Search member name in ${fellowshipName}..." class="w-full sm:w-72 bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+
+                    <div id="assignLeaderMembersContainer" class="divide-y divide-white/5">
+                        <p class="py-6 text-center text-gray-400 text-xs">Loading ${fellowshipName} members...</p>
+                    </div>
+                </div>
+            `;
+
+            await loadAssignLeaderGroupData(fellowshipName);
+        }
+
+        async function loadAssignLeaderGroupData(fellowshipName) {
+            const container = document.getElementById('assignLeaderMembersContainer');
+            const statusEl = document.getElementById('currentFellowshipLeaderStatus');
+            if (!container) return;
+
+            const { data: fellowshipRow, error: fErr } = await supabaseClient
+                .from('fellowships')
+                .select('id, name')
+                .eq('name', fellowshipName)
+                .single();
+
+            if (fErr || !fellowshipRow) {
+                if (statusEl) statusEl.innerText = 'Current Group Leader: None';
+                container.innerHTML = `<p class="py-6 text-center text-red-400 text-xs">Fellowship "${fellowshipName}" not found.</p>`;
+                return;
+            }
+
+            const { data: mfRows, error: mfErr } = await supabaseClient
+                .from('member_fellowships')
+                .select('member_id, members(id, full_name, phone, member_id)')
+                .eq('fellowship_id', fellowshipRow.id);
+
+            if (mfErr) {
+                container.innerHTML = `<p class="py-6 text-center text-red-400 text-xs">Error loading members: ${mfErr.message}</p>`;
+                return;
+            }
+
+            const { data: leaderRows } = await supabaseClient
+                .from('group_leaders')
+                .select('member_id, is_active, members(full_name)')
+                .eq('fellowship_id', fellowshipRow.id)
+                .eq('is_active', true);
+
+            const activeLeader = leaderRows?.[0] || null;
+            const activeLeaderId = activeLeader?.member_id || null;
+            const activeLeaderName = activeLeader?.members?.full_name || 'None Assigned';
+
+            if (statusEl) {
+                statusEl.innerHTML = `Current Group Leader: <span class="text-emerald-400 font-semibold">${activeLeaderName}</span>`;
+            }
+
+            const members = (mfRows || []).map(r => r.members).filter(Boolean).map(m => ({
+                ...m,
+                fellowshipId: fellowshipRow.id,
+                fellowshipName: fellowshipRow.name,
+                isCurrentLeader: m.id === activeLeaderId
+            }));
+
+            window.assignLeaderFellowshipId = fellowshipRow.id;
+            window.assignLeaderMembersList = members;
+
+            renderAssignLeaderMemberRows(members);
+        }
+
+        function filterAssignLeaderMembers() {
+            const q = (document.getElementById('leaderMemberSearchInput')?.value || '').trim().toLowerCase();
+            const list = window.assignLeaderMembersList || [];
+            const filtered = q ? list.filter(m => (m.full_name || '').toLowerCase().includes(q)) : list;
+            renderAssignLeaderMemberRows(filtered);
+        }
+
+        function renderAssignLeaderMemberRows(members) {
+            const container = document.getElementById('assignLeaderMembersContainer');
+            if (!container) return;
+
+            if (!members || members.length === 0) {
+                container.innerHTML = `<p class="py-6 text-center text-gray-400 text-xs">No matching members found in ${activeAssignLeaderFellowship}.</p>`;
+                return;
+            }
+
+            container.innerHTML = members.map(m => {
+                const isExpanded = expandedLeaderMemberId === m.id;
+                const defaultChoice = selectedLeaderActionByMember[m.id] || (m.isCurrentLeader ? 'assign_group_leader' : 'assign_group_leader');
+                return `
+                    <div class="py-3 px-2">
+                        <div onclick="toggleLeaderMemberRow('${m.id}')" class="flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-white/5 cursor-pointer transition">
+                            <div class="min-w-0">
+                                <div class="flex items-center space-x-2">
+                                    <h4 class="text-sm font-semibold text-white truncate">${m.full_name}</h4>
+                                    ${m.isCurrentLeader ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">Group Leader</span>` : ''}
+                                </div>
+                                <p class="text-[11px] text-gray-400 truncate">${m.member_id || ''} ${m.phone ? '• ' + m.phone : ''}</p>
+                            </div>
+                            <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-xs text-gray-400"></i>
+                        </div>
+
+                        <div id="leaderActionPanel-${m.id}" class="${isExpanded ? '' : 'hidden'} mt-2 ml-2 mr-2 p-3.5 rounded-xl bg-black/30 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex-1">
+                                <label class="block text-[11px] text-gray-400 mb-1">Select Action for ${m.full_name}</label>
+                                <select id="leaderActionSelect-${m.id}" onchange="onLeaderActionSelectChange('${m.id}', this.value)" class="w-full bg-black/50 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                                    <option value="assign_group_leader" ${defaultChoice === 'assign_group_leader' ? 'selected' : ''}>Assign Group Leader</option>
+                                    <option value="remove_as_group_leader" ${defaultChoice === 'remove_as_group_leader' ? 'selected' : ''}>Remove as Group Leader</option>
+                                </select>
+                            </div>
+                            <button type="button" id="saveLeaderBtn-${m.id}" onclick="saveGroupLeaderAssignment('${m.id}', '${m.fellowshipId}', '${m.fellowshipName}')" class="bg-amber-600 hover:bg-amber-700 text-black font-bold px-5 py-2.5 rounded-lg text-xs transition shadow-md shrink-0">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleLeaderMemberRow(memberId) {
+            expandedLeaderMemberId = expandedLeaderMemberId === memberId ? null : memberId;
+            filterAssignLeaderMembers();
+        }
+
+        function onLeaderActionSelectChange(memberId, value) {
+            selectedLeaderActionByMember[memberId] = value;
+        }
+
+        async function saveGroupLeaderAssignment(memberId, fellowshipId, fellowshipName) {
+            const selectEl = document.getElementById(`leaderActionSelect-${memberId}`);
+            const btnEl = document.getElementById(`saveLeaderBtn-${memberId}`);
+            const action = selectEl ? selectEl.value : (selectedLeaderActionByMember[memberId] || 'assign_group_leader');
+
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerText = 'Saving...';
+            }
+
+            try {
+                if (action === 'assign_group_leader') {
+                    await supabaseClient
+                        .from('group_leaders')
+                        .update({ is_active: false })
+                        .eq('fellowship_id', fellowshipId);
+
+                    const { data: existingRow } = await supabaseClient
+                        .from('group_leaders')
+                        .select('id')
+                        .eq('member_id', memberId)
+                        .eq('fellowship_id', fellowshipId)
+                        .maybeSingle();
+
+                    if (existingRow?.id) {
+                        const { error: updErr } = await supabaseClient
+                            .from('group_leaders')
+                            .update({ is_active: true })
+                            .eq('id', existingRow.id);
+                        if (updErr) throw updErr;
+                    } else {
+                        const { error: insErr } = await supabaseClient
+                            .from('group_leaders')
+                            .insert([{ member_id: memberId, fellowship_id: fellowshipId, is_active: true }]);
+                        if (insErr) throw insErr;
+                    }
+
+                    showModal(
+                        'Group Leader Assigned',
+                        `This member is now the Group Leader of ${fellowshipName}. When they log into their Member Dashboard, Group Dashboard will appear in their sidebar.`,
+                        async () => {
+                            await loadAssignLeaderGroupData(fellowshipName);
+                        }
+                    );
+                } else {
+                    const { error: remErr } = await supabaseClient
+                        .from('group_leaders')
+                        .update({ is_active: false })
+                        .eq('member_id', memberId)
+                        .eq('fellowship_id', fellowshipId);
+                    if (remErr) throw remErr;
+
+                    showModal(
+                        'Group Leader Removed',
+                        `Removed this member as Group Leader of ${fellowshipName}.`,
+                        async () => {
+                            await loadAssignLeaderGroupData(fellowshipName);
+                        }
+                    );
+                }
+            } catch (err) {
+                showModal('Save Failed', err.message || 'Could not update group leader.', null, false);
+            } finally {
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerText = 'Save';
+                }
+            }
         }
 
         // --- FELLOWSHIP GROUP DASHBOARD (MEN, WOMEN, YOUTH) ---
@@ -1867,54 +2694,9 @@
             });
         }
 
-        // --- GROUP LEADER DASHBOARD ---
+        // --- GROUP LEADER DASHBOARD (DIRECT VIEW) ---
         function renderGroupLeaderDashboard() {
-            const m = activeMemberSession;
-            const fellowshipName = m?.member_fellowships?.[0]?.fellowships?.name || 'Fellowship';
-            const container = document.getElementById('appContainer');
-            container.innerHTML = `
-                <div class="flex-1 flex flex-col h-screen overflow-hidden">
-                    <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
-                            <div>
-                                <h2 class="text-sm font-bold text-amber-400">${fellowshipName.toUpperCase()} – GROUP LEADER PORTAL</h2>
-                                <p class="text-xs text-gray-400">Leader: ${m.full_name}</p>
-                            </div>
-                        </div>
-                        <button onclick="renderMemberDashboardShell()" class="text-xs text-blue-400 hover:underline">
-                            <i class="fa-solid fa-arrow-left mr-1"></i> Back to Member Dashboard
-                        </button>
-                    </header>
-                    <main class="flex-1 overflow-y-auto p-6 space-y-6">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
-                                <p class="text-xs sm:text-sm text-gray-400">Fellowship Members</p>
-                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-emerald-400">Active</h3>
-                            </div>
-                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
-                                <p class="text-xs sm:text-sm text-gray-400">Fellowship Dues</p>
-                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-blue-400">₦150,000</h3>
-                            </div>
-                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
-                                <p class="text-xs sm:text-sm text-gray-400">Total Arrears</p>
-                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-red-400">₦12,000</h3>
-                            </div>
-                            <div class="card-bg p-4 sm:p-5 rounded-xl border border-white/5">
-                                <p class="text-xs sm:text-sm text-gray-400">Fellowship Balance</p>
-                                <h3 class="text-lg sm:text-2xl font-bold mt-1 text-purple-400">₦138,000</h3>
-                            </div>
-                        </div>
-                        <div class="card-bg p-6 rounded-xl border border-white/5">
-                            <h3 class="text-base font-bold mb-3">${fellowshipName} Overview & Quick Actions</h3>
-                            <p class="text-xs text-gray-400 mb-4">Manage attendance, view member contributions, and coordinate group activities for ${fellowshipName}.</p>
-                            <button onclick="showModal('Register Export', 'Group Leader attendance register export initiated successfully.')" class="bg-amber-600 hover:bg-amber-700 text-black font-semibold px-4 py-2 rounded-lg text-xs transition">
-                                Export Fellowship Register
-                            </button>
-                        </div>
-                    </main>
-                </div>
-            `;
+            openAssignedGroupLeaderWorkspace();
         }
 
         async function adminLogout() {
