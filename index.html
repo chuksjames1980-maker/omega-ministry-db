@@ -195,6 +195,19 @@
             return '₦' + num.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
+        function getAdminBankAccounts() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem('ocm_admin_bank_accounts') || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveAdminBankAccounts(list) {
+            localStorage.setItem('ocm_admin_bank_accounts', JSON.stringify(list));
+        }
+
         function showModal(title, message, callback = null, isSuccess = true) {
             const modal = document.getElementById('customModal');
             const titleEl = document.getElementById('modalTitle');
@@ -2684,6 +2697,9 @@
                             <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('profile')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-user-gear w-5"></i><span>Profile</span>
                             </a>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('bank')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-building-columns w-5"></i><span>Bank</span>
+                            </a>
                             <!-- REPORTS DROPDOWN -->
                             <div>
                                 <button onclick="toggleDropdown('reportsDropdown')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
@@ -3001,7 +3017,7 @@
             }
         }
 
-        // --- ADMIN ALL MEMBERS DIRECTORY (CLICK NAME -> SHOW DETAILS -> DROPDOWN -> DELETE -> ARE YOU SURE? -> YES) ---
+        // --- ADMIN ALL MEMBERS DIRECTORY ---
         async function renderAllMembersDirectoryView() {
             expandedDirectoryMemberId = null;
             openDirectoryDropdownId = null;
@@ -3651,6 +3667,85 @@
             reader.readAsDataURL(file);
         }
 
+        function renderAdminBankView() {
+            const main = document.getElementById('mainAdminContent');
+            if (!main) return;
+
+            const banks = getAdminBankAccounts();
+            main.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="card-bg p-6 rounded-2xl border border-amber-500/30 space-y-4">
+                        <div class="border-b border-white/10 pb-3">
+                            <h3 class="text-base font-bold text-amber-400">Ministry Bank Account</h3>
+                            <p class="text-xs text-gray-400">Add or update official ministry bank account details.</p>
+                        </div>
+                        <form onsubmit="saveNewAdminBankAccount(event)" class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Bank Name</label>
+                                <input type="text" id="adminBankNameInput" required placeholder="e.g. First Bank / GTBank / Zenith Bank" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Account Name</label>
+                                <input type="text" id="adminAccountNameInput" required placeholder="e.g. Omega City of Mercy Glorious Ministry" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Account Number</label>
+                                <input type="text" id="adminAccountNumberInput" required maxlength="15" inputmode="numeric" placeholder="e.g. 0123456789" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono focus:outline-none focus:border-amber-500">
+                            </div>
+                            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-xs transition shadow-lg">
+                                Save Bank Details
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4">
+                        <div class="border-b border-white/10 pb-3">
+                            <h3 class="text-base font-bold text-white">Saved Bank Accounts (${banks.length})</h3>
+                            <p class="text-xs text-gray-400">Registered ministry bank accounts.</p>
+                        </div>
+                        <div class="divide-y divide-white/5 text-xs">
+                            ${banks.length > 0 ? banks.map((b, idx) => `
+                                <div class="py-3.5 flex items-center justify-between gap-3">
+                                    <div class="space-y-0.5 min-w-0">
+                                        <p class="font-bold text-amber-400 text-sm truncate">${b.bankName}</p>
+                                        <p class="text-white font-semibold truncate">${b.accountName}</p>
+                                        <p class="text-blue-300 font-mono text-xs">${b.accountNumber}</p>
+                                    </div>
+                                    <button type="button" onclick="deleteAdminBankAccount(${idx})" class="text-red-400 hover:underline text-xs shrink-0">
+                                        Remove
+                                    </button>
+                                </div>
+                            `).join('') : '<p class="py-6 text-center text-gray-400">No bank accounts added yet.</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveNewAdminBankAccount(e) {
+            e.preventDefault();
+            const bankName = document.getElementById('adminBankNameInput')?.value.trim() || '';
+            const accountName = document.getElementById('adminAccountNameInput')?.value.trim() || '';
+            const accountNumber = document.getElementById('adminAccountNumberInput')?.value.trim() || '';
+
+            if (!bankName || !accountName || !accountNumber) return;
+
+            const list = getAdminBankAccounts();
+            list.unshift({ bankName, accountName, accountNumber });
+            saveAdminBankAccounts(list);
+
+            showModal('Bank Saved', `${bankName} (${accountNumber}) has been saved.`, () => {
+                renderAdminBankView();
+            });
+        }
+
+        function deleteAdminBankAccount(index) {
+            const list = getAdminBankAccounts();
+            list.splice(index, 1);
+            saveAdminBankAccounts(list);
+            renderAdminBankView();
+        }
+
         async function switchAdminView(view) {
             closeSidebarIfMobile('sidebar');
             const main = document.getElementById('mainAdminContent');
@@ -3745,6 +3840,9 @@
                         </form>
                     </div>
                 `;
+            } else if (view === 'bank') {
+                title.innerText = "Bank Management";
+                renderAdminBankView();
             } else if (view === 'members') {
                 title.innerText = "Members Directory";
                 await renderAllMembersDirectoryView();
@@ -4051,13 +4149,9 @@
                             <button onclick="toggleTakerDropdown('${m.id}')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
                                 Action <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
                             </button>
-                            <div id="takerDropdown-${m.id}" class="hidden absolute right-0 mt-2 w-48 card-bg border border-white/10 rounded-xl shadow-2xl z-50 p-2 space-y-1">
-                                <button onclick="saveReportTakerRole('${m.id}', true)" class="w-full text-left px-3 py-2 text-xs rounded hover:bg-emerald-500/20 text-emerald-400 font-medium transition">
-                                    <i class="fa-solid fa-file-pen mr-1.5"></i> Assign Report Taker
-                                </button>
-                                <button onclick="saveReportTakerRole('${m.id}', false)" class="w-full text-left px-3 py-2 text-xs rounded hover:bg-red-500/20 text-red-400 font-medium transition">
-                                    <i class="fa-solid fa-user-minus mr-1.5"></i> Remove
-                                </button>
+                            <div id="takerDropdown-${m.id}" class="hidden absolute right-0 mt-2 w-48 card-bg border border-white/10 rounded-xl shadow-2xl z-30 p-1.5 space-y-1">
+                                <button onclick="assignMemberAsTaker('${m.id}', '${m.full_name}')" class="w-full text-left px-3 py-1.5 text-xs rounded-lg hover:bg-emerald-500/20 text-emerald-400 transition">Assign Report Taker</button>
+                                <button onclick="removeMemberAsTaker('${m.id}', '${m.full_name}')" class="w-full text-left px-3 py-1.5 text-xs rounded-lg hover:bg-red-500/20 text-red-400 transition">Remove Report Taker</button>
                             </div>
                         </div>
                     </div>
@@ -4066,86 +4160,76 @@
         }
 
         function filterTakerSearch() {
-            const query = document.getElementById('takerSearchInput').value.trim();
-            const filtered = (window.allDepartmentMembers || []).filter(m => m.full_name.toLowerCase().includes(query.toLowerCase()));
-            displayTakerMemberList(filtered, query);
+            const q = document.getElementById('takerSearchInput').value.trim();
+            const filtered = q ? window.allDepartmentMembers.filter(m => m.full_name.toLowerCase().includes(q.toLowerCase())) : window.allDepartmentMembers;
+            displayTakerMemberList(filtered, q);
         }
 
         function toggleTakerDropdown(memberId) {
-            document.querySelectorAll('[id^="takerDropdown-"]').forEach(el => {
-                if (el.id !== `takerDropdown-${memberId}`) el.classList.add('hidden');
-            });
-            const drop = document.getElementById(`takerDropdown-${memberId}`);
-            if (drop) drop.classList.toggle('hidden');
+            const el = document.getElementById(`takerDropdown-${memberId}`);
+            if (el) el.classList.toggle('hidden');
         }
 
-        async function saveReportTakerRole(memberId, makeTaker) {
-            try {
-                if (makeTaker) {
-                    await supabaseClient.from('report_takers').upsert([{
-                        member_id: memberId,
-                        is_active: true
-                    }], { onConflict: 'member_id' });
-                    showModal("Role Assigned", "Successfully assigned as Population Report Taker! The submission card is now active on their dashboard.");
-                } else {
-                    await supabaseClient.from('report_takers').update({ is_active: false }).eq('member_id', memberId);
-                    showModal("Role Revoked", "Successfully removed Report Taker role.");
-                }
-                switchAdminView('assign-report-taker');
-            } catch (err) {
-                showModal("Error", 'Error updating role: ' + err.message, null, false);
+        async function assignMemberAsTaker(memberId, fullName) {
+            const { data: existing } = await supabaseClient.from('report_takers').select('*').eq('member_id', memberId).maybeSingle();
+            if (existing) {
+                await supabaseClient.from('report_takers').update({ is_active: true }).eq('member_id', memberId);
+            } else {
+                await supabaseClient.from('report_takers').insert([{ member_id: memberId, is_active: true }]);
             }
+            showModal("Role Assigned", `${fullName} is now an active Report Taker and can submit reports from their dashboard.`, () => {
+                renderAssignReportTakerView();
+            });
+        }
+
+        async function removeMemberAsTaker(memberId, fullName) {
+            await supabaseClient.from('report_takers').update({ is_active: false }).eq('member_id', memberId);
+            showModal("Role Removed", `Removed ${fullName} as Report Taker.`, () => {
+                renderAssignReportTakerView();
+            });
         }
 
         async function loadAdminMemberCount() {
             const { count } = await supabaseClient.from('members').select('*', { count: 'exact', head: true });
             const el = document.getElementById('statTotalMembers');
-            if (el) el.innerText = count !== null ? count : '0';
+            if (el) el.innerText = count !== null ? count.toLocaleString() : '0';
+        }
+
+        function adminLogout() {
+            activeAdminSession = null;
+            localStorage.removeItem('ocm_admin_session');
+            renderLoginPage();
         }
 
         function initChart() {
             const ctx = document.getElementById('financialChart');
             if (!ctx) return;
             new Chart(ctx.getContext('2d'), {
-                type: 'line',
+                type: 'bar',
                 data: {
-                    labels: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
                     datasets: [
-                        { label: 'Dues', data: [300, 340, 320, 410, 390, 482], borderColor: '#10b981', tension: 0.4 },
-                        { label: 'Expenses', data: [90, 110, 95, 130, 115, 125], borderColor: '#ef4444', tension: 0.4 },
-                        { label: 'Balance', data: [210, 230, 225, 280, 275, 356], borderColor: '#2563eb', tension: 0.4 }
+                        { label: 'Dues (₦)', data: [42000, 48000, 51000, 49000, 55000], backgroundColor: '#10b981', borderRadius: 6 },
+                        { label: 'Expenses (₦)', data: [12000, 15000, 9000, 18000, 14000], backgroundColor: '#ef4444', borderRadius: 6 }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#9ca3af', font: { size: 11 } } } },
+                    scales: {
+                        y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { ticks: { color: '#9ca3af' }, grid: { display: false } }
+                    }
+                }
             });
         }
 
-        // --- GROUP LEADER DASHBOARD (DIRECT VIEW) ---
-        function renderGroupLeaderDashboard() {
-            openAssignedGroupLeaderWorkspace();
-        }
-
-        async function adminLogout() {
-            activeAdminSession = null;
-            localStorage.removeItem('ocm_admin_session');
-            renderLoginPage();
-        }
-
-        // Initialize application on load with Session Persistence check
         window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                await supabaseClient.from('admin_users').upsert([
-                    { email: 'chuksjames1980@gmail.com', password: '07291980', full_name: 'Chuks James' }
-                ], { onConflict: 'email' });
-            } catch (e) {
-                console.log('Admin auto-seed notice:', e);
-            }
-
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('admin') === 'true' || activeAdminSession) {
+            if (activeAdminSession) {
                 renderFullAdminDashboard();
             } else if (activeMemberSession) {
-                renderMemberDashboardShell();
+                await renderMemberDashboardShell();
             } else {
                 renderLoadingScreen();
             }
