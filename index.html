@@ -144,8 +144,13 @@
         let activeAssignLeaderFellowship = null;
         let selectedLeaderActionByMember = {};
         let expandedLeaderMemberId = null;
-        let selectedWorkerLeaderActionByMember = {};
-        let expandedWorkerLeaderMemberId = null;
+
+        // Workers Leader Assignment Wizard State
+        let workersAssignStep = 'select_workers_leader'; // 'select_workers_leader' | 'select_vice_leader'
+        let openWorkerDropdownId = null;
+        let pendingWorkersLeaderId = null;
+        let pendingViceLeaderId = null;
+
         let expandedDirectoryMemberId = null;
         let allAdminDirectoryMembers = [];
         let groupLeaderSubView = 'home';
@@ -430,55 +435,40 @@
             return localState;
         }
 
-        async function persistWorkersLeadershipAction(memberId, actionType) {
-            const current = await fetchWorkersLeadershipState();
-            let nextLeaderId = current.workersLeaderId;
-            let nextViceId = current.viceLeaderId;
-
-            if (actionType === 'assign_workers_leader') {
-                nextLeaderId = memberId;
-                if (nextViceId === memberId) nextViceId = null;
-            } else if (actionType === 'remove_as_workers_leader') {
-                if (nextLeaderId === memberId) nextLeaderId = null;
-            } else if (actionType === 'assign_vice_leader') {
-                nextViceId = memberId;
-                if (nextLeaderId === memberId) nextLeaderId = null;
-            } else if (actionType === 'remove_as_vice_leader') {
-                if (nextViceId === memberId) nextViceId = null;
-            }
+        async function saveWorkersLeadershipPair(workersLeaderId, viceLeaderId) {
+            const finalLeaderId = workersLeaderId || null;
+            const finalViceId = (viceLeaderId && viceLeaderId !== finalLeaderId) ? viceLeaderId : null;
 
             setLocalWorkersLeadershipState({
-                workersLeaderId: nextLeaderId,
-                viceLeaderId: nextViceId
+                workersLeaderId: finalLeaderId,
+                viceLeaderId: finalViceId
             });
 
             try {
-                if (actionType === 'assign_workers_leader') {
-                    await supabaseClient.from('workers_leaders').update({ is_active: false }).eq('role_type', 'workers_leader');
-                    const { data: existing } = await supabaseClient.from('workers_leaders').select('id').eq('member_id', memberId).maybeSingle();
-                    if (existing?.id) {
-                        await supabaseClient.from('workers_leaders').update({ is_active: true, role_type: 'workers_leader' }).eq('id', existing.id);
+                await supabaseClient.from('workers_leaders').update({ is_active: false }).neq('id', '00000000-0000-0000-0000-000000000000');
+
+                if (finalLeaderId) {
+                    const { data: exL } = await supabaseClient.from('workers_leaders').select('id').eq('member_id', finalLeaderId).maybeSingle();
+                    if (exL?.id) {
+                        await supabaseClient.from('workers_leaders').update({ is_active: true, role_type: 'workers_leader' }).eq('id', exL.id);
                     } else {
-                        await supabaseClient.from('workers_leaders').insert([{ member_id: memberId, is_active: true, role_type: 'workers_leader' }]);
+                        await supabaseClient.from('workers_leaders').insert([{ member_id: finalLeaderId, is_active: true, role_type: 'workers_leader' }]);
                     }
-                } else if (actionType === 'remove_as_workers_leader') {
-                    await supabaseClient.from('workers_leaders').update({ is_active: false }).eq('member_id', memberId);
-                } else if (actionType === 'assign_vice_leader') {
-                    await supabaseClient.from('workers_leaders').update({ is_active: false }).eq('role_type', 'vice_leader');
-                    const { data: existing } = await supabaseClient.from('workers_leaders').select('id').eq('member_id', memberId).maybeSingle();
-                    if (existing?.id) {
-                        await supabaseClient.from('workers_leaders').update({ is_active: true, role_type: 'vice_leader' }).eq('id', existing.id);
+                }
+
+                if (finalViceId) {
+                    const { data: exV } = await supabaseClient.from('workers_leaders').select('id').eq('member_id', finalViceId).maybeSingle();
+                    if (exV?.id) {
+                        await supabaseClient.from('workers_leaders').update({ is_active: true, role_type: 'vice_leader' }).eq('id', exV.id);
                     } else {
-                        await supabaseClient.from('workers_leaders').insert([{ member_id: memberId, is_active: true, role_type: 'vice_leader' }]);
+                        await supabaseClient.from('workers_leaders').insert([{ member_id: finalViceId, is_active: true, role_type: 'vice_leader' }]);
                     }
-                } else if (actionType === 'remove_as_vice_leader') {
-                    await supabaseClient.from('workers_leaders').update({ is_active: false }).eq('member_id', memberId);
                 }
             } catch (e) {
                 console.warn('workers_leaders table sync fallback:', e);
             }
 
-            return { workersLeaderId: nextLeaderId, viceLeaderId: nextViceId };
+            return { workersLeaderId: finalLeaderId, viceLeaderId: finalViceId };
         }
 
         function getWorkersExcosList() {
@@ -492,6 +482,41 @@
 
         function saveWorkersExcosList(list) {
             localStorage.setItem('ocm_workers_excos_list', JSON.stringify(list));
+        }
+
+        function getWorkersSavedItems() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem('ocm_workers_saved_items') || 'null');
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {}
+            return [
+                { id: 'sav-1', amount: 40000, date: '2026-04-15', note: 'Workers Monthly Savings Remittance', status: 'Approved', approvedBy: 'Chuks James' },
+                { id: 'sav-2', amount: 25000, date: '2026-05-02', note: 'Departmental Equipment Reserve', status: 'Pending', approvedBy: null }
+            ];
+        }
+
+        function setWorkersSavedItems(list) {
+            localStorage.setItem('ocm_workers_saved_items', JSON.stringify(list));
+        }
+
+        function getWorkersSubmittedReports() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem('ocm_workers_submitted_reports') || 'null');
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {}
+            return [
+                {
+                    id: 'wr-1',
+                    title: 'Workers General Assembly & Department Roll Call',
+                    date: '2026-05-10',
+                    totalWorkers: 48,
+                    notes: 'All 6 departments represented; security & choir schedules updated.'
+                }
+            ];
+        }
+
+        function setWorkersSubmittedReports(list) {
+            localStorage.setItem('ocm_workers_submitted_reports', JSON.stringify(list));
         }
 
         // --- 1. LOADING SCREEN VIEW ---
@@ -974,7 +999,7 @@
 
                 const wState = await fetchWorkersLeadershipState();
                 member.is_workers_leader = wState.workersLeaderId === member.id;
-                member.is_vice_president = wState.viceLeaderId === member.id;
+                member.is_vice_leader = wState.viceLeaderId === member.id;
                 activeMemberSession = member;
                 localStorage.setItem('ocm_member_session', JSON.stringify(member));
             }
@@ -1011,7 +1036,7 @@
 
                 const wState = await fetchWorkersLeadershipState();
                 member.is_workers_leader = wState.workersLeaderId === member.id;
-                member.is_vice_president = wState.viceLeaderId === member.id;
+                member.is_vice_leader = wState.viceLeaderId === member.id;
 
                 activeMemberSession = member;
                 localStorage.setItem('ocm_member_session', JSON.stringify(member));
@@ -1032,12 +1057,12 @@
             const activeLeaderEntry = (m?.group_leaders || []).find(gl => gl.is_active);
             const isGroupLeader = Boolean(activeLeaderEntry);
             const isWorkersLeader = Boolean(m?.is_workers_leader);
-            const isVicePresident = Boolean(m?.is_vice_president);
+            const isViceLeader = Boolean(m?.is_vice_leader);
             const isReportTaker = (m?.report_takers || []).some(rt => rt.is_active);
 
             const roleBadgeLabel = isWorkersLeader
                 ? 'Workers Leader'
-                : (isVicePresident ? 'Vice President' : (isGroupLeader ? 'Group Leader' : 'Active Member'));
+                : (isViceLeader ? 'Vice Leader' : (isGroupLeader ? 'Group Leader' : 'Active Member'));
 
             const container = document.getElementById('appContainer');
             container.innerHTML = `
@@ -1065,9 +1090,9 @@
                                 <i class="fa-solid fa-helmet-safety w-5"></i><span>Workers Leader</span>
                             </a>
                             ` : ''}
-                            ${isVicePresident ? `
-                            <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); openWorkersLeaderDashboard('vice_president')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-indigo-500/15 border border-indigo-500/40 text-indigo-300 font-semibold transition">
-                                <i class="fa-solid fa-user-tie w-5"></i><span>Vice President</span>
+                            ${isViceLeader ? `
+                            <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); openWorkersLeaderDashboard('vice_leader')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-indigo-500/15 border border-indigo-500/40 text-indigo-300 font-semibold transition">
+                                <i class="fa-solid fa-user-tie w-5"></i><span>Vice Leader</span>
                             </a>
                             ` : ''}
                             <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); switchMemberView('fellowship')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
@@ -1151,7 +1176,7 @@
             const fellowshipName = activeLeaderEntry?.fellowships?.name || m?.member_fellowships?.[0]?.fellowships?.name || inferFellowshipFromMember(m) || 'Unassigned Fellowship';
             const isGroupLeader = Boolean(activeLeaderEntry);
             const isWorkersLeader = Boolean(m?.is_workers_leader);
-            const isVicePresident = Boolean(m?.is_vice_president);
+            const isViceLeader = Boolean(m?.is_vice_leader);
             const isReportTaker = (m?.report_takers || []).some(rt => rt.is_active);
 
             if (view === 'dashboard') {
@@ -1170,10 +1195,10 @@
                             <span>WORKERS LEADER</span>
                         </button>
                         ` : ''}
-                        ${isVicePresident ? `
-                        <button onclick="openWorkersLeaderDashboard('vice_president')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(99,102,241,0.45)] transition flex items-center space-x-2 border border-indigo-300">
+                        ${isViceLeader ? `
+                        <button onclick="openWorkersLeaderDashboard('vice_leader')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(99,102,241,0.45)] transition flex items-center space-x-2 border border-indigo-300">
                             <i class="fa-solid fa-user-tie text-sm"></i>
-                            <span>VICE PRESIDENT</span>
+                            <span>VICE LEADER</span>
                         </button>
                         ` : ''}
                         ${isReportTaker ? `
@@ -1317,23 +1342,51 @@
             }
         }
 
-        // --- WORKERS LEADER & VICE PRESIDENT WORKSPACE (FROM MEMBER DASHBOARD) ---
+        // --- WORKERS LEADER & VICE LEADER WORKSPACE (FROM MEMBER DASHBOARD) ---
         async function openWorkersLeaderDashboard(mode = 'workers_leader') {
             closeSidebarIfMobile('memberSidebar');
             const m = activeMemberSession;
             if (!m) return;
 
             activeWorkersPortalMode = mode;
-            const isVice = mode === 'vice_president';
-            const portalTitle = isVice ? 'Vice President' : 'Workers Leader';
-            const portalSubtitle = isVice ? 'Workers Vice President Portal' : 'Ministry Workers Portal';
+            const isVice = mode === 'vice_leader';
+            const portalTitle = isVice ? 'Vice Leader' : 'Workers Leader';
+            const portalSubtitle = isVice ? 'Workers Vice Leader Portal' : 'Ministry Workers Portal';
             const badgeColorClass = isVice ? 'text-indigo-300' : 'text-purple-400';
             const activeNavClass = isVice ? 'bg-indigo-600 text-white' : 'bg-purple-600 text-white';
+
+            const sidebarNavHtml = isVice ? `
+                <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('home')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg ${activeNavClass} font-medium shadow-md transition">
+                    <i class="fa-solid fa-house w-5"></i><span>Home</span>
+                </a>
+                <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('view-report')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                    <i class="fa-solid fa-file-lines w-5"></i><span>View Report</span>
+                </a>
+                <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('view-save')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                    <i class="fa-solid fa-piggy-bank w-5"></i><span>View Save</span>
+                </a>
+                <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('take-report')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                    <i class="fa-solid fa-file-pen w-5"></i><span>Take Report</span>
+                </a>
+            ` : `
+                <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('home')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg ${activeNavClass} font-medium shadow-md transition">
+                    <i class="fa-solid fa-house w-5"></i><span>Home</span>
+                </a>
+                <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('assign-excos')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                    <i class="fa-solid fa-user-tie w-5"></i><span>Assign Excos</span>
+                </a>
+                <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('view-reports')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                    <i class="fa-solid fa-file-lines w-5"></i><span>View Reports</span>
+                </a>
+                <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('approve-save')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                    <i class="fa-solid fa-circle-check w-5"></i><span>Approve Save</span>
+                </a>
+            `;
 
             const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex h-screen overflow-hidden relative">
-                    <!-- WORKERS LEADER / VICE PRESIDENT SIDEBAR -->
+                    <!-- WORKERS LEADER / VICE LEADER SIDEBAR -->
                     <aside id="workersLeaderSidebar" class="fixed inset-y-0 left-0 z-50 w-64 card-bg transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col shadow-2xl">
                         <div class="p-4 border-b border-white/10 flex items-center space-x-3">
                             <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
@@ -1343,14 +1396,7 @@
                             </div>
                         </div>
                         <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
-                            <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('home')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg ${activeNavClass} font-medium shadow-md transition">
-                                <i class="fa-solid fa-house w-5"></i><span>Home</span>
-                            </a>
-                            ${!isVice ? `
-                            <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('assign-excos')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                                <i class="fa-solid fa-user-tie w-5"></i><span>Assign Excos</span>
-                            </a>
-                            ` : ''}
+                            ${sidebarNavHtml}
                         </nav>
                         <div class="p-3 m-2 card-bg rounded-xl border border-purple-500/25 text-xs">
                             <p class="${badgeColorClass} font-semibold mb-0.5"><i class="fa-solid ${isVice ? 'fa-user-tie' : 'fa-helmet-safety'}"></i> ${m.full_name}</p>
@@ -1358,7 +1404,7 @@
                         </div>
                     </aside>
 
-                    <!-- WORKERS LEADER / VICE PRESIDENT MAIN VIEWPORT -->
+                    <!-- WORKERS LEADER / VICE LEADER MAIN VIEWPORT -->
                     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
                         <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-4 sm:px-6 z-40">
                             <div class="flex items-center space-x-3 min-w-0">
@@ -1416,25 +1462,19 @@
                 }));
 
             const totalDues = 165000;
-            const totalArrears = 32000;
-            const totalOldDues = 28000;
-            const totalProjectPaid = 85000;
-            const projectUnpaid = 45000;
             const totalExpenses = 28500;
-            const saveMoney = 40000;
-            const totalInflow = totalDues + totalProjectPaid + totalOldDues;
-            const totalBalance = totalDues + totalProjectPaid - totalExpenses - saveMoney;
+            const projectPaid = 85000;
+            const projectUnpaid = 45000;
+            const totalInflow = totalDues + projectPaid;
+            const totalBalance = totalInflow - totalExpenses;
 
             currentWorkersPortalMetrics = {
                 workersList,
                 totalInflow,
                 totalDues,
-                totalArrears,
-                projectPaid: totalProjectPaid,
+                projectPaid,
                 projectUnpaid,
-                totalOldDues,
                 expenses: totalExpenses,
-                saveMoney,
                 totalBalance
             };
         }
@@ -1446,13 +1486,13 @@
             const data = currentWorkersPortalMetrics;
             if (!content || !data) return;
 
-            const isVice = activeWorkersPortalMode === 'vice_president';
-            const portalTitle = isVice ? 'Vice President' : 'Workers Leader';
+            const isVice = activeWorkersPortalMode === 'vice_leader';
+            const portalTitle = isVice ? 'Vice Leader' : 'Workers Leader';
 
             if (subView === 'home') {
                 titleEl.innerText = `${portalTitle} – Home`;
                 content.innerHTML = `
-                    <!-- 9 FINANCIAL CARDS GRID -->
+                    <!-- 6 FINANCIAL CARDS GRID: Total Inflow, Total Dues, Project Paid, Project Unpaid, Expenses, Total Balance -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4">
                         <div class="premium-stat-card p-5 rounded-2xl border border-emerald-500/30">
                             <div class="flex items-center justify-between mb-2">
@@ -1460,7 +1500,7 @@
                                 <i class="fa-solid fa-arrow-trend-up text-emerald-400 text-xs"></i>
                             </div>
                             <h3 class="text-base sm:text-xl font-extrabold text-emerald-400">${formatNaira(data.totalInflow)}</h3>
-                            <p class="text-[10px] text-emerald-300/80 mt-1.5">Dues + Project + Old Dues</p>
+                            <p class="text-[10px] text-emerald-300/80 mt-1.5">Total workers inflow</p>
                         </div>
 
                         <div class="premium-stat-card p-5 rounded-2xl border border-blue-500/30">
@@ -1470,15 +1510,6 @@
                             </div>
                             <h3 class="text-base sm:text-xl font-extrabold text-blue-400">${formatNaira(data.totalDues)}</h3>
                             <p class="text-[10px] text-blue-300/80 mt-1.5">Workers dues collected</p>
-                        </div>
-
-                        <div class="premium-stat-card p-5 rounded-2xl border border-red-500/30">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Total Arrears</span>
-                                <i class="fa-solid fa-circle-exclamation text-red-400 text-xs"></i>
-                            </div>
-                            <h3 class="text-base sm:text-xl font-extrabold text-red-400">${formatNaira(data.totalArrears)}</h3>
-                            <p class="text-[10px] text-gray-400 mt-1.5">Pending workers dues</p>
                         </div>
 
                         <div class="premium-stat-card p-5 rounded-2xl border border-purple-500/30">
@@ -1496,16 +1527,7 @@
                                 <i class="fa-solid fa-hourglass-half text-orange-400 text-xs"></i>
                             </div>
                             <h3 class="text-base sm:text-xl font-extrabold text-orange-400">${formatNaira(data.projectUnpaid)}</h3>
-                            <p class="text-[10px] text-orange-300/80 mt-1.5">Outstanding project pledges</p>
-                        </div>
-
-                        <div class="premium-stat-card p-5 rounded-2xl border border-amber-500/30">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Total Old Dues</span>
-                                <i class="fa-solid fa-clock-rotate-left text-amber-400 text-xs"></i>
-                            </div>
-                            <h3 class="text-base sm:text-xl font-extrabold text-amber-400">${formatNaira(data.totalOldDues)}</h3>
-                            <p class="text-[10px] text-amber-300/80 mt-1.5">Brought-forward dues</p>
+                            <p class="text-[10px] text-orange-300/80 mt-1.5">Outstanding project balances</p>
                         </div>
 
                         <div class="premium-stat-card p-5 rounded-2xl border border-rose-500/30">
@@ -1517,22 +1539,13 @@
                             <p class="text-[10px] text-rose-300/80 mt-1.5">Total workers expenses</p>
                         </div>
 
-                        <div class="premium-stat-card p-5 rounded-2xl border border-teal-500/30">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Save Money</span>
-                                <i class="fa-solid fa-piggy-bank text-teal-400 text-xs"></i>
-                            </div>
-                            <h3 class="text-base sm:text-xl font-extrabold text-teal-400">${formatNaira(data.saveMoney)}</h3>
-                            <p class="text-[10px] text-teal-300/80 mt-1.5">Remitted / saved funds</p>
-                        </div>
-
                         <div class="premium-stat-card p-5 rounded-2xl border border-cyan-500/30">
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Total Balance</span>
                                 <i class="fa-solid fa-scale-balanced text-cyan-400 text-xs"></i>
                             </div>
                             <h3 class="text-base sm:text-xl font-extrabold text-cyan-400">${formatNaira(data.totalBalance)}</h3>
-                            <p class="text-[10px] text-cyan-300/80 mt-1.5">Dues + project - expenses - saved</p>
+                            <p class="text-[10px] text-cyan-300/80 mt-1.5">Net workers balance</p>
                         </div>
                     </div>
 
@@ -1594,7 +1607,132 @@
                         </div>
                     </div>
                 `;
+            } else if (subView === 'view-reports' || subView === 'view-report') {
+                titleEl.innerText = `${portalTitle} – ${isVice ? 'View Report' : 'View Reports'}`;
+                const reports = getWorkersSubmittedReports();
+                content.innerHTML = `
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4">
+                        <h3 class="text-base font-bold text-amber-400">Workers Reports (${reports.length})</h3>
+                        <div class="divide-y divide-white/5 text-xs">
+                            ${reports.length > 0 ? reports.map(rep => `
+                                <div class="py-3.5 space-y-1">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="font-bold text-white text-sm">${rep.title}</h4>
+                                        <span class="text-gray-400">${rep.date}</span>
+                                    </div>
+                                    <p class="text-emerald-400 font-semibold">Workers Count: ${rep.totalWorkers}</p>
+                                    <p class="text-gray-300">${rep.notes}</p>
+                                </div>
+                            `).join('') : '<p class="py-4 text-gray-400">No workers reports recorded yet.</p>'}
+                        </div>
+                    </div>
+                `;
+            } else if (subView === 'approve-save') {
+                titleEl.innerText = "Workers Leader – Approve Save";
+                const saves = getWorkersSavedItems();
+                content.innerHTML = `
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4">
+                        <h3 class="text-base font-bold text-emerald-400">Approve Saved Money Requests</h3>
+                        <div class="divide-y divide-white/5 text-xs">
+                            ${saves.map((s, idx) => `
+                                <div class="py-3.5 flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="font-bold text-white text-sm">${formatNaira(s.amount)}</p>
+                                        <p class="text-gray-400">${s.note} • ${s.date}</p>
+                                        <p class="text-[11px] mt-0.5 ${s.status === 'Approved' ? 'text-emerald-400' : 'text-amber-400'} font-semibold">Status: ${s.status}</p>
+                                    </div>
+                                    ${s.status !== 'Approved' ? `
+                                        <button onclick="approveWorkersSaveItem(${idx})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition shrink-0">
+                                            Approve
+                                        </button>
+                                    ` : `<span class="text-emerald-400 font-semibold text-xs"><i class="fa-solid fa-check mr-1"></i>Approved</span>`}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (subView === 'view-save') {
+                titleEl.innerText = "Vice Leader – View Save";
+                const saves = getWorkersSavedItems();
+                content.innerHTML = `
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4">
+                        <h3 class="text-base font-bold text-teal-400">Saved Money Records (${saves.length})</h3>
+                        <div class="divide-y divide-white/5 text-xs">
+                            ${saves.map(s => `
+                                <div class="py-3.5 flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="font-bold text-white text-sm">${formatNaira(s.amount)}</p>
+                                        <p class="text-gray-400">${s.note} • ${s.date}</p>
+                                    </div>
+                                    <span class="font-semibold ${s.status === 'Approved' ? 'text-emerald-400' : 'text-amber-400'}">${s.status}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (subView === 'take-report') {
+                titleEl.innerText = "Vice Leader – Take Report";
+                content.innerHTML = `
+                    <div class="card-bg p-6 rounded-2xl border border-indigo-500/30 space-y-4 max-w-xl">
+                        <h3 class="text-base font-bold text-indigo-300">Take Workers Report</h3>
+                        <form onsubmit="submitViceWorkersReport(event)" class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">Report Title / Meeting</label>
+                                <input type="text" id="viceRepTitle" required placeholder="e.g. Monthly Workers Briefing" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-gray-300 mb-1">Date</label>
+                                    <input type="date" id="viceRepDate" required value="${new Date().toISOString().split('T')[0]}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-300 mb-1">Workers Present</label>
+                                    <input type="number" id="viceRepCount" required min="0" value="0" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">Report Notes</label>
+                                <textarea id="viceRepNotes" rows="3" required placeholder="Enter report summary..." class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white"></textarea>
+                            </div>
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-lg text-xs transition shadow-lg">
+                                Save Report
+                            </button>
+                        </form>
+                    </div>
+                `;
             }
+        }
+
+        function approveWorkersSaveItem(index) {
+            const saves = getWorkersSavedItems();
+            if (!saves[index]) return;
+            saves[index].status = 'Approved';
+            saves[index].approvedBy = activeMemberSession?.full_name || 'Workers Leader';
+            setWorkersSavedItems(saves);
+            showModal('Save Approved', `Saved item of ${formatNaira(saves[index].amount)} has been approved.`, () => {
+                switchWorkersLeaderView('approve-save');
+            });
+        }
+
+        function submitViceWorkersReport(e) {
+            e.preventDefault();
+            const title = document.getElementById('viceRepTitle')?.value.trim() || 'Workers Report';
+            const date = document.getElementById('viceRepDate')?.value || new Date().toISOString().split('T')[0];
+            const totalWorkers = parseInt(document.getElementById('viceRepCount')?.value || '0', 10);
+            const notes = document.getElementById('viceRepNotes')?.value.trim() || '';
+
+            const reports = getWorkersSubmittedReports();
+            reports.unshift({
+                id: 'wr-' + Date.now(),
+                title,
+                date,
+                totalWorkers,
+                notes
+            });
+            setWorkersSubmittedReports(reports);
+            showModal('Report Saved', 'Workers report has been recorded.', () => {
+                switchWorkersLeaderView('view-report');
+            });
         }
 
         function saveWorkerExcoAssignment() {
@@ -2532,8 +2670,12 @@
         // --- ASSIGN WORKERS LEADER & VICE LEADER VIEW (UNDER ASSIGN LEADERS -> WORKERS) ---
         async function openAssignWorkersLeaderView() {
             closeSidebarIfMobile('sidebar');
-            selectedWorkerLeaderActionByMember = {};
-            expandedWorkerLeaderMemberId = null;
+            workersAssignStep = 'select_workers_leader';
+            openWorkerDropdownId = null;
+
+            const wState = await fetchWorkersLeadershipState();
+            pendingWorkersLeaderId = wState.workersLeaderId || null;
+            pendingViceLeaderId = wState.viceLeaderId || null;
 
             const main = document.getElementById('mainAdminContent');
             const title = document.getElementById('pageTitle');
@@ -2544,17 +2686,23 @@
                 <div class="card-bg p-6 rounded-2xl border border-purple-500/25 space-y-5">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
                         <div class="space-y-1">
-                            <h3 class="text-base font-bold text-purple-300">Workers Leader & Vice Leader Assignment</h3>
-                            <p id="currentWorkersLeaderStatus" class="text-xs text-gray-400">Loading assigned leaders...</p>
+                            <h3 id="workersAssignStepHeading" class="text-base font-bold text-purple-300">Workers – Select Workers Leader</h3>
+                            <p id="workersAssignStepSubtext" class="text-xs text-gray-400">Click a member name to choose Assign Workers Leader or Remove as Leader.</p>
+                            <p id="currentWorkersLeaderStatus" class="text-xs text-gray-300 pt-1">Loading assigned leaders...</p>
                         </div>
-                        <div class="relative w-full sm:w-72">
-                            <i class="fa-solid fa-magnifying-glass text-xs text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                            <input type="text" id="workerLeaderSearchInput" oninput="filterAssignWorkerLeaderMembers()" placeholder="Search worker name..." class="w-full bg-black/30 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <div class="relative flex-1 sm:w-64">
+                                <i class="fa-solid fa-magnifying-glass text-xs text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                                <input type="text" id="workerLeaderSearchInput" oninput="filterAssignWorkerLeaderMembers()" placeholder="Search member name..." class="w-full bg-black/30 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                            </div>
+                            <button type="button" id="saveWorkersLeadershipBtn" onclick="saveFinalWorkersLeadership()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-lg text-xs transition shadow-lg shrink-0">
+                                Save
+                            </button>
                         </div>
                     </div>
 
-                    <div id="assignWorkerLeaderContainer" class="space-y-5">
-                        <p class="py-6 text-center text-gray-400 text-xs">Loading members under Security, Usher, Technical, Children Teacher, Choir, Sanitation...</p>
+                    <div id="assignWorkerLeaderContainer" class="divide-y divide-white/5">
+                        <p class="py-6 text-center text-gray-400 text-xs">Loading members in departments...</p>
                     </div>
                 </div>
             `;
@@ -2564,7 +2712,6 @@
 
         async function loadAssignWorkersLeaderData() {
             const container = document.getElementById('assignWorkerLeaderContainer');
-            const statusEl = document.getElementById('currentWorkersLeaderStatus');
             if (!container) return;
 
             const { data: deptRows, error } = await supabaseClient
@@ -2576,8 +2723,6 @@
                 return;
             }
 
-            const wState = await fetchWorkersLeadershipState();
-
             const workers = (deptRows || [])
                 .filter(r => r.members)
                 .map(r => ({
@@ -2585,165 +2730,169 @@
                     full_name: r.members.full_name,
                     phone: r.members.phone || '',
                     member_id: r.members.member_id || '',
-                    department: r.departments?.name || 'Security',
-                    isWorkersLeader: wState.workersLeaderId === r.members.id,
-                    isViceLeader: wState.viceLeaderId === r.members.id
+                    department: r.departments?.name || 'Worker'
                 }));
 
-            const leaderObj = workers.find(w => w.isWorkersLeader);
-            const viceObj = workers.find(w => w.isViceLeader);
-
-            if (statusEl) {
-                statusEl.innerHTML = `
-                    <span class="block sm:inline">Workers Leader: <span class="text-purple-300 font-semibold">${leaderObj ? `${leaderObj.full_name} (${leaderObj.department})` : 'None Assigned'}</span></span>
-                    <span class="hidden sm:inline mx-2 text-gray-600">|</span>
-                    <span class="block sm:inline">Vice Leader: <span class="text-indigo-300 font-semibold">${viceObj ? `${viceObj.full_name} (${viceObj.department})` : 'None Assigned'}</span></span>
-                `;
-            }
-
             window.assignWorkersLeaderList = workers;
-            renderAssignWorkerLeaderGroupedRows(workers);
+            updateWorkersAssignBannerAndRows(workers);
         }
 
         function filterAssignWorkerLeaderMembers() {
             const q = (document.getElementById('workerLeaderSearchInput')?.value || '').trim().toLowerCase();
             const list = window.assignWorkersLeaderList || [];
             const filtered = q ? list.filter(w => (w.full_name || '').toLowerCase().includes(q)) : list;
-            renderAssignWorkerLeaderGroupedRows(filtered);
+            renderAssignWorkerLeaderRows(filtered);
         }
 
-        function renderAssignWorkerLeaderGroupedRows(workers) {
+        function updateWorkersAssignBannerAndRows(listToRender = null) {
+            const allWorkers = window.assignWorkersLeaderList || [];
+            const headingEl = document.getElementById('workersAssignStepHeading');
+            const subtextEl = document.getElementById('workersAssignStepSubtext');
+            const statusEl = document.getElementById('currentWorkersLeaderStatus');
+
+            const leaderObj = allWorkers.find(w => w.id === pendingWorkersLeaderId);
+            const viceObj = allWorkers.find(w => w.id === pendingViceLeaderId);
+
+            if (headingEl) {
+                headingEl.innerText = workersAssignStep === 'select_vice_leader'
+                    ? 'Workers – Select Vice Leader (Optional)'
+                    : 'Workers – Select Workers Leader';
+            }
+
+            if (subtextEl) {
+                subtextEl.innerText = workersAssignStep === 'select_vice_leader'
+                    ? 'Click a member name to choose Assign Vice Leader or Remove as Leader, or click Save directly (Vice Leader is optional).'
+                    : 'Click a member name to choose Assign Workers Leader or Remove as Leader.';
+            }
+
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <span>Workers Leader: <strong class="text-purple-300">${leaderObj ? leaderObj.full_name : 'None'}</strong></span>
+                    <span class="mx-2 text-gray-600">|</span>
+                    <span>Vice Leader: <strong class="text-indigo-300">${viceObj ? viceObj.full_name : 'None (Optional)'}</strong></span>
+                `;
+            }
+
+            const q = (document.getElementById('workerLeaderSearchInput')?.value || '').trim().toLowerCase();
+            const baseList = listToRender || (q ? allWorkers.filter(w => (w.full_name || '').toLowerCase().includes(q)) : allWorkers);
+            renderAssignWorkerLeaderRows(baseList);
+        }
+
+        function renderAssignWorkerLeaderRows(workers) {
             const container = document.getElementById('assignWorkerLeaderContainer');
             if (!container) return;
 
-            const searchQuery = (document.getElementById('workerLeaderSearchInput')?.value || '').trim();
-            const groupedMap = {};
-
-            ALL_WORKER_DEPARTMENTS.forEach(dept => {
-                groupedMap[dept] = [];
-            });
-
-            (workers || []).forEach(w => {
-                const matchedDept = ALL_WORKER_DEPARTMENTS.find(d => d.toLowerCase() === (w.department || '').toLowerCase()) || w.department || 'Security';
-                if (!groupedMap[matchedDept]) groupedMap[matchedDept] = [];
-                groupedMap[matchedDept].push(w);
-            });
-
-            const departmentsToRender = Object.keys(groupedMap).filter(dept => !searchQuery || groupedMap[dept].length > 0);
-
-            if (departmentsToRender.length === 0) {
-                container.innerHTML = `<p class="py-6 text-center text-gray-400 text-xs">No worker matches "${searchQuery}".</p>`;
+            if (!workers || workers.length === 0) {
+                container.innerHTML = `<p class="py-6 text-center text-gray-400 text-xs">No members found in departments.</p>`;
                 return;
             }
 
-            container.innerHTML = departmentsToRender.map(deptName => {
-                const deptMembers = groupedMap[deptName];
-                return `
-                    <div class="bg-black/20 rounded-2xl border border-white/10 overflow-hidden">
-                        <div class="px-4 py-3 bg-white/5 border-b border-white/10 flex items-center justify-between">
-                            <span class="text-xs font-bold uppercase tracking-wider text-amber-400">
-                                <i class="fa-solid fa-building-shield mr-1.5"></i>${deptName}
-                            </span>
-                            <span class="text-[11px] text-gray-400">${deptMembers.length} member(s)</span>
-                        </div>
-                        <div class="divide-y divide-white/5">
-                            ${deptMembers.length > 0 ? deptMembers.map(w => {
-                                const isExpanded = expandedWorkerLeaderMemberId === w.id;
-                                const defaultOpt = w.isViceLeader
-                                    ? 'assign_vice_leader'
-                                    : (w.isWorkersLeader ? 'assign_workers_leader' : 'assign_workers_leader');
-                                const selectedAction = selectedWorkerLeaderActionByMember[w.id] || defaultOpt;
-                                return `
-                                    <div class="py-3 px-4">
-                                        <div onclick="toggleWorkerLeaderMemberRow('${w.id}')" class="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer transition">
-                                            <div class="min-w-0">
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <h4 class="text-sm font-semibold text-white truncate">${w.full_name}</h4>
-                                                    ${w.isWorkersLeader ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40">Workers Leader</span>` : ''}
-                                                    ${w.isViceLeader ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/40">Vice Leader</span>` : ''}
-                                                </div>
-                                                <p class="text-[11px] text-gray-400 truncate">Department: <span class="text-blue-300">${deptName}</span> ${w.phone ? '• ' + w.phone : ''}</p>
-                                            </div>
-                                            <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-xs text-gray-400"></i>
-                                        </div>
+            container.innerHTML = workers.map(w => {
+                const isOpen = openWorkerDropdownId === w.id;
+                const isPendingLeader = w.id === pendingWorkersLeaderId;
+                const isPendingVice = w.id === pendingViceLeaderId;
+                const safeName = (w.full_name || '').replace(/'/g, "\\'");
 
-                                        <div id="workerLeaderActionPanel-${w.id}" class="${isExpanded ? '' : 'hidden'} mt-2 ml-2 mr-2 p-3.5 rounded-xl bg-black/35 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                            <div class="flex-1">
-                                                <label class="block text-[11px] text-gray-400 mb-1">Select Leadership Role for ${w.full_name}</label>
-                                                <select id="workerLeaderActionSelect-${w.id}" onchange="onWorkerLeaderActionChange('${w.id}', this.value)" class="w-full bg-black/50 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
-                                                    <option value="assign_workers_leader" ${selectedAction === 'assign_workers_leader' ? 'selected' : ''}>Assign as Workers Leader</option>
-                                                    <option value="remove_as_workers_leader" ${selectedAction === 'remove_as_workers_leader' ? 'selected' : ''}>Remove as Workers Leader</option>
-                                                    <option value="assign_vice_leader" ${selectedAction === 'assign_vice_leader' ? 'selected' : ''}>Assign as Vice Leader</option>
-                                                    <option value="remove_as_vice_leader" ${selectedAction === 'remove_as_vice_leader' ? 'selected' : ''}>Remove as Vice Leader</option>
-                                                </select>
-                                            </div>
-                                            <button type="button" id="saveWorkerLeaderBtn-${w.id}" onclick="saveWorkerLeaderRole('${w.id}', '${(w.full_name || '').replace(/'/g, "\\'")}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2.5 rounded-lg text-xs transition shadow-md shrink-0">
-                                                Save
-                                            </button>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('') : `<p class="py-3 px-4 text-xs text-gray-500">No members registered under ${deptName} yet.</p>`}
+                const primaryActionLabel = workersAssignStep === 'select_vice_leader'
+                    ? 'Assign Vice Leader'
+                    : 'Assign Workers Leader';
+                const primaryActionMode = workersAssignStep === 'select_vice_leader'
+                    ? 'vice'
+                    : 'leader';
+
+                return `
+                    <div class="py-3 px-2">
+                        <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-white/5 transition">
+                            <div onclick="toggleWorkerNameDropdown('${w.id}')" class="flex-1 min-w-0 cursor-pointer">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h4 class="text-sm font-semibold text-white hover:text-purple-300 transition truncate">${w.full_name}</h4>
+                                    ${isPendingLeader ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40">Workers Leader</span>` : ''}
+                                    ${isPendingVice ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/40">Vice Leader</span>` : ''}
+                                </div>
+                                <p class="text-[11px] text-gray-400 truncate">Department: <span class="text-blue-300">${w.department}</span> ${w.phone ? '• ' + w.phone : ''}</p>
+                            </div>
+
+                            <div class="relative shrink-0">
+                                <button type="button" onclick="toggleWorkerNameDropdown('${w.id}')" class="bg-white/10 hover:bg-white/15 text-gray-200 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                    <i class="fa-solid ${isOpen ? 'fa-chevron-up' : 'fa-chevron-down'} text-[11px]"></i>
+                                </button>
+                                <div id="workerDropdownMenu-${w.id}" class="${isOpen ? '' : 'hidden'} absolute right-0 mt-1.5 w-48 card-bg border border-white/15 rounded-xl shadow-2xl z-40 p-1.5 space-y-1">
+                                    <button type="button" onclick="pickWorkerRole('${w.id}', '${safeName}', '${primaryActionMode}')" class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-purple-500/20 text-purple-300 font-semibold transition">
+                                        ${primaryActionLabel}
+                                    </button>
+                                    <button type="button" onclick="pickWorkerRole('${w.id}', '${safeName}', 'remove')" class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-red-500/20 text-red-400 font-semibold transition">
+                                        Remove as Leader
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        function toggleWorkerLeaderMemberRow(memberId) {
-            expandedWorkerLeaderMemberId = expandedWorkerLeaderMemberId === memberId ? null : memberId;
+        function toggleWorkerNameDropdown(memberId) {
+            openWorkerDropdownId = openWorkerDropdownId === memberId ? null : memberId;
             filterAssignWorkerLeaderMembers();
         }
 
-        function onWorkerLeaderActionChange(memberId, value) {
-            selectedWorkerLeaderActionByMember[memberId] = value;
+        function pickWorkerRole(memberId, memberName, roleChoice) {
+            openWorkerDropdownId = null;
+
+            if (roleChoice === 'leader') {
+                pendingWorkersLeaderId = memberId;
+                if (pendingViceLeaderId === memberId) pendingViceLeaderId = null;
+                workersAssignStep = 'select_vice_leader';
+                updateWorkersAssignBannerAndRows();
+            } else if (roleChoice === 'vice') {
+                pendingViceLeaderId = memberId;
+                if (pendingWorkersLeaderId === memberId) pendingWorkersLeaderId = null;
+                updateWorkersAssignBannerAndRows();
+            } else if (roleChoice === 'remove') {
+                if (pendingWorkersLeaderId === memberId) {
+                    pendingWorkersLeaderId = null;
+                    workersAssignStep = 'select_workers_leader';
+                }
+                if (pendingViceLeaderId === memberId) {
+                    pendingViceLeaderId = null;
+                }
+                updateWorkersAssignBannerAndRows();
+            }
         }
 
-        async function saveWorkerLeaderRole(memberId, memberName) {
-            const selectEl = document.getElementById(`workerLeaderActionSelect-${memberId}`);
-            const btnEl = document.getElementById(`saveWorkerLeaderBtn-${memberId}`);
-            const action = selectEl ? selectEl.value : (selectedWorkerLeaderActionByMember[memberId] || 'assign_workers_leader');
-
-            if (btnEl) {
-                btnEl.disabled = true;
-                btnEl.innerText = 'Saving...';
+        async function saveFinalWorkersLeadership() {
+            const btn = document.getElementById('saveWorkersLeadershipBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Saving...';
             }
 
             try {
-                const updatedState = await persistWorkersLeadershipAction(memberId, action);
+                const savedState = await saveWorkersLeadershipPair(pendingWorkersLeaderId, pendingViceLeaderId);
+                const allWorkers = window.assignWorkersLeaderList || [];
+                const leaderName = allWorkers.find(w => w.id === savedState.workersLeaderId)?.full_name || 'None';
+                const viceName = allWorkers.find(w => w.id === savedState.viceLeaderId)?.full_name || 'None';
 
-                if (activeMemberSession && activeMemberSession.id === memberId) {
-                    activeMemberSession.is_workers_leader = updatedState.workersLeaderId === memberId;
-                    activeMemberSession.is_vice_president = updatedState.viceLeaderId === memberId;
+                if (activeMemberSession) {
+                    activeMemberSession.is_workers_leader = savedState.workersLeaderId === activeMemberSession.id;
+                    activeMemberSession.is_vice_leader = savedState.viceLeaderId === activeMemberSession.id;
                     localStorage.setItem('ocm_member_session', JSON.stringify(activeMemberSession));
                 }
 
-                let titleMsg = 'Leadership Updated';
-                let bodyMsg = '';
-
-                if (action === 'assign_workers_leader') {
-                    titleMsg = 'Workers Leader Assigned';
-                    bodyMsg = `${memberName} is now assigned as Workers Leader. You can also search or click a second name to assign a Vice Leader.`;
-                } else if (action === 'remove_as_workers_leader') {
-                    titleMsg = 'Workers Leader Removed';
-                    bodyMsg = `Removed ${memberName} as Workers Leader.`;
-                } else if (action === 'assign_vice_leader') {
-                    titleMsg = 'Vice Leader Assigned';
-                    bodyMsg = `${memberName} is now assigned as Vice Leader. In their Member Dashboard, Vice President will automatically show with all 9 financial cards.`;
-                } else if (action === 'remove_as_vice_leader') {
-                    titleMsg = 'Vice Leader Removed';
-                    bodyMsg = `Removed ${memberName} as Vice Leader.`;
-                }
-
-                showModal(titleMsg, bodyMsg, async () => {
-                    await loadAssignWorkersLeaderData();
-                });
+                showModal(
+                    'Workers Leadership Saved',
+                    `Workers Leader: ${leaderName}\nVice Leader: ${viceName}\n\nTheir Member Dashboards will automatically show their assigned button.`,
+                    async () => {
+                        workersAssignStep = 'select_workers_leader';
+                        await loadAssignWorkersLeaderData();
+                    }
+                );
             } catch (err) {
-                showModal('Save Failed', err.message || 'Could not update Workers leadership.', null, false);
+                showModal('Save Failed', err.message || 'Could not save Workers leadership.', null, false);
             } finally {
-                if (btnEl) {
-                    btnEl.disabled = false;
-                    btnEl.innerText = 'Save';
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Save';
                 }
             }
         }
