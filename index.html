@@ -1222,15 +1222,15 @@
                 return sum + proj.unpaidEntries.reduce((uSum, u) => uSum + Number(u.balanceDue), 0);
             }, 0);
 
-            const totalInflow = totalDues + totalProjectPaid + totalOldDues;
-            const totalArrears = Math.max(1, memberNamesList.length) * 5000;
-            const totalBalance = totalDues + totalProjectPaid - totalExpenses;
-
             const savedMoneyList = [
                 { amount: 50000, date: '2026-02-25', approvalName: 'Chuks James' },
                 { amount: 40000, date: '2026-04-15', approvalName: 'Chuks James' }
             ];
             const totalSavedMoney = savedMoneyList.reduce((sum, s) => sum + Number(s.amount), 0);
+
+            const totalInflow = totalDues + totalProjectPaid + totalOldDues;
+            const totalArrears = Math.max(1, memberNamesList.length) * 5000;
+            const totalBalance = totalDues + totalProjectPaid - totalExpenses - totalSavedMoney;
 
             currentGroupLeaderMetrics = {
                 fellowshipName,
@@ -1343,7 +1343,7 @@
                                 <i class="fa-solid fa-scale-balanced text-cyan-400 text-xs"></i>
                             </div>
                             <h3 class="text-base sm:text-xl font-extrabold text-cyan-400">${formatNaira(data.totalBalance)}</h3>
-                            <p class="text-[10px] text-cyan-300/80 mt-1.5">Dues + project paid - expenses</p>
+                            <p class="text-[10px] text-cyan-300/80 mt-1.5">Dues + project - expenses - saved</p>
                         </div>
                     </div>
                     <div id="leaderCardDrilldownPanel" class="hidden card-bg p-6 rounded-2xl border border-amber-500/30 space-y-4"></div>
@@ -1637,7 +1637,7 @@
             } else if (cardKey === 'total_balance') {
                 panel.innerHTML = `
                     <div class="flex items-center justify-between border-b border-white/10 pb-3">
-                        <h4 class="text-sm font-bold text-cyan-400">Total Balance (Total Dues + Project Paid - Total Expenses)</h4>
+                        <h4 class="text-sm font-bold text-cyan-400">Total Balance Breakdown</h4>
                         <button onclick="document.getElementById('leaderCardDrilldownPanel').classList.add('hidden')" class="text-xs text-gray-400 hover:text-white">Close</button>
                     </div>
                     <div class="space-y-2 text-xs">
@@ -1652,6 +1652,10 @@
                         <div class="flex justify-between py-1.5 border-b border-white/5">
                             <span class="text-gray-300">Total Expenses</span>
                             <span class="font-semibold text-rose-400">- ${formatNaira(data.totalExpenses)}</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 border-b border-white/5">
+                            <span class="text-gray-300">Saved Money</span>
+                            <span class="font-semibold text-teal-400">- ${formatNaira(data.totalSavedMoney)}</span>
                         </div>
                         <div class="flex justify-between pt-2 text-sm font-extrabold">
                             <span class="text-white">Total Balance</span>
