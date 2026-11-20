@@ -1224,7 +1224,7 @@
 
             const totalInflow = totalDues + totalProjectPaid + totalOldDues;
             const totalArrears = Math.max(1, memberNamesList.length) * 5000;
-            const totalBalance = totalDues - totalExpenses;
+            const totalBalance = totalDues + totalProjectPaid - totalExpenses;
 
             const savedMoneyList = [
                 { amount: 50000, date: '2026-02-25', approvalName: 'Chuks James' },
@@ -1343,7 +1343,7 @@
                                 <i class="fa-solid fa-scale-balanced text-cyan-400 text-xs"></i>
                             </div>
                             <h3 class="text-base sm:text-xl font-extrabold text-cyan-400">${formatNaira(data.totalBalance)}</h3>
-                            <p class="text-[10px] text-cyan-300/80 mt-1.5">Dues minus expenses</p>
+                            <p class="text-[10px] text-cyan-300/80 mt-1.5">Dues + project paid - expenses</p>
                         </div>
                     </div>
                     <div id="leaderCardDrilldownPanel" class="hidden card-bg p-6 rounded-2xl border border-amber-500/30 space-y-4"></div>
@@ -1637,13 +1637,17 @@
             } else if (cardKey === 'total_balance') {
                 panel.innerHTML = `
                     <div class="flex items-center justify-between border-b border-white/10 pb-3">
-                        <h4 class="text-sm font-bold text-cyan-400">Total Balance (Total Dues - Total Expenses)</h4>
+                        <h4 class="text-sm font-bold text-cyan-400">Total Balance (Total Dues + Project Paid - Total Expenses)</h4>
                         <button onclick="document.getElementById('leaderCardDrilldownPanel').classList.add('hidden')" class="text-xs text-gray-400 hover:text-white">Close</button>
                     </div>
                     <div class="space-y-2 text-xs">
                         <div class="flex justify-between py-1.5 border-b border-white/5">
                             <span class="text-gray-300">Total Dues</span>
                             <span class="font-semibold text-blue-400">${formatNaira(data.totalDues)}</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 border-b border-white/5">
+                            <span class="text-gray-300">Project Paid</span>
+                            <span class="font-semibold text-purple-400">+ ${formatNaira(data.totalProjectPaid)}</span>
                         </div>
                         <div class="flex justify-between py-1.5 border-b border-white/5">
                             <span class="text-gray-300">Total Expenses</span>
