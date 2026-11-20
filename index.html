@@ -285,6 +285,7 @@
         }
 
         async function ensureFellowshipRecord(fellowshipName) {
+            if (!fellowshipName) return { row: null, error: null };
             const { data: existing, error: selErr } = await supabaseClient
                 .from('fellowships')
                 .select('id, name')
@@ -305,6 +306,70 @@
                 .maybeSingle();
 
             return { row: inserted || null, error: insErr };
+        }
+
+        async function ensureDepartmentRecord(departmentName) {
+            if (!departmentName || departmentName === 'None') return { row: null, error: null };
+            const { data: existing, error: selErr } = await supabaseClient
+                .from('departments')
+                .select('id, name')
+                .eq('name', departmentName)
+                .maybeSingle();
+
+            if (selErr) {
+                return { row: null, error: selErr };
+            }
+            if (existing) {
+                return { row: existing, error: null };
+            }
+
+            const { data: inserted, error: insErr } = await supabaseClient
+                .from('departments')
+                .insert([{ name: departmentName }])
+                .select('id, name')
+                .maybeSingle();
+
+            return { row: inserted || null, error: insErr };
+        }
+
+        async function resolveMemberDepartmentName(member) {
+            const joinedDept = member?.member_departments?.[0]?.departments?.name;
+            if (joinedDept && joinedDept !== 'None') {
+                return joinedDept;
+            }
+
+            if (member?.id) {
+                try {
+                    const { data: mdRow } = await supabaseClient
+                        .from('member_departments')
+                        .select('department_id, departments(name)')
+                        .eq('member_id', member.id)
+                        .maybeSingle();
+
+                    if (mdRow?.departments?.name && mdRow.departments.name !== 'None') {
+                        return mdRow.departments.name;
+                    }
+
+                    if (mdRow?.department_id) {
+                        const { data: dRow } = await supabaseClient
+                            .from('departments')
+                            .select('name')
+                            .eq('id', mdRow.department_id)
+                            .maybeSingle();
+                        if (dRow?.name && dRow.name !== 'None') {
+                            return dRow.name;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Department lookup fallback:', e);
+                }
+            }
+
+            if (member?.assigned_department && member.assigned_department !== 'None') {
+                return member.assigned_department;
+            }
+
+            return 'None';
         }
 
         function inferFellowshipFromMember(member) {
@@ -864,16 +929,26 @@
                     await supabaseClient.from('member_fellowships').insert([{ member_id: insertedMember.id, fellowship_id: fellowshipRow.id }]);
                 }
 
-                if (registrationData.isWorker === 'yes' && registrationData.department !== 'None') {
-                    const { data: deptRow } = await supabaseClient.from('departments').select('id').eq('name', registrationData.department).maybeSingle();
+                if (registrationData.isWorker === 'yes' && registrationData.department && registrationData.department !== 'None') {
+                    const { row: deptRow, error: deptErr } = await ensureDepartmentRecord(registrationData.department);
+                    if (deptErr) throw deptErr;
                     if (deptRow) {
-                        await supabaseClient.from('member_departments').insert([{ member_id: insertedMember.id, department_id: deptRow.id }]);
+                        const { error: mdErr } = await supabaseClient
+                            .from('member_departments')
+                            .upsert([{ member_id: insertedMember.id, department_id: deptRow.id }], { onConflict: 'member_id,department_id' });
+                        if (mdErr) {
+                            await supabaseClient.from('member_departments').insert([{ member_id: insertedMember.id, department_id: deptRow.id }]);
+                        }
                     }
                 }
 
+                const deptSummary = (registrationData.isWorker === 'yes' && registrationData.department && registrationData.department !== 'None')
+                    ? ` | Department: ${registrationData.department}`
+                    : '';
+
                 showModal(
                     "Registration Successful",
-                    `Your membership profile has been created successfully. Your assigned Member ID is ${generatedMemberId} (${registrationData.fellowship}). Please proceed to log in.`,
+                    `Your membership profile has been created successfully. Your assigned Member ID is ${generatedMemberId} (${registrationData.fellowship}${deptSummary}). Please proceed to log in.`,
                     () => { renderLoginPage(); }
                 );
             } catch (err) {
@@ -891,6 +966,12 @@
                 .eq('id', memberId)
                 .maybeSingle();
             if (member) {
+                const resolvedDept = await resolveMemberDepartmentName(member);
+                member.assigned_department = resolvedDept;
+                if (resolvedDept !== 'None' && (!member.member_departments || member.member_departments.length === 0)) {
+                    member.member_departments = [{ departments: { name: resolvedDept } }];
+                }
+
                 const wState = await fetchWorkersLeadershipState();
                 member.is_workers_leader = wState.workersLeaderId === member.id;
                 member.is_vice_president = wState.viceLeaderId === member.id;
@@ -921,6 +1002,12 @@
 
                 if (error || !member) throw new Error('Invalid Phone Number/Member ID or 4-Digit PIN.');
                 if (member.membership_status !== 'Active') throw new Error(`Account is currently ${member.membership_status}.`);
+
+                const resolvedDept = await resolveMemberDepartmentName(member);
+                member.assigned_department = resolvedDept;
+                if (resolvedDept !== 'None' && (!member.member_departments || member.member_departments.length === 0)) {
+                    member.member_departments = [{ departments: { name: resolvedDept } }];
+                }
 
                 const wState = await fetchWorkersLeadershipState();
                 member.is_workers_leader = wState.workersLeaderId === member.id;
@@ -1046,16 +1133,22 @@
             renderLoginPage();
         }
 
-        function switchMemberView(view) {
+        async function switchMemberView(view) {
             closeSidebarIfMobile('memberSidebar');
             const main = document.getElementById('mainMemberContent');
             const title = document.getElementById('memberPageTitle');
-            const m = activeMemberSession;
-            if (!main) return;
+            let m = activeMemberSession;
+            if (!main || !m) return;
+
+            const fetchedDept = await resolveMemberDepartmentName(m);
+            const deptName = fetchedDept !== 'None'
+                ? fetchedDept
+                : (m?.member_departments?.[0]?.departments?.name || m?.assigned_department || 'None');
+            m.assigned_department = deptName;
+            localStorage.setItem('ocm_member_session', JSON.stringify(m));
 
             const activeLeaderEntry = (m?.group_leaders || []).find(gl => gl.is_active);
-            const fellowshipName = activeLeaderEntry?.fellowships?.name || m?.member_fellowships?.[0]?.fellowships?.name || 'Unassigned Fellowship';
-            const deptName = m?.member_departments?.[0]?.departments?.name || 'None';
+            const fellowshipName = activeLeaderEntry?.fellowships?.name || m?.member_fellowships?.[0]?.fellowships?.name || inferFellowshipFromMember(m) || 'Unassigned Fellowship';
             const isGroupLeader = Boolean(activeLeaderEntry);
             const isWorkersLeader = Boolean(m?.is_workers_leader);
             const isVicePresident = Boolean(m?.is_vice_president);
@@ -1126,7 +1219,7 @@
                                 <i class="fa-solid fa-building-shield text-amber-400 text-xs"></i>
                             </div>
                             <h3 class="text-sm sm:text-base font-bold text-amber-300 truncate">${deptName}</h3>
-                            <p class="text-[10px] text-gray-400 mt-1.5">${m.is_worker ? 'Assigned Service Unit' : 'General Member'}</p>
+                            <p class="text-[10px] text-gray-400 mt-1.5">${m.is_worker || deptName !== 'None' ? 'Assigned Service Unit' : 'General Member'}</p>
                         </div>
 
                         <div class="premium-stat-card p-5 rounded-2xl border border-cyan-500/25">
@@ -1204,7 +1297,7 @@
                             </div>
                             <div class="grid grid-cols-2 gap-2 text-left text-xs bg-black/30 p-3 rounded-xl border border-white/5">
                                 <p><span class="text-gray-400">Fellowship:</span> <span class="text-white">${fellowshipName}</span></p>
-                                <p><span class="text-gray-400">Department:</span> <span class="text-white">${deptName}</span></p>
+                                <p><span class="text-gray-400">Department:</span> <span class="text-amber-300 font-semibold">${deptName}</span></p>
                                 <p><span class="text-gray-400">Phone:</span> <span class="text-white">${m.phone}</span></p>
                                 <p><span class="text-gray-400">Status:</span> <span class="text-emerald-400 font-semibold">${m.membership_status}</span></p>
                             </div>
@@ -1359,7 +1452,7 @@
             if (subView === 'home') {
                 titleEl.innerText = `${portalTitle} – Home`;
                 content.innerHTML = `
-                    <!-- 9 FINANCIAL CARDS GRID (TOTAL INFLOW, TOTAL DUES, TOTAL ARREARS, PROJECT PAID, PROJECT UNPAID, TOTAL OLD DUES, EXPENSES, SAVE MONEY, TOTAL BALANCE) -->
+                    <!-- 9 FINANCIAL CARDS GRID -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4">
                         <div class="premium-stat-card p-5 rounded-2xl border border-emerald-500/30">
                             <div class="flex items-center justify-between mb-2">
@@ -2696,17 +2789,20 @@
                 return;
             }
 
-            allAdminDirectoryMembers = (membersRows || []).map(m => {
+            allAdminDirectoryMembers = await Promise.all((membersRows || []).map(async m => {
                 const groups = (m.member_fellowships || []).map(mf => mf.fellowships?.name).filter(Boolean);
                 const groupLabel = groups.length > 0 ? groups.join(', ') : inferFellowshipFromMember(m);
                 const depts = (m.member_departments || []).map(md => md.departments?.name).filter(Boolean);
-                const deptLabel = depts.length > 0 ? depts.join(', ') : 'None (Non-Worker)';
+                const resolvedSingleDept = await resolveMemberDepartmentName(m);
+                const deptLabel = depts.length > 0
+                    ? depts.join(', ')
+                    : (resolvedSingleDept !== 'None' ? resolvedSingleDept : 'None (Non-Worker)');
                 return {
                     ...m,
                     groupLabel,
                     deptLabel
                 };
-            });
+            }));
 
             const subtitleEl = document.getElementById('allMembersSubtitle');
             if (subtitleEl) {
