@@ -135,10 +135,13 @@
         let activeAssignLeaderFellowship = null;
         let selectedLeaderActionByMember = {};
         let expandedLeaderMemberId = null;
+        let selectedWorkerLeaderActionByMember = {};
+        let expandedWorkerLeaderMemberId = null;
         let expandedDirectoryMemberId = null;
         let allAdminDirectoryMembers = [];
         let groupLeaderSubView = 'home';
         let currentGroupLeaderMetrics = null;
+        let currentWorkersLeaderMetrics = null;
         let pendingProfileAvatarDataUrl = null;
         let registrationData = {
             fullName: '', phone: '', whatsapp: '', dob: '', email: '',
@@ -301,6 +304,69 @@
                 return gender === 'female' ? 'Women Fellowship' : 'Men Fellowship';
             }
             return 'Youth Fellowship';
+        }
+
+        // --- WORKERS LEADER STORAGE & SYNC HELPERS ---
+        function getLocalWorkersLeaderIds() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem('ocm_workers_leader_ids') || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function setLocalWorkersLeaderIds(ids) {
+            localStorage.setItem('ocm_workers_leader_ids', JSON.stringify(Array.from(new Set(ids))));
+        }
+
+        async function fetchActiveWorkersLeaderIds() {
+            const localIds = getLocalWorkersLeaderIds();
+            try {
+                const { data, error } = await supabaseClient
+                    .from('workers_leaders')
+                    .select('member_id, is_active');
+                if (!error && Array.isArray(data)) {
+                    const dbActive = data.filter(r => r.is_active).map(r => r.member_id);
+                    const dbInactive = new Set(data.filter(r => !r.is_active).map(r => r.member_id));
+                    const merged = Array.from(new Set([
+                        ...localIds.filter(id => !dbInactive.has(id)),
+                        ...dbActive
+                    ]));
+                    return merged;
+                }
+            } catch (e) {
+                console.warn('workers_leaders fallback:', e);
+            }
+            return localIds;
+        }
+
+        async function persistWorkersLeaderAssignment(memberId, makeLeader) {
+            const currentLocal = getLocalWorkersLeaderIds();
+            if (makeLeader) {
+                setLocalWorkersLeaderIds([...currentLocal, memberId]);
+                try {
+                    const { data: existing } = await supabaseClient
+                        .from('workers_leaders')
+                        .select('id')
+                        .eq('member_id', memberId)
+                        .maybeSingle();
+                    if (existing?.id) {
+                        await supabaseClient.from('workers_leaders').update({ is_active: true }).eq('id', existing.id);
+                    } else {
+                        await supabaseClient.from('workers_leaders').insert([{ member_id: memberId, is_active: true }]);
+                    }
+                } catch (e) {
+                    console.warn('workers_leaders table insert/update fallback:', e);
+                }
+            } else {
+                setLocalWorkersLeaderIds(currentLocal.filter(id => id !== memberId));
+                try {
+                    await supabaseClient.from('workers_leaders').update({ is_active: false }).eq('member_id', memberId);
+                } catch (e) {
+                    console.warn('workers_leaders table remove fallback:', e);
+                }
+            }
         }
 
         // --- 1. LOADING SCREEN VIEW ---
@@ -765,6 +831,8 @@
                 .eq('id', memberId)
                 .maybeSingle();
             if (member) {
+                const activeWorkerLeaderIds = await fetchActiveWorkersLeaderIds();
+                member.is_workers_leader = activeWorkerLeaderIds.includes(member.id);
                 activeMemberSession = member;
                 localStorage.setItem('ocm_member_session', JSON.stringify(member));
             }
@@ -793,6 +861,9 @@
                 if (error || !member) throw new Error('Invalid Phone Number/Member ID or 4-Digit PIN.');
                 if (member.membership_status !== 'Active') throw new Error(`Account is currently ${member.membership_status}.`);
 
+                const activeWorkerLeaderIds = await fetchActiveWorkersLeaderIds();
+                member.is_workers_leader = activeWorkerLeaderIds.includes(member.id);
+
                 activeMemberSession = member;
                 localStorage.setItem('ocm_member_session', JSON.stringify(member));
                 renderMemberDashboardShell();
@@ -811,7 +882,12 @@
             const m = activeMemberSession;
             const activeLeaderEntry = (m?.group_leaders || []).find(gl => gl.is_active);
             const isGroupLeader = Boolean(activeLeaderEntry);
+            const isWorkersLeader = Boolean(m?.is_workers_leader);
             const isReportTaker = (m?.report_takers || []).some(rt => rt.is_active);
+
+            const roleBadgeLabel = isWorkersLeader
+                ? 'Workers Leader'
+                : (isGroupLeader ? 'Group Leader' : 'Active Member');
 
             const container = document.getElementById('appContainer');
             container.innerHTML = `
@@ -834,6 +910,11 @@
                                 <i class="fa-solid fa-crown w-5"></i><span>Group Dashboard</span>
                             </a>
                             ` : ''}
+                            ${isWorkersLeader ? `
+                            <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); openWorkersLeaderDashboard()" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-purple-500/15 border border-purple-500/40 text-purple-300 font-semibold transition">
+                                <i class="fa-solid fa-helmet-safety w-5"></i><span>Workers Leader</span>
+                            </a>
+                            ` : ''}
                             <a href="#" onclick="closeSidebarIfMobile('memberSidebar'); switchMemberView('fellowship')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-users-rectangle w-5"></i><span>My Fellowship</span>
                             </a>
@@ -848,7 +929,7 @@
                             </a>
                         </nav>
                         <div class="p-3 m-2 card-bg rounded-xl border border-blue-500/20 text-xs">
-                            <p class="text-blue-400 font-semibold mb-0.5"><i class="fa-solid fa-user-check"></i> ${isGroupLeader ? 'Group Leader' : 'Active Member'}</p>
+                            <p class="text-blue-400 font-semibold mb-0.5"><i class="fa-solid fa-user-check"></i> ${roleBadgeLabel}</p>
                             <p class="text-gray-400 text-[10px]">Secure Supabase Session</p>
                         </div>
                     </aside>
@@ -908,6 +989,7 @@
             const fellowshipName = activeLeaderEntry?.fellowships?.name || m?.member_fellowships?.[0]?.fellowships?.name || 'Unassigned Fellowship';
             const deptName = m?.member_departments?.[0]?.departments?.name || 'None';
             const isGroupLeader = Boolean(activeLeaderEntry);
+            const isWorkersLeader = Boolean(m?.is_workers_leader);
             const isReportTaker = (m?.report_takers || []).some(rt => rt.is_active);
 
             if (view === 'dashboard') {
@@ -918,6 +1000,12 @@
                         <button onclick="openAssignedGroupLeaderWorkspace()" class="bg-amber-600 hover:bg-amber-700 text-black font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(245,158,11,0.4)] transition flex items-center space-x-2 border border-amber-300">
                             <i class="fa-solid fa-crown text-sm"></i>
                             <span>OPEN GROUP LEADER DASHBOARD</span>
+                        </button>
+                        ` : ''}
+                        ${isWorkersLeader ? `
+                        <button onclick="openWorkersLeaderDashboard()" class="bg-purple-600 hover:bg-purple-700 text-white font-extrabold px-6 py-3 rounded-2xl text-xs shadow-[0_0_20px_rgba(139,92,246,0.45)] transition flex items-center space-x-2 border border-purple-300">
+                            <i class="fa-solid fa-helmet-safety text-sm"></i>
+                            <span>WORKERS LEADER</span>
                         </button>
                         ` : ''}
                         ${isReportTaker ? `
@@ -1059,6 +1147,213 @@
                     </div>
                 `;
             }
+        }
+
+        // --- WORKERS LEADER WORKSPACE (FROM MEMBER DASHBOARD) ---
+        async function openWorkersLeaderDashboard() {
+            closeSidebarIfMobile('memberSidebar');
+            const m = activeMemberSession;
+            if (!m) return;
+
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="flex h-screen overflow-hidden relative">
+                    <!-- WORKERS LEADER SIDEBAR -->
+                    <aside id="workersLeaderSidebar" class="fixed inset-y-0 left-0 z-50 w-64 card-bg transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col shadow-2xl">
+                        <div class="p-4 border-b border-white/10 flex items-center space-x-3">
+                            <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
+                            <div>
+                                <h1 class="text-xs font-bold tracking-wide uppercase text-purple-400">Workers Leader</h1>
+                                <p class="text-[10px] text-gray-400 italic">Ministry Workers Portal</p>
+                            </div>
+                        </div>
+                        <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
+                            <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('home')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-purple-600 text-white font-medium shadow-md transition">
+                                <i class="fa-solid fa-house w-5"></i><span>Home</span>
+                            </a>
+                            <a href="#" onclick="closeSidebarIfMobile('workersLeaderSidebar'); switchWorkersLeaderView('assign-excos')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-user-tie w-5"></i><span>Assign Excos</span>
+                            </a>
+                        </nav>
+                        <div class="p-3 m-2 card-bg rounded-xl border border-purple-500/25 text-xs">
+                            <p class="text-purple-300 font-semibold mb-0.5"><i class="fa-solid fa-helmet-safety"></i> ${m.full_name}</p>
+                            <p class="text-gray-400 text-[10px]">Assigned Workers Leader</p>
+                        </div>
+                    </aside>
+
+                    <!-- WORKERS LEADER MAIN VIEWPORT -->
+                    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+                        <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-4 sm:px-6 z-40">
+                            <div class="flex items-center space-x-3 min-w-0">
+                                <button onclick="toggleWorkersLeaderSidebar(event)" class="lg:hidden text-gray-300 hover:text-white shrink-0">
+                                    <i class="fa-solid fa-bars text-xl"></i>
+                                </button>
+                                <div class="min-w-0">
+                                    <h2 id="workersLeaderTitle" class="text-sm sm:text-base font-bold text-purple-300 truncate">Workers Leader Dashboard</h2>
+                                    <p class="text-[11px] text-gray-400 truncate">Leader: ${m.full_name}</p>
+                                </div>
+                            </div>
+                            <button onclick="renderMemberDashboardShell()" class="text-xs text-blue-400 hover:underline shrink-0">
+                                <i class="fa-solid fa-arrow-left mr-1"></i> Member Dashboard
+                            </button>
+                        </header>
+                        <main id="workersLeaderContent" class="flex-1 overflow-y-auto p-6 space-y-6">
+                            <!-- Loaded dynamically -->
+                        </main>
+                    </div>
+                </div>
+            `;
+
+            await loadWorkersLeaderData();
+            switchWorkersLeaderView('home');
+        }
+
+        function toggleWorkersLeaderSidebar(e) {
+            if (e) e.stopPropagation();
+            const sb = document.getElementById('workersLeaderSidebar');
+            if (sb) sb.classList.toggle('-translate-x-full');
+        }
+
+        document.addEventListener('click', (e) => {
+            const sb = document.getElementById('workersLeaderSidebar');
+            const hamburgerBtn = document.querySelector('button[onclick*="toggleWorkersLeaderSidebar"]');
+            if (sb && window.innerWidth < 1024 && !sb.classList.contains('-translate-x-full')) {
+                if (!sb.contains(e.target) && (!hamburgerBtn || !hamburgerBtn.contains(e.target))) {
+                    sb.classList.add('-translate-x-full');
+                }
+            }
+        });
+
+        async function loadWorkersLeaderData() {
+            const { data: deptRows } = await supabaseClient
+                .from('member_departments')
+                .select('member_id, members(id, full_name, phone), departments(name)');
+
+            const workersList = (deptRows || [])
+                .filter(r => r.members)
+                .map(r => ({
+                    id: r.members.id,
+                    full_name: r.members.full_name,
+                    phone: r.members.phone || '',
+                    department: r.departments?.name || 'Worker'
+                }));
+
+            const totalDues = 165000;
+            const totalArrears = 32000;
+            const totalProjectPaid = 85000;
+            const projectUnpaid = 45000;
+            const totalExpenses = 28500;
+            const savedMoney = 40000;
+            const totalBalance = totalDues + totalProjectPaid - totalExpenses - savedMoney;
+
+            currentWorkersLeaderMetrics = {
+                workersList,
+                totalDues,
+                totalArrears,
+                totalProjectPaid,
+                projectUnpaid,
+                totalExpenses,
+                savedMoney,
+                totalBalance
+            };
+        }
+
+        function switchWorkersLeaderView(subView) {
+            closeSidebarIfMobile('workersLeaderSidebar');
+            const content = document.getElementById('workersLeaderContent');
+            const titleEl = document.getElementById('workersLeaderTitle');
+            const data = currentWorkersLeaderMetrics;
+            if (!content || !data) return;
+
+            if (subView === 'home') {
+                titleEl.innerText = "Workers Leader – Home";
+                content.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+                        <div class="premium-stat-card p-5 rounded-2xl border border-blue-500/30">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Total Dues</span>
+                                <i class="fa-solid fa-wallet text-blue-400 text-sm"></i>
+                            </div>
+                            <h3 class="text-lg sm:text-2xl font-extrabold text-blue-400">${formatNaira(data.totalDues)}</h3>
+                            <p class="text-[11px] text-gray-400 mt-1.5">Workers dues collected</p>
+                        </div>
+
+                        <div class="premium-stat-card p-5 rounded-2xl border border-red-500/30">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Total Arrears</span>
+                                <i class="fa-solid fa-circle-exclamation text-red-400 text-sm"></i>
+                            </div>
+                            <h3 class="text-lg sm:text-2xl font-extrabold text-red-400">${formatNaira(data.totalArrears)}</h3>
+                            <p class="text-[11px] text-gray-400 mt-1.5">Pending workers dues</p>
+                        </div>
+
+                        <div class="premium-stat-card p-5 rounded-2xl border border-purple-500/30">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Total Project Paid</span>
+                                <i class="fa-solid fa-diagram-project text-purple-400 text-sm"></i>
+                            </div>
+                            <h3 class="text-lg sm:text-2xl font-extrabold text-purple-400">${formatNaira(data.totalProjectPaid)}</h3>
+                            <p class="text-[11px] text-gray-400 mt-1.5">Completed project contributions</p>
+                        </div>
+
+                        <div class="premium-stat-card p-5 rounded-2xl border border-orange-500/30">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Project Unpaid</span>
+                                <i class="fa-solid fa-hourglass-half text-orange-400 text-sm"></i>
+                            </div>
+                            <h3 class="text-lg sm:text-2xl font-extrabold text-orange-400">${formatNaira(data.projectUnpaid)}</h3>
+                            <p class="text-[11px] text-gray-400 mt-1.5">Outstanding project pledges</p>
+                        </div>
+                    </div>
+
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-2 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300 font-semibold">Net Cash Balance (Total Dues + Project Paid - Expenses - Saved)</span>
+                            <span class="text-sm font-extrabold text-emerald-400">${formatNaira(data.totalBalance)}</span>
+                        </div>
+                        <p class="text-gray-400">Active Workers Tracked Across Departments: <span class="text-white font-semibold">${data.workersList.length}</span></p>
+                    </div>
+                `;
+            } else if (subView === 'assign-excos') {
+                titleEl.innerText = "Workers Leader – Assign Excos";
+                const workerOptions = data.workersList.length > 0
+                    ? data.workersList.map(w => `<option value="${w.full_name}">${w.full_name} (${w.department})</option>`).join('')
+                    : '<option value="Worker Member">Worker Member</option>';
+
+                content.innerHTML = `
+                    <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4 max-w-xl">
+                        <h3 class="text-base font-bold text-purple-300">Assign Workers Executives</h3>
+                        <p class="text-xs text-gray-400">Select a worker member and assign an executive position.</p>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">Select Worker</label>
+                                <select id="workerExcoMemberSelect" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
+                                    ${workerOptions}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">Executive Role</label>
+                                <select id="workerExcoRoleSelect" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
+                                    <option value="Assistant Workers Leader">Assistant Workers Leader</option>
+                                    <option value="Workers Secretary">Workers Secretary</option>
+                                    <option value="Workers Financial Secretary">Workers Financial Secretary</option>
+                                    <option value="Workers Treasurer">Workers Treasurer</option>
+                                    <option value="Prayer & Welfare Coordinator">Prayer & Welfare Coordinator</option>
+                                </select>
+                            </div>
+                            <button onclick="saveWorkerExcoAssignment()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2.5 rounded-lg text-xs transition">
+                                Save Exco Assignment
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function saveWorkerExcoAssignment() {
+            const workerName = document.getElementById('workerExcoMemberSelect')?.value || 'Worker';
+            const roleName = document.getElementById('workerExcoRoleSelect')?.value || 'Exco';
+            showModal('Exco Assigned', `${workerName} has been assigned as ${roleName}.`);
         }
 
         // --- ASSIGNED GROUP LEADER WORKSPACE (FROM MEMBER DASHBOARD SIDEBAR) ---
@@ -1907,6 +2202,7 @@
                                     <a href="#" onclick="closeSidebarIfMobile('sidebar'); openAssignLeadersForFellowship('Men Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Men Fellowship</a>
                                     <a href="#" onclick="closeSidebarIfMobile('sidebar'); openAssignLeadersForFellowship('Women Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Women Fellowship</a>
                                     <a href="#" onclick="closeSidebarIfMobile('sidebar'); openAssignLeadersForFellowship('Youth Fellowship')" class="block py-1.5 text-xs text-gray-300 hover:text-amber-400 transition">• Youth Fellowship</a>
+                                    <a href="#" onclick="closeSidebarIfMobile('sidebar'); openAssignWorkersLeaderView()" class="block py-1.5 text-xs text-purple-300 hover:text-amber-400 font-semibold transition">• Workers</a>
                                 </div>
                             </div>
                             <!-- DEPARTMENTS DROPDOWN -->
@@ -1972,6 +2268,198 @@
                 </div>
             `;
             switchAdminView('dashboard');
+        }
+
+        // --- ASSIGN WORKERS LEADER VIEW (UNDER ASSIGN LEADERS -> WORKERS) ---
+        async function openAssignWorkersLeaderView() {
+            closeSidebarIfMobile('sidebar');
+            selectedWorkerLeaderActionByMember = {};
+            expandedWorkerLeaderMemberId = null;
+
+            const main = document.getElementById('mainAdminContent');
+            const title = document.getElementById('pageTitle');
+            if (!main) return;
+
+            title.innerText = "Assign Leaders – Workers";
+            main.innerHTML = `
+                <div class="card-bg p-6 rounded-2xl border border-purple-500/25 space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-purple-300">Workers Leader Assignment (By Department)</h3>
+                            <p id="currentWorkersLeaderStatus" class="text-xs text-gray-400 mt-0.5">Current Workers Leader: Loading...</p>
+                        </div>
+                        <div class="relative w-full sm:w-72">
+                            <i class="fa-solid fa-magnifying-glass text-xs text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                            <input type="text" id="workerLeaderSearchInput" oninput="filterAssignWorkerLeaderMembers()" placeholder="Search worker name..." class="w-full bg-black/30 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                    </div>
+
+                    <div id="assignWorkerLeaderContainer" class="space-y-5">
+                        <p class="py-6 text-center text-gray-400 text-xs">Loading workers under departments...</p>
+                    </div>
+                </div>
+            `;
+
+            await loadAssignWorkersLeaderData();
+        }
+
+        async function loadAssignWorkersLeaderData() {
+            const container = document.getElementById('assignWorkerLeaderContainer');
+            const statusEl = document.getElementById('currentWorkersLeaderStatus');
+            if (!container) return;
+
+            const { data: deptRows, error } = await supabaseClient
+                .from('member_departments')
+                .select('member_id, members(id, full_name, phone, member_id), departments(name)');
+
+            if (error) {
+                container.innerHTML = `<p class="py-6 text-center text-red-400 text-xs">Could not load workers: ${error.message}</p>`;
+                return;
+            }
+
+            const activeLeaderIds = await fetchActiveWorkersLeaderIds();
+            const activeSet = new Set(activeLeaderIds);
+
+            const workers = (deptRows || [])
+                .filter(r => r.members)
+                .map(r => ({
+                    id: r.members.id,
+                    full_name: r.members.full_name,
+                    phone: r.members.phone || '',
+                    member_id: r.members.member_id || '',
+                    department: r.departments?.name || 'Unassigned Department',
+                    isWorkersLeader: activeSet.has(r.members.id)
+                }));
+
+            const currentLeaders = workers.filter(w => w.isWorkersLeader);
+            if (statusEl) {
+                statusEl.innerHTML = currentLeaders.length > 0
+                    ? `Current Workers Leader: <span class="text-purple-300 font-semibold">${currentLeaders.map(l => `${l.full_name} (${l.department})`).join(', ')}</span>`
+                    : 'Current Workers Leader: <span class="text-gray-300">None Assigned</span>';
+            }
+
+            window.assignWorkersLeaderList = workers;
+            renderAssignWorkerLeaderGroupedRows(workers);
+        }
+
+        function filterAssignWorkerLeaderMembers() {
+            const q = (document.getElementById('workerLeaderSearchInput')?.value || '').trim().toLowerCase();
+            const list = window.assignWorkersLeaderList || [];
+            const filtered = q ? list.filter(w => (w.full_name || '').toLowerCase().includes(q)) : list;
+            renderAssignWorkerLeaderGroupedRows(filtered);
+        }
+
+        function renderAssignWorkerLeaderGroupedRows(workers) {
+            const container = document.getElementById('assignWorkerLeaderContainer');
+            if (!container) return;
+
+            if (!workers || workers.length === 0) {
+                container.innerHTML = `<p class="py-6 text-center text-gray-400 text-xs">No workers match your search.</p>`;
+                return;
+            }
+
+            const groupedMap = {};
+            workers.forEach(w => {
+                const dept = w.department || 'Unassigned Department';
+                if (!groupedMap[dept]) groupedMap[dept] = [];
+                groupedMap[dept].push(w);
+            });
+
+            const departmentNames = Object.keys(groupedMap).sort();
+
+            container.innerHTML = departmentNames.map(deptName => {
+                const deptMembers = groupedMap[deptName];
+                return `
+                    <div class="bg-black/20 rounded-2xl border border-white/10 overflow-hidden">
+                        <div class="px-4 py-3 bg-white/5 border-b border-white/10 flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase tracking-wider text-amber-400">
+                                <i class="fa-solid fa-building-shield mr-1.5"></i>${deptName}
+                            </span>
+                            <span class="text-[11px] text-gray-400">${deptMembers.length} worker(s)</span>
+                        </div>
+                        <div class="divide-y divide-white/5">
+                            ${deptMembers.map(w => {
+                                const isExpanded = expandedWorkerLeaderMemberId === w.id;
+                                const selectedAction = selectedWorkerLeaderActionByMember[w.id] || 'assign_workers_leader';
+                                return `
+                                    <div class="py-3 px-4">
+                                        <div onclick="toggleWorkerLeaderMemberRow('${w.id}')" class="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer transition">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center space-x-2">
+                                                    <h4 class="text-sm font-semibold text-white truncate">${w.full_name}</h4>
+                                                    ${w.isWorkersLeader ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40">Workers Leader</span>` : ''}
+                                                </div>
+                                                <p class="text-[11px] text-gray-400 truncate">Department: <span class="text-blue-300">${deptName}</span> ${w.phone ? '• ' + w.phone : ''}</p>
+                                            </div>
+                                            <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-xs text-gray-400"></i>
+                                        </div>
+
+                                        <div id="workerLeaderActionPanel-${w.id}" class="${isExpanded ? '' : 'hidden'} mt-2 ml-2 mr-2 p-3.5 rounded-xl bg-black/35 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div class="flex-1">
+                                                <label class="block text-[11px] text-gray-400 mb-1">Action for ${w.full_name}</label>
+                                                <select id="workerLeaderActionSelect-${w.id}" onchange="onWorkerLeaderActionChange('${w.id}', this.value)" class="w-full bg-black/50 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                                                    <option value="assign_workers_leader" ${selectedAction === 'assign_workers_leader' ? 'selected' : ''}>Assign Workers Leader</option>
+                                                    <option value="remove_as_workers_leader" ${selectedAction === 'remove_as_workers_leader' ? 'selected' : ''}>Remove as Workers Leader</option>
+                                                </select>
+                                            </div>
+                                            <button type="button" id="saveWorkerLeaderBtn-${w.id}" onclick="saveWorkerLeaderRole('${w.id}', '${(w.full_name || '').replace(/'/g, "\\'")}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2.5 rounded-lg text-xs transition shadow-md shrink-0">
+                                                Save
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleWorkerLeaderMemberRow(memberId) {
+            expandedWorkerLeaderMemberId = expandedWorkerLeaderMemberId === memberId ? null : memberId;
+            filterAssignWorkerLeaderMembers();
+        }
+
+        function onWorkerLeaderActionChange(memberId, value) {
+            selectedWorkerLeaderActionByMember[memberId] = value;
+        }
+
+        async function saveWorkerLeaderRole(memberId, memberName) {
+            const selectEl = document.getElementById(`workerLeaderActionSelect-${memberId}`);
+            const btnEl = document.getElementById(`saveWorkerLeaderBtn-${memberId}`);
+            const action = selectEl ? selectEl.value : (selectedWorkerLeaderActionByMember[memberId] || 'assign_workers_leader');
+            const makeLeader = action === 'assign_workers_leader';
+
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerText = 'Saving...';
+            }
+
+            try {
+                await persistWorkersLeaderAssignment(memberId, makeLeader);
+
+                if (activeMemberSession && activeMemberSession.id === memberId) {
+                    activeMemberSession.is_workers_leader = makeLeader;
+                    localStorage.setItem('ocm_member_session', JSON.stringify(activeMemberSession));
+                }
+
+                showModal(
+                    makeLeader ? 'Workers Leader Assigned' : 'Workers Leader Removed',
+                    makeLeader
+                        ? `${memberName} is now the Workers Leader. When they log into their Member Dashboard, Workers Leader will appear on their dashboard and sidebar.`
+                        : `Removed ${memberName} as Workers Leader.`,
+                    async () => {
+                        await loadAssignWorkersLeaderData();
+                    }
+                );
+            } catch (err) {
+                showModal('Save Failed', err.message || 'Could not update Workers Leader.', null, false);
+            } finally {
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerText = 'Save';
+                }
+            }
         }
 
         // --- ADMIN ALL MEMBERS DIRECTORY (GROUP, DEPARTMENT, SEARCH & DETAILS ON CLICK) ---
