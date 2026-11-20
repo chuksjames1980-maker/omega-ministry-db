@@ -156,7 +156,7 @@
         let groupLeaderSubView = 'home';
         let currentGroupLeaderMetrics = null;
         let currentWorkersPortalMetrics = null;
-        let activeWorkersPortalMode = 'workers_leader'; // 'workers_leader' | 'vice_president'
+        let activeWorkersPortalMode = 'workers_leader'; // 'workers_leader' | 'vice_leader'
         let pendingProfileAvatarDataUrl = null;
         let registrationData = {
             fullName: '', phone: '', whatsapp: '', dob: '', email: '',
@@ -335,6 +335,54 @@
                 .maybeSingle();
 
             return { row: inserted || null, error: insErr };
+        }
+
+        // Fetches all members belonging to departments reliably (with fallback if join is empty/blocked)
+        async function fetchDepartmentMembersList() {
+            const [{ data: mdRows }, { data: deptRows }, { data: allMembers }] = await Promise.all([
+                supabaseClient.from('member_departments').select('member_id, department_id'),
+                supabaseClient.from('departments').select('id, name'),
+                supabaseClient.from('members').select('id, full_name, phone, member_id, is_worker, assigned_department')
+            ]);
+
+            const deptMap = new Map((deptRows || []).map(d => [String(d.id), d.name]));
+            const memberMap = new Map((allMembers || []).map(m => [String(m.id), m]));
+            const combinedByMemberId = new Map();
+
+            (mdRows || []).forEach(row => {
+                const mem = memberMap.get(String(row.member_id));
+                if (mem) {
+                    const dName = deptMap.get(String(row.department_id)) || mem.assigned_department || 'Worker';
+                    combinedByMemberId.set(String(mem.id), {
+                        id: mem.id,
+                        full_name: mem.full_name,
+                        phone: mem.phone || '',
+                        member_id: mem.member_id || '',
+                        department: dName
+                    });
+                }
+            });
+
+            // Fallback: include any member marked as worker or with an assigned department
+            (allMembers || []).forEach(mem => {
+                const key = String(mem.id);
+                if (!combinedByMemberId.has(key)) {
+                    const hasDept = mem.assigned_department && mem.assigned_department !== 'None';
+                    if (mem.is_worker || hasDept) {
+                        combinedByMemberId.set(key, {
+                            id: mem.id,
+                            full_name: mem.full_name,
+                            phone: mem.phone || '',
+                            member_id: mem.member_id || '',
+                            department: hasDept ? mem.assigned_department : 'Worker'
+                        });
+                    }
+                }
+            });
+
+            return Array.from(combinedByMemberId.values()).sort((a, b) =>
+                (a.full_name || '').localeCompare(b.full_name || '')
+            );
         }
 
         async function resolveMemberDepartmentName(member) {
@@ -926,6 +974,11 @@
                 const generatedMemberId = `OCM/MEM/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`;
                 const formattedJoinDate = registrationData.dateJoined ? `${registrationData.dateJoined}-01` : new Date().toISOString().split('T')[0];
 
+                const isWorkerBool = registrationData.isWorker === 'yes';
+                const chosenDept = isWorkerBool && registrationData.department && registrationData.department !== 'None'
+                    ? registrationData.department
+                    : null;
+
                 const { data: insertedMember, error: memberError } = await supabaseClient
                     .from('members')
                     .insert([{
@@ -941,7 +994,8 @@
                         state: registrationData.stateOfOrigin,
                         residence_state: registrationData.stateOfResidence,
                         is_married: registrationData.isMarried === 'yes',
-                        is_worker: registrationData.isWorker === 'yes',
+                        is_worker: isWorkerBool,
+                        assigned_department: chosenDept,
                         date_joined: formattedJoinDate,
                         pin_code: hashedPin
                     }])
@@ -954,8 +1008,8 @@
                     await supabaseClient.from('member_fellowships').insert([{ member_id: insertedMember.id, fellowship_id: fellowshipRow.id }]);
                 }
 
-                if (registrationData.isWorker === 'yes' && registrationData.department && registrationData.department !== 'None') {
-                    const { row: deptRow, error: deptErr } = await ensureDepartmentRecord(registrationData.department);
+                if (isWorkerBool && chosenDept) {
+                    const { row: deptRow, error: deptErr } = await ensureDepartmentRecord(chosenDept);
                     if (deptErr) throw deptErr;
                     if (deptRow) {
                         const { error: mdErr } = await supabaseClient
@@ -967,9 +1021,7 @@
                     }
                 }
 
-                const deptSummary = (registrationData.isWorker === 'yes' && registrationData.department && registrationData.department !== 'None')
-                    ? ` | Department: ${registrationData.department}`
-                    : '';
+                const deptSummary = chosenDept ? ` | Department: ${chosenDept}` : '';
 
                 showModal(
                     "Registration Successful",
@@ -1058,7 +1110,6 @@
             const isGroupLeader = Boolean(activeLeaderEntry);
             const isWorkersLeader = Boolean(m?.is_workers_leader);
             const isViceLeader = Boolean(m?.is_vice_leader);
-            const isReportTaker = (m?.report_takers || []).some(rt => rt.is_active);
 
             const roleBadgeLabel = isWorkersLeader
                 ? 'Workers Leader'
@@ -1448,18 +1499,7 @@
         });
 
         async function loadWorkersPortalData() {
-            const { data: deptRows } = await supabaseClient
-                .from('member_departments')
-                .select('member_id, members(id, full_name, phone), departments(name)');
-
-            const workersList = (deptRows || [])
-                .filter(r => r.members)
-                .map(r => ({
-                    id: r.members.id,
-                    full_name: r.members.full_name,
-                    phone: r.members.phone || '',
-                    department: r.departments?.name || 'Worker'
-                }));
+            const workersList = await fetchDepartmentMembersList();
 
             const totalDues = 165000;
             const totalExpenses = 28500;
@@ -2714,27 +2754,13 @@
             const container = document.getElementById('assignWorkerLeaderContainer');
             if (!container) return;
 
-            const { data: deptRows, error } = await supabaseClient
-                .from('member_departments')
-                .select('member_id, members(id, full_name, phone, member_id), departments(name)');
-
-            if (error) {
+            try {
+                const workers = await fetchDepartmentMembersList();
+                window.assignWorkersLeaderList = workers;
+                updateWorkersAssignBannerAndRows(workers);
+            } catch (error) {
                 container.innerHTML = `<p class="py-6 text-center text-red-400 text-xs">Could not load workers: ${error.message}</p>`;
-                return;
             }
-
-            const workers = (deptRows || [])
-                .filter(r => r.members)
-                .map(r => ({
-                    id: r.members.id,
-                    full_name: r.members.full_name,
-                    phone: r.members.phone || '',
-                    member_id: r.members.member_id || '',
-                    department: r.departments?.name || 'Worker'
-                }));
-
-            window.assignWorkersLeaderList = workers;
-            updateWorkersAssignBannerAndRows(workers);
         }
 
         function filterAssignWorkerLeaderMembers() {
@@ -3875,22 +3901,14 @@
                 </div>
             `;
 
-            const { data: memberDepts, error } = await supabaseClient
-                .from('member_departments')
-                .select('member_id, members(*), departments(name)');
-
-            if (error) {
-                document.getElementById('takerListContainer').innerHTML = `<p class="py-4 text-center text-red-400 text-xs">Error: ${error.message}</p>`;
-                return;
-            }
-
+            const deptWorkers = await fetchDepartmentMembersList();
             const { data: takers } = await supabaseClient.from('report_takers').select('*');
-            const activeTakerIds = new Set((takers || []).filter(t => t.is_active).map(t => t.member_id));
+            const activeTakerIds = new Set((takers || []).filter(t => t.is_active).map(t => String(t.member_id)));
 
-            window.allDepartmentMembers = (memberDepts || []).map(md => ({
-                ...md.members,
-                departmentName: md.departments?.name || 'Worker',
-                isReportTaker: activeTakerIds.has(md.members.id)
+            window.allDepartmentMembers = deptWorkers.map(w => ({
+                ...w,
+                departmentName: w.department || 'Worker',
+                isReportTaker: activeTakerIds.has(String(w.id))
             }));
 
             displayTakerMemberList(window.allDepartmentMembers, "");
