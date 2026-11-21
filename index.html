@@ -7,7 +7,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="OMEGA MINISTRY DN">
-    <link id="appleTouchIconLink" rel="apple-touch-icon" href="./icon-512.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/icon-512.png">
+    <link id="appleTouchIconLink" rel="apple-touch-icon" href="/icon-512.png">
     <title>OMEGA MINISTRY DN — Omega City of Mercy Glorious Ministry Database</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -151,143 +153,116 @@
         </div>
     </div>
 
+    <!-- AUTOMATIC PWA INSTALL POPUP MODAL -->
+    <div id="pwaAutoInstallModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs hidden p-4">
+        <div class="card-bg w-full max-w-sm rounded-2xl p-6 border border-emerald-500/40 shadow-2xl text-center space-y-4">
+            <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl border border-emerald-400/30">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-extrabold text-white">Install OMEGA MINISTRY DN</h3>
+                <p class="text-xs text-gray-300 mt-1 leading-relaxed">
+                    Download and install <strong class="text-amber-400">OMEGA MINISTRY DN</strong> on your phone for instant full-screen access.
+                </p>
+            </div>
+            <div id="pwaInstallManualHint" class="hidden text-left text-[11px] text-amber-200 bg-black/40 p-3 rounded-xl border border-amber-500/30 space-y-1"></div>
+            <div class="grid grid-cols-2 gap-3 pt-1">
+                <button type="button" onclick="dismissPwaInstallPopup()" class="card-bg hover:bg-white/5 text-gray-300 font-semibold py-2.5 rounded-xl text-xs transition">
+                    Later
+                </button>
+                <button type="button" id="pwaInstallNowBtn" onclick="executePwaInstallNow()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-download"></i><span>Install App</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- JAVASCRIPT APPLICATION CONTROLLER -->
     <script>
         // =========================================================================
-        // PWA MANIFEST, ICON FALLBACK & SERVICE WORKER FOR "OMEGA MINISTRY DN"
+        // REAL HTTPS PWA SERVICE WORKER & AUTOMATIC ENTRY INSTALL POPUP
         // =========================================================================
         const PWA_APP_NAME = "OMEGA MINISTRY DN";
-        const PWA_SHORT_NAME = "OMEGA MINISTRY DN";
-        const PWA_ICON_URL = "./icon-512.png";
         let deferredPwaInstallPrompt = null;
 
-        function getFallbackSvgIconDataUrl() {
-            const svg = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                    <defs>
-                        <radialGradient id="goldBg" cx="40%" cy="35%" r="65%">
-                            <stop offset="0%" stop-color="#fde047"/>
-                            <stop offset="55%" stop-color="#eab308"/>
-                            <stop offset="100%" stop-color="#a16207"/>
-                        </radialGradient>
-                    </defs>
-                    <circle cx="256" cy="256" r="248" fill="url(#goldBg)" stroke="#fef08a" stroke-width="8"/>
-                    <path d="M120 420 V290 H205 V420 Z M195 420 V180 H315 V420 Z M305 420 V260 H392 V420 Z" fill="#060a17"/>
-                    <path d="M256 125 L286 245 L270 355 L256 375 L242 355 L226 245 Z" fill="#ef4444" stroke="#060a17" stroke-width="8"/>
-                    <rect x="200" y="340" width="112" height="18" rx="6" fill="#fef08a" stroke="#060a17" stroke-width="6"/>
-                    <path d="M150 155 Q205 95 260 125 Q225 140 232 175 Q190 165 150 155 Z" fill="#fef08a" stroke="#060a17" stroke-width="7"/>
-                </svg>
-            `.trim();
-            return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+        function isAppAlreadyInstalled() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+
+        function openPwaInstallPopup() {
+            if (isAppAlreadyInstalled()) return;
+            const modal = document.getElementById('pwaAutoInstallModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function dismissPwaInstallPopup() {
+            const modal = document.getElementById('pwaAutoInstallModal');
+            if (modal) modal.classList.add('hidden');
+            sessionStorage.setItem('ocm_pwa_popup_dismissed', '1');
         }
 
         function initPwaSupport() {
-            const fallbackIcon = getFallbackSvgIconDataUrl();
-
-            // Test if ./icon-512.png exists; if not, fall back to SVG icon cleanly
-            const testImg = new Image();
-            testImg.onload = () => {
-                applyManifestAndIcons(PWA_ICON_URL);
-            };
-            testImg.onerror = () => {
-                applyManifestAndIcons(fallbackIcon);
-            };
-            testImg.src = PWA_ICON_URL;
-
-            function applyManifestAndIcons(iconSrc) {
-                const appleLink = document.getElementById("appleTouchIconLink");
-                if (appleLink) appleLink.href = iconSrc;
-
-                const manifestObj = {
-                    name: PWA_APP_NAME,
-                    short_name: PWA_SHORT_NAME,
-                    description: "Omega City of Mercy Glorious Ministry Database",
-                    start_url: "./",
-                    scope: "./",
-                    display: "standalone",
-                    orientation: "portrait",
-                    background_color: "#060a17",
-                    theme_color: "#060a17",
-                    icons: [
-                        {
-                            src: iconSrc,
-                            sizes: "192x192",
-                            type: iconSrc.startsWith("data:") ? "image/svg+xml" : "image/png",
-                            purpose: "any"
-                        },
-                        {
-                            src: iconSrc,
-                            sizes: "512x512",
-                            type: iconSrc.startsWith("data:") ? "image/svg+xml" : "image/png",
-                            purpose: "any maskable"
-                        }
-                    ]
-                };
-
-                const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: "application/manifest+json" });
-                const manifestUrl = URL.createObjectURL(manifestBlob);
-                let manifestLink = document.querySelector('link[rel="manifest"]');
-                if (!manifestLink) {
-                    manifestLink = document.createElement("link");
-                    manifestLink.rel = "manifest";
-                    document.head.appendChild(manifestLink);
-                }
-                manifestLink.href = manifestUrl;
-            }
-
-            // Register Service Worker if supported and on http/https
-            if ("serviceWorker" in navigator && (window.location.protocol === "https:" || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
-                const swCode = `
-                    const CACHE_NAME = 'omega-ministry-dn-v1';
-                    self.addEventListener('install', (event) => {
-                        self.skipWaiting();
-                    });
-                    self.addEventListener('activate', (event) => {
-                        event.waitUntil(self.clients.claim());
-                    });
-                    self.addEventListener('fetch', (event) => {
-                        if (event.request.method !== 'GET') return;
-                        event.respondWith(
-                            fetch(event.request).catch(() => caches.match(event.request))
-                        );
-                    });
-                `;
-                const swBlob = new Blob([swCode], { type: "application/javascript" });
-                const swUrl = URL.createObjectURL(swBlob);
-                navigator.serviceWorker.register(swUrl).catch((err) => {
-                    console.warn("Service worker registration skipped/failed:", err);
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch((err) => {
+                    console.warn('Service worker registration error:', err);
                 });
             }
 
-            window.addEventListener("beforeinstallprompt", (e) => {
+            window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPwaInstallPrompt = e;
+                // Automatically pop up the install modal as soon as Chrome makes install available
+                openPwaInstallPopup();
             });
+
+            window.addEventListener('appinstalled', () => {
+                deferredPwaInstallPrompt = null;
+                dismissPwaInstallPopup();
+                showModal('App Installed', `${PWA_APP_NAME} has been installed on your device.`);
+            });
+
+            // Also show the entry popup automatically on page load if not already installed
+            if (!isAppAlreadyInstalled() && !sessionStorage.getItem('ocm_pwa_popup_dismissed')) {
+                setTimeout(() => {
+                    openPwaInstallPopup();
+                }, 800);
+            }
         }
 
-        async function triggerDownloadOrInstallApp() {
+        async function executePwaInstallNow() {
+            const hintBox = document.getElementById('pwaInstallManualHint');
             if (deferredPwaInstallPrompt) {
                 deferredPwaInstallPrompt.prompt();
                 const choiceResult = await deferredPwaInstallPrompt.userChoice;
                 deferredPwaInstallPrompt = null;
-                if (choiceResult && choiceResult.outcome === "accepted") {
-                    showModal("App Installed", `${PWA_APP_NAME} has been added to your device.`);
+                if (choiceResult && choiceResult.outcome === 'accepted') {
+                    dismissPwaInstallPopup();
                 }
                 return;
             }
 
             const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-            if (isIos) {
-                showModal(
-                    `Install ${PWA_APP_NAME}`,
-                    `1. Tap the Share button (square with arrow) in Safari.\n2. Scroll down and tap "Add to Home Screen".\n3. Confirm the name "${PWA_APP_NAME}" and tap Add.`
-                );
-            } else {
-                showModal(
-                    `Install ${PWA_APP_NAME}`,
-                    `To install ${PWA_APP_NAME} on your phone or computer:\n1. Open your browser menu (⋮ or ...).\n2. Tap "Install app" or "Add to Home screen".`
-                );
+            if (hintBox) {
+                hintBox.classList.remove('hidden');
+                if (isIos) {
+                    hintBox.innerHTML = `
+                        <p class="font-bold text-amber-300">Install on iPhone / iPad:</p>
+                        <p>1. Tap the <strong>Share</strong> icon at the bottom of Safari.</p>
+                        <p>2. Tap <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.</p>
+                    `;
+                } else {
+                    hintBox.innerHTML = `
+                        <p class="font-bold text-amber-300">Install on Android Chrome:</p>
+                        <p>1. Make sure your phone's <strong>Home screen layout</strong> is unlocked.</p>
+                        <p>2. Tap Chrome's <strong>three dots (⋮)</strong> at the top-right and tap <strong>Install app</strong> (or <strong>Add to Home screen</strong>).</p>
+                    `;
+                }
             }
+        }
+
+        function triggerDownloadOrInstallApp() {
+            sessionStorage.removeItem('ocm_pwa_popup_dismissed');
+            openPwaInstallPopup();
         }
 
         initPwaSupport();
@@ -4238,11 +4213,11 @@
                             <span class="text-rose-400 font-semibold">- ${formatNaira(data.totalExpenses)}</span>
                         </div>
                         <div class="flex justify-between py-1.5 border-b border-white/5">
-                            <span class="text-gray-300">Less: Saved Money</span>
+                            <span class="text-gray-300">Less: Saved Money Sent to Admin</span>
                             <span class="text-teal-400 font-semibold">- ${formatNaira(data.totalSavedMoney)}</span>
                         </div>
                         <div class="flex justify-between pt-2 text-sm font-extrabold">
-                            <span class="text-white">Net Group Balance</span>
+                            <span class="text-white">Total Balance</span>
                             <span class="text-cyan-400">${formatNaira(data.totalBalance)}</span>
                         </div>
                     </div>
@@ -4252,81 +4227,181 @@
             panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        // --- 6. FULL ADMIN DASHBOARD SHELL ---
+        // --- 6. FULL ADMIN DASHBOARD VIEW ---
         function renderFullAdminDashboard() {
-            const container = document.getElementById('appContainer');
-            const pendingAdminBanksCount = getTreasurerTransfers().filter(t => t.status === 'leader_approved').length;
+            const adminName = activeAdminSession?.full_name || 'Chuks James';
+            const adminEmail = activeAdminSession?.email || 'chuksjames1980@gmail.com';
+            const adminAvatar = localStorage.getItem('ocm_admin_avatar') || '';
+            const pendingAdminReceipts = getTreasurerTransfers().filter(t => t.status === 'leader_approved').length;
 
+            const avatarHtml = adminAvatar
+                ? `<img src="${adminAvatar}" alt="Admin Profile" class="w-9 h-9 rounded-full object-cover border-2 border-amber-400 shadow">`
+                : `<div class="w-9 h-9 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-300 font-bold text-xs">${adminName.charAt(0)}</div>`;
+
+            const container = document.getElementById('appContainer');
             container.innerHTML = `
                 <div class="flex h-screen overflow-hidden relative">
-                    <!-- ADMIN SIDEBAR -->
                     <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 card-bg transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col shadow-2xl">
                         <div class="p-4 border-b border-white/10 flex items-center space-x-3">
                             <div class="w-9 h-9">${getLogoHtml("w-9 h-9")}</div>
                             <div>
                                 <h1 class="text-xs font-bold tracking-wide uppercase text-amber-400">${PWA_APP_NAME}</h1>
-                                <p class="text-[10px] text-gray-400 italic">Ministry Database Admin</p>
+                                <p class="text-[10px] text-gray-400 italic">Admin Command Center</p>
                             </div>
                         </div>
                         <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
                             <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dashboard')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium shadow-md transition">
-                                <i class="fa-solid fa-gauge w-5"></i><span>Dashboard</span>
+                                <i class="fa-solid fa-chart-pie w-5"></i><span>Dashboard</span>
                             </a>
-                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('reports')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                                <i class="fa-solid fa-file-lines w-5"></i><span>Reports</span>
-                            </a>
-                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                                <i class="fa-solid fa-wallet w-5"></i><span>Dues</span>
-                            </a>
-                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('expenses')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                                <i class="fa-solid fa-receipt w-5"></i><span>Expenses</span>
-                            </a>
-                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('projects')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                                <i class="fa-solid fa-diagram-project w-5"></i><span>Projects</span>
-                            </a>
-                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('bank')" class="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                                <span class="flex items-center space-x-3"><i class="fa-solid fa-building-columns w-5"></i><span>Bank</span></span>
-                                ${pendingAdminBanksCount > 0 ? `<span class="bg-emerald-500 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full">${pendingAdminBanksCount}</span>` : ''}
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('members')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-users w-5"></i><span>Members Directory</span>
                             </a>
                             <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('fellowships')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                                <i class="fa-solid fa-users-rectangle w-5"></i><span>Fellowships</span>
+                                <i class="fa-solid fa-people-roof w-5"></i><span>Fellowship Groups</span>
                             </a>
                             <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('departments')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
                                 <i class="fa-solid fa-building-shield w-5"></i><span>Departments</span>
                             </a>
-                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('directory')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                                <i class="fa-solid fa-address-book w-5"></i><span>All Members Directory</span>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('bank')" class="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <span class="flex items-center space-x-3"><i class="fa-solid fa-building-columns w-5"></i><span>Bank</span></span>
+                                ${pendingAdminReceipts > 0 ? `<span class="bg-emerald-500 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full">${pendingAdminReceipts}</span>` : ''}
                             </a>
-                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('settings')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
-                                <i class="fa-solid fa-gear w-5"></i><span>Settings</span>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('dues')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-wallet w-5"></i><span>Dues & Collections</span>
+                            </a>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('projects')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-diagram-project w-5"></i><span>Projects & Levies</span>
+                            </a>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('expenses')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-receipt w-5"></i><span>Expenses</span>
+                            </a>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('birthdays')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-cake-candles w-5"></i><span>Birthday Alerts</span>
+                            </a>
+                            <a href="#" onclick="closeSidebarIfMobile('sidebar'); switchAdminView('profile')" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-gray-300 transition">
+                                <i class="fa-solid fa-user-gear w-5"></i><span>Profile</span>
                             </a>
                         </nav>
                         <div class="p-3 m-2 card-bg rounded-xl border border-amber-500/20 text-xs">
-                            <p class="text-amber-400 font-semibold mb-0.5"><i class="fa-solid fa-shield-halved"></i> Main Admin</p>
-                            <p class="text-gray-400 text-[10px]">Full System Control</p>
+                            <p class="text-amber-400 font-semibold mb-0.5"><i class="fa-solid fa-shield-halved"></i> Main Admin Active</p>
+                            <p class="text-gray-400 text-[10px] truncate">${adminEmail}</p>
                         </div>
                     </aside>
 
-                    <!-- MAIN CONTENT AREA -->
                     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-                        <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-6 z-40">
-                            <div class="flex items-center space-x-4">
+                        <header class="card-bg border-b border-white/10 h-16 flex items-center justify-between px-4 sm:px-6 z-40">
+                            <div class="flex items-center space-x-3 sm:space-x-4">
                                 <button onclick="toggleSidebar(event)" class="lg:hidden text-gray-300 hover:text-white"><i class="fa-solid fa-bars text-xl"></i></button>
                                 <h2 id="pageTitle" class="text-lg font-bold tracking-tight">Dashboard</h2>
                             </div>
-                            <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-3 sm:space-x-4">
+                                <button onclick="closeSidebarIfMobile('sidebar'); switchAdminView('profile')" class="flex items-center space-x-2 text-left hover:opacity-90 transition">
+                                    ${avatarHtml}
+                                    <span class="hidden md:inline text-xs font-semibold text-gray-200">${adminName}</span>
+                                </button>
                                 <button onclick="adminLogout()" class="text-xs text-red-400 hover:underline">
                                     <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
                                 </button>
                             </div>
                         </header>
-                        <main id="mainContent" class="flex-1 overflow-y-auto p-6 space-y-6">
-                            <!-- Dynamically loaded admin views -->
+                        <main id="mainContent" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+                            <div class="grid grid-cols-3 gap-2.5 sm:gap-3.5">
+                                <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-emerald-500/30 transition duration-200">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Inflow</span>
+                                        <i class="fa-solid fa-arrow-trend-up text-emerald-400 text-[10px]"></i>
+                                    </div>
+                                    <h3 class="text-xs sm:text-sm font-extrabold text-emerald-400 truncate">₦1,450,000.00</h3>
+                                    <p class="text-[9px] text-emerald-300/80 mt-0.5 truncate">+12% month</p>
+                                </div>
+                                <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-blue-500/30 transition duration-200">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Total Dues</span>
+                                        <i class="fa-solid fa-wallet text-blue-400 text-[10px]"></i>
+                                    </div>
+                                    <h3 class="text-xs sm:text-sm font-extrabold text-blue-400 truncate">₦620,000.00</h3>
+                                    <p class="text-[9px] text-blue-300/80 mt-0.5 truncate">Dues collected</p>
+                                </div>
+                                <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-purple-500/30 transition duration-200">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Proj. Paid</span>
+                                        <i class="fa-solid fa-diagram-project text-purple-400 text-[10px]"></i>
+                                    </div>
+                                    <h3 class="text-xs sm:text-sm font-extrabold text-purple-400 truncate">₦480,000.00</h3>
+                                    <p class="text-[9px] text-purple-300/80 mt-0.5 truncate">Paid projects</p>
+                                </div>
+                                <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-orange-500/30 transition duration-200">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Proj. Unpaid</span>
+                                        <i class="fa-solid fa-hourglass-half text-orange-400 text-[10px]"></i>
+                                    </div>
+                                    <h3 class="text-xs sm:text-sm font-extrabold text-orange-400 truncate">₦195,000.00</h3>
+                                    <p class="text-[9px] text-orange-300/80 mt-0.5 truncate">Pending dues</p>
+                                </div>
+                                <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-rose-500/30 transition duration-200">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Expenses</span>
+                                        <i class="fa-solid fa-receipt text-rose-400 text-[10px]"></i>
+                                    </div>
+                                    <h3 class="text-xs sm:text-sm font-extrabold text-rose-400 truncate">₦215,000.00</h3>
+                                    <p class="text-[9px] text-rose-300/80 mt-0.5 truncate">Total spent</p>
+                                </div>
+                                <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-cyan-500/30 transition duration-200">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Balance</span>
+                                        <i class="fa-solid fa-scale-balanced text-cyan-400 text-[10px]"></i>
+                                    </div>
+                                    <h3 class="text-xs sm:text-sm font-extrabold text-cyan-400 truncate">₦1,235,000.00</h3>
+                                    <p class="text-[9px] text-cyan-300/80 mt-0.5 truncate">Net balance</p>
+                                </div>
+                                <div onclick="switchAdminView('members')" class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-amber-500/30 hover:border-amber-400 cursor-pointer transition duration-200">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Members</span>
+                                        <i class="fa-solid fa-users text-amber-400 text-[10px]"></i>
+                                    </div>
+                                    <h3 id="statTotalMembers" class="text-xs sm:text-sm font-extrabold text-amber-300 truncate">Loading...</h3>
+                                    <p class="text-[9px] text-gray-400 mt-0.5 truncate">Registered</p>
+                                </div>
+                                <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-indigo-500/30 transition duration-200">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">First Timers</span>
+                                        <i class="fa-solid fa-user-plus text-indigo-400 text-[10px]"></i>
+                                    </div>
+                                    <h3 class="text-xs sm:text-sm font-extrabold text-indigo-300 truncate">18</h3>
+                                    <p class="text-[9px] text-gray-400 mt-0.5 truncate">This month</p>
+                                </div>
+                                <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-teal-500/30 transition duration-200">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Birthdays</span>
+                                        <i class="fa-solid fa-cake-candles text-teal-400 text-[10px]"></i>
+                                    </div>
+                                    <h3 class="text-xs sm:text-sm font-extrabold text-teal-300 truncate">12</h3>
+                                    <p class="text-[9px] text-gray-400 mt-0.5 truncate">This month</p>
+                                </div>
+                            </div>
+
+                            <div class="card-bg p-5 rounded-xl border border-white/5">
+                                <h3 class="font-semibold text-base mb-4">Financial & Member Analytics</h3>
+                                <div class="h-64"><canvas id="financeChart"></canvas></div>
+                            </div>
                         </main>
                     </div>
                 </div>
             `;
-            switchAdminView('dashboard');
+            initDashboardChart();
+            loadAdminMemberCount();
+        }
+
+        async function loadAdminMemberCount() {
+            const { count } = await supabaseClient.from('members').select('*', { count: 'exact', head: true });
+            const el = document.getElementById('statTotalMembers');
+            if (el) el.innerText = (count ?? 0).toLocaleString();
+        }
+
+        function adminLogout() {
+            activeAdminSession = null;
+            localStorage.removeItem('ocm_admin_session');
+            renderLoginPage();
         }
 
         function toggleSidebar(e) {
@@ -4345,279 +4420,66 @@
             }
         });
 
-        function adminLogout() {
-            activeAdminSession = null;
-            localStorage.removeItem('ocm_admin_session');
-            renderLoginPage();
-        }
-
         async function switchAdminView(view) {
             closeSidebarIfMobile('sidebar');
-            const main = document.getElementById('mainContent');
             const title = document.getElementById('pageTitle');
-            if (!main) return;
-            openDirectoryDropdownId = null;
+            const main = document.getElementById('mainContent');
+            if (!title || !main) return;
 
             if (view === 'dashboard') {
-                title.innerText = "Dashboard";
-                main.innerHTML = `
-                    <div class="grid grid-cols-3 gap-2.5 sm:gap-3.5">
-                        <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-emerald-500/30">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Inflow</span>
-                                <i class="fa-solid fa-arrow-trend-up text-emerald-400 text-[10px]"></i>
-                            </div>
-                            <h3 class="text-xs sm:text-sm font-extrabold text-emerald-400 truncate">₦1,450,000.00</h3>
-                            <p class="text-[9px] text-emerald-300/80 mt-0.5 truncate">+12% month</p>
-                        </div>
-
-                        <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-blue-500/30">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Total Dues</span>
-                                <i class="fa-solid fa-wallet text-blue-400 text-[10px]"></i>
-                            </div>
-                            <h3 class="text-xs sm:text-sm font-extrabold text-blue-400 truncate">₦620,000.00</h3>
-                            <p class="text-[9px] text-blue-300/80 mt-0.5 truncate">Dues collected</p>
-                        </div>
-
-                        <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-purple-500/30">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Proj. Paid</span>
-                                <i class="fa-solid fa-diagram-project text-purple-400 text-[10px]"></i>
-                            </div>
-                            <h3 class="text-xs sm:text-sm font-extrabold text-purple-400 truncate">₦480,000.00</h3>
-                            <p class="text-[9px] text-purple-300/80 mt-0.5 truncate">Paid projects</p>
-                        </div>
-
-                        <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-orange-500/30">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Proj. Unpaid</span>
-                                <i class="fa-solid fa-hourglass-half text-orange-400 text-[10px]"></i>
-                            </div>
-                            <h3 class="text-xs sm:text-sm font-extrabold text-orange-400 truncate">₦195,000.00</h3>
-                            <p class="text-[9px] text-orange-300/80 mt-0.5 truncate">Pending dues</p>
-                        </div>
-
-                        <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-rose-500/30">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Expenses</span>
-                                <i class="fa-solid fa-receipt text-rose-400 text-[10px]"></i>
-                            </div>
-                            <h3 class="text-xs sm:text-sm font-extrabold text-rose-400 truncate">₦215,000.00</h3>
-                            <p class="text-[9px] text-rose-300/80 mt-0.5 truncate">Total spent</p>
-                        </div>
-
-                        <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-cyan-500/30">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Balance</span>
-                                <i class="fa-solid fa-scale-balanced text-cyan-400 text-[10px]"></i>
-                            </div>
-                            <h3 class="text-xs sm:text-sm font-extrabold text-cyan-400 truncate">₦1,235,000.00</h3>
-                            <p class="text-[9px] text-cyan-300/80 mt-0.5 truncate">Net balance</p>
-                        </div>
-
-                        <div onclick="switchAdminView('directory')" class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-amber-500/30 hover:border-amber-400 cursor-pointer transition">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Members</span>
-                                <i class="fa-solid fa-users text-amber-400 text-[10px]"></i>
-                            </div>
-                            <h3 id="statTotalMembers" class="text-xs sm:text-sm font-extrabold text-amber-300 truncate">Loading...</h3>
-                            <p class="text-[9px] text-gray-400 mt-0.5 truncate">Registered</p>
-                        </div>
-
-                        <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-indigo-500/30">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">First Timers</span>
-                                <i class="fa-solid fa-user-plus text-indigo-400 text-[10px]"></i>
-                            </div>
-                            <h3 class="text-xs sm:text-sm font-extrabold text-indigo-300 truncate">18</h3>
-                            <p class="text-[9px] text-gray-400 mt-0.5 truncate">This month</p>
-                        </div>
-
-                        <div class="premium-stat-card p-3 sm:p-3.5 rounded-xl border border-teal-500/30">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-400 font-semibold truncate">Birthdays</span>
-                                <i class="fa-solid fa-cake-candles text-teal-400 text-[10px]"></i>
-                            </div>
-                            <h3 class="text-xs sm:text-sm font-extrabold text-teal-300 truncate">12</h3>
-                            <p class="text-[9px] text-gray-400 mt-0.5 truncate">This month</p>
-                        </div>
-                    </div>
-
-                    <div class="card-bg p-6 rounded-2xl border border-white/10">
-                        <h3 class="text-base font-bold mb-4">Financial & Member Analytics</h3>
-                        <div class="h-64"><canvas id="financeChart"></canvas></div>
-                    </div>
-                `;
-                await loadAdminMemberCount();
-                initFinanceChart();
-            } else if (view === 'bank') {
-                title.innerText = "Admin Bank & Incoming Remittances";
-                renderAdminBankModule();
-            } else if (view === 'fellowships') {
-                title.innerText = "Fellowships Management";
-                renderFellowshipsModule();
-            } else if (view === 'departments') {
-                title.innerText = "Departments Management";
-                renderDepartmentsModule();
-            } else if (view === 'directory') {
-                title.innerText = "All Members Directory";
+                renderFullAdminDashboard();
+            } else if (view === 'members') {
+                title.innerText = "Members Directory";
+                expandedDirectoryMemberId = null;
+                openDirectoryDropdownId = null;
                 await renderAllMembersDirectoryView();
-            } else if (view === 'settings') {
-                title.innerText = "System Settings";
-                renderAdminSettingsModule();
+            } else if (view === 'fellowships') {
+                title.innerText = "Fellowship Groups";
+                renderFellowshipGroupsCards();
+            } else if (view === 'departments') {
+                title.innerText = "Departments";
+                await renderAdminDepartmentsView();
+            } else if (view === 'bank') {
+                title.innerText = "Bank";
+                renderAdminBankAccountsView();
+            } else if (view === 'dues') {
+                title.innerText = "Dues & Collections";
+                renderAdminDuesSettingsView();
+            } else if (view === 'profile') {
+                title.innerText = "Profile";
+                pendingProfileAvatarDataUrl = null;
+                renderAdminProfileView();
             } else {
                 title.innerText = view.charAt(0).toUpperCase() + view.slice(1);
-                main.innerHTML = `<div class="card-bg p-8 rounded-xl border border-white/5 text-center py-16"><i class="fa-solid fa-folder-open text-4xl text-blue-500 mb-4"></i><h3 class="text-xl font-bold mb-2">${title.innerText} Module Active</h3><p class="text-gray-400 text-xs">Connected to live Supabase instance.</p></div>`;
+                main.innerHTML = `
+                    <div class="card-bg p-8 rounded-xl border border-white/5 text-center py-20">
+                        <i class="fa-solid fa-database text-4xl text-blue-500 mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">${title.innerText} Module Active</h3>
+                        <p class="text-gray-400 text-xs max-w-md mx-auto">All transactions and member actions are logged and secured in Supabase.</p>
+                    </div>
+                `;
             }
         }
 
-        // =========================================================================
-        // ADMIN BANK MODULE (ADD BANK ACCOUNTS + LEADER-APPROVED TRANSFERS)
-        // =========================================================================
-        function renderAdminBankModule() {
+        // --- ADMIN DUES & COLLECTIONS DEFAULT SETTING VIEW ---
+        function renderAdminDuesSettingsView() {
             const main = document.getElementById('mainContent');
             if (!main) return;
-
-            const banks = getAdminBankAccounts();
-            const transfers = getTreasurerTransfers();
-            const leaderApprovedList = transfers.filter(t => t.status === 'leader_approved' || t.status === 'admin_received');
+            const currentGlobalDues = getGlobalDefaultDues();
 
             main.innerHTML = `
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="card-bg p-6 rounded-2xl border border-amber-500/30 space-y-4">
-                        <h3 class="text-base font-bold text-amber-400">Add Admin Bank Account</h3>
-                        <p class="text-xs text-gray-400">Treasurers will see these bank accounts when sending money to Admin Account.</p>
-                        <div class="space-y-3 text-sm">
-                            <div>
-                                <label class="block text-xs text-gray-300 mb-1">Bank Name</label>
-                                <input type="text" id="adminNewBankName" placeholder="e.g. GTBank / Zenith Bank" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-300 mb-1">Account Name</label>
-                                <input type="text" id="adminNewAcctName" placeholder="e.g. Omega City of Mercy Ministry" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-300 mb-1">Account Number</label>
-                                <input type="text" id="adminNewAcctNum" placeholder="e.g. 0123456789" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono">
-                            </div>
-                            <button type="button" onclick="addAdminBankAccount()" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-xs transition shadow-lg">
-                                Save Bank Account
-                            </button>
-                        </div>
-
-                        <div class="pt-3 border-t border-white/10 space-y-2">
-                            <h4 class="text-xs font-bold text-gray-300">Saved Admin Bank Accounts (${banks.length})</h4>
-                            <div class="divide-y divide-white/5 text-xs">
-                                ${banks.length > 0 ? banks.map((b, idx) => `
-                                    <div class="py-2.5 flex items-center justify-between gap-2">
-                                        <div>
-                                            <p class="font-bold text-white">${b.accountName}</p>
-                                            <p class="text-gray-400">${b.bankName} • <span class="font-mono text-amber-300">${b.accountNumber}</span></p>
-                                        </div>
-                                        <button type="button" onclick="removeAdminBankAccount(${idx})" class="text-red-400 hover:underline text-[11px]">Remove</button>
-                                    </div>
-                                `).join('') : '<p class="py-2 text-gray-400">No bank account saved yet.</p>'}
-                            </div>
-                        </div>
+                <div class="card-bg p-6 rounded-2xl border border-blue-500/30 space-y-5 max-w-xl">
+                    <div class="border-b border-white/10 pb-3">
+                        <h3 class="text-base font-bold text-blue-400">Default Monthly Dues Settings</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Set the default monthly dues figure for all groups. Group Leaders can also adjust their group rate in Group Leader Dashboard → Settings.</p>
                     </div>
-
-                    <div class="card-bg p-6 rounded-2xl border border-emerald-500/30 space-y-4">
-                        <h3 class="text-base font-bold text-emerald-400">Incoming Group Transfers (Leader Approved)</h3>
-                        <p class="text-xs text-gray-400">Confirm receipt of transfers approved by Group Leaders. Confirmed items highlight green for the Treasurer.</p>
-                        <div class="divide-y divide-white/5 text-xs">
-                            ${leaderApprovedList.length > 0 ? leaderApprovedList.map(tx => {
-                                const isReceived = tx.status === 'admin_received';
-                                return `
-                                    <div class="py-3.5 px-3 rounded-xl my-1 space-y-2 ${isReceived ? 'bg-emerald-500/15 border border-emerald-500/40' : 'bg-black/25 border border-white/10'}">
-                                        <div class="flex items-start justify-between gap-2">
-                                            <div>
-                                                <p class="font-bold ${isReceived ? 'text-emerald-300' : 'text-white'}">${tx.fellowshipName} — ${formatNaira(tx.amount)}</p>
-                                                <p class="text-gray-300">Treasurer: ${tx.treasurerName} • Approved by Leader: ${tx.leaderApprovedBy || 'Group Leader'}</p>
-                                                <p class="text-[11px] text-gray-400">To: ${tx.accountName} (${tx.bankName} • ${tx.accountNumber}) • ${tx.details || ''}</p>
-                                            </div>
-                                            ${isReceived ? `
-                                                <span class="px-2.5 py-1 rounded-full bg-emerald-500/25 text-emerald-300 font-bold text-[10px] shrink-0">Received</span>
-                                            ` : `
-                                                <button type="button" onclick="confirmAdminReceivedTransfer('${tx.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-lg text-[11px] transition shrink-0">
-                                                    Confirm Received
-                                                </button>
-                                            `}
-                                        </div>
-                                        ${tx.proofDataUrl ? `
-                                            <div>
-                                                <p class="text-[10px] text-gray-400 mb-1">Proof of Payment:</p>
-                                                <img src="${tx.proofDataUrl}" alt="Proof" class="max-h-32 rounded-lg border border-white/10">
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                `;
-                            }).join('') : '<p class="py-6 text-center text-gray-400">No leader-approved transfers yet.</p>'}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function addAdminBankAccount() {
-            const bankName = document.getElementById('adminNewBankName')?.value.trim() || '';
-            const accountName = document.getElementById('adminNewAcctName')?.value.trim() || '';
-            const accountNumber = document.getElementById('adminNewAcctNum')?.value.trim() || '';
-            if (!bankName || !accountName || !accountNumber) {
-                showModal('Missing Fields', 'Please enter Bank Name, Account Name, and Account Number.', null, false);
-                return;
-            }
-            const banks = getAdminBankAccounts();
-            banks.push({ bankName, accountName, accountNumber });
-            saveAdminBankAccounts(banks);
-            showModal('Bank Account Added', `${accountName} (${bankName}) has been added.`, () => renderAdminBankModule());
-        }
-
-        function removeAdminBankAccount(idx) {
-            const banks = getAdminBankAccounts();
-            banks.splice(idx, 1);
-            saveAdminBankAccounts(banks);
-            renderAdminBankModule();
-        }
-
-        function confirmAdminReceivedTransfer(txId) {
-            const transfers = getTreasurerTransfers();
-            const tx = transfers.find(t => t.id === txId);
-            if (!tx) return;
-            tx.status = 'admin_received';
-            tx.adminReceivedAt = new Date().toISOString();
-            saveTreasurerTransfers(transfers);
-
-            pushMemberInboxNotification(
-                tx.treasurerId,
-                'Admin Confirmed Receipt of Funds',
-                `Main Admin has confirmed receipt of ${formatNaira(tx.amount)} (${tx.details || tx.fellowshipName}).`
-            );
-
-            showModal('Confirmed Received', `Marked ${formatNaira(tx.amount)} from ${tx.fellowshipName} as Received by Admin.`, () => {
-                renderAdminBankModule();
-            });
-        }
-
-        // =========================================================================
-        // ADMIN SETTINGS MODULE (GLOBAL DEFAULT DUES)
-        // =========================================================================
-        function renderAdminSettingsModule() {
-            const main = document.getElementById('mainContent');
-            if (!main) return;
-            const currentDefault = getGlobalDefaultDues();
-
-            main.innerHTML = `
-                <div class="card-bg p-6 rounded-2xl border border-amber-500/30 space-y-4 max-w-xl">
-                    <h3 class="text-base font-bold text-amber-400">Global Default Monthly Dues</h3>
-                    <p class="text-xs text-gray-400">Set the default monthly dues amount across groups (default is ₦500.00). Updating this updates dues, arrears, and advance calculations.</p>
-                    <div class="space-y-3 text-sm">
+                    <div class="space-y-4 text-sm">
                         <div>
-                            <label class="block text-xs text-gray-300 mb-1">Default Monthly Dues Amount (₦)</label>
-                            <input type="number" id="adminGlobalDuesInput" min="100" step="100" value="${currentDefault}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white">
+                            <label class="block text-xs font-semibold text-gray-300 mb-1">Default Monthly Dues Figure (₦)</label>
+                            <input type="number" id="adminGlobalDefaultDuesInput" min="100" step="100" value="${currentGlobalDues}" class="w-full bg-black/30 border border-white/15 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
                         </div>
-                        <button type="button" onclick="saveAdminGlobalDefaultDues()" class="bg-amber-600 hover:bg-amber-700 text-black font-bold px-5 py-2.5 rounded-lg text-xs transition shadow-lg">
-                            Save Default Monthly Dues
+                        <button type="button" onclick="saveAdminGlobalDefaultDues()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-lg text-xs transition shadow-lg">
+                            Save Default Dues
                         </button>
                     </div>
                 </div>
@@ -4625,135 +4487,643 @@
         }
 
         function saveAdminGlobalDefaultDues() {
-            const val = Number(document.getElementById('adminGlobalDuesInput')?.value || 500);
+            const val = Number(document.getElementById('adminGlobalDefaultDuesInput')?.value || 500);
             if (val <= 0) {
-                showModal('Invalid Amount', 'Please enter a valid dues amount.', null, false);
+                showModal('Invalid Figure', 'Please enter a valid monthly dues figure.', null, false);
                 return;
             }
             setGlobalDefaultDues(val);
-            showModal('Default Dues Updated', `Global default monthly dues is now ${formatNaira(val)}.`, () => {
-                renderAdminSettingsModule();
+            showModal('Default Dues Updated', `Default monthly dues is now set to ${formatNaira(val)} across the ministry.`, () => {
+                renderAdminDuesSettingsView();
             });
         }
 
-        // =========================================================================
-        // ALL MEMBERS DIRECTORY VIEW (ADMIN)
-        // =========================================================================
+        // --- ADMIN DEPARTMENTS VIEW & WORKERS LEADER / VICE LEADER ASSIGNMENT ---
+        async function renderAdminDepartmentsView() {
+            const main = document.getElementById('mainContent');
+            if (!main) return;
+
+            main.innerHTML = `
+                <div class="card-bg p-6 rounded-2xl border border-white/10">
+                    <p class="text-xs text-gray-400 text-center py-6">Loading Departments & Workers...</p>
+                </div>
+            `;
+
+            const [workersList, leadershipState] = await Promise.all([
+                fetchDepartmentMembersList(),
+                fetchWorkersLeadershipState()
+            ]);
+
+            const currentWorkersLeader = workersList.find(w => w.id === leadershipState.workersLeaderId) || null;
+            const currentViceLeader = workersList.find(w => w.id === leadershipState.viceLeaderId) || null;
+
+            main.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div onclick="openDepartmentMembersModal()" class="card-bg p-6 rounded-2xl border border-blue-500/30 hover:border-blue-400 cursor-pointer transition shadow-xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs uppercase tracking-wider text-blue-300 font-semibold">Departments Roster</span>
+                            <i class="fa-solid fa-building-shield text-blue-400 text-lg"></i>
+                        </div>
+                        <h3 class="text-lg font-extrabold text-white">Department Members</h3>
+                        <p class="text-xs text-gray-300">Total Workers Across Departments: <strong class="text-blue-400">${workersList.length}</strong></p>
+                        <p class="text-[11px] text-gray-400 pt-1">Click to view all workers and their departments →</p>
+                    </div>
+
+                    <div onclick="openAssignWorkersLeaderView()" class="card-bg p-6 rounded-2xl border border-purple-500/35 hover:border-purple-400 cursor-pointer transition shadow-xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs uppercase tracking-wider text-purple-300 font-semibold">Leadership Control</span>
+                            <i class="fa-solid fa-helmet-safety text-purple-400 text-lg"></i>
+                        </div>
+                        <h3 class="text-lg font-extrabold text-white">Assign Workers Leader</h3>
+                        <p class="text-xs text-gray-300">Workers Leader: <strong class="text-purple-300">${currentWorkersLeader ? currentWorkersLeader.full_name : 'Not Assigned'}</strong></p>
+                        <p class="text-xs text-gray-300">Vice Leader: <strong class="text-indigo-300">${currentViceLeader ? currentViceLeader.full_name : 'Not Assigned'}</strong></p>
+                        <p class="text-[11px] text-gray-400 pt-1">Click to assign Workers Leader & Vice Leader →</p>
+                    </div>
+                </div>
+                <div id="adminDepartmentsSubPanel"></div>
+            `;
+        }
+
+        async function openDepartmentMembersModal() {
+            const subPanel = document.getElementById('adminDepartmentsSubPanel');
+            if (!subPanel) return;
+
+            const workersList = await fetchDepartmentMembersList();
+            subPanel.innerHTML = `
+                <div class="card-bg p-6 rounded-2xl border border-blue-500/30 space-y-4">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <div>
+                            <h3 class="text-base font-bold text-blue-400">Department Members (${workersList.length})</h3>
+                            <p class="text-xs text-gray-400">All workers registered across ministry departments</p>
+                        </div>
+                        <button onclick="document.getElementById('adminDepartmentsSubPanel').innerHTML=''" class="text-xs text-gray-400 hover:text-white">Close</button>
+                    </div>
+                    <div class="divide-y divide-white/5 text-xs">
+                        ${workersList.length > 0 ? workersList.map(w => `
+                            <div class="py-3 flex items-center justify-between gap-3">
+                                <div>
+                                    <p class="font-bold text-white text-sm">${w.full_name}</p>
+                                    <p class="text-gray-400">${w.phone || ''}</p>
+                                </div>
+                                <span class="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-semibold">${w.department}</span>
+                            </div>
+                        `).join('') : '<p class="py-6 text-center text-gray-400">No members have registered in a department yet.</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function openAssignWorkersLeaderView() {
+            const main = document.getElementById('mainContent');
+            if (!main) return;
+
+            const [workersList, leadershipState] = await Promise.all([
+                fetchDepartmentMembersList(),
+                fetchWorkersLeadershipState()
+            ]);
+
+            workersAssignStep = 'select_workers_leader';
+            openWorkerDropdownId = null;
+            pendingWorkersLeaderId = leadershipState.workersLeaderId || null;
+            pendingViceLeaderId = leadershipState.viceLeaderId || null;
+
+            renderAssignWorkersLeaderWizard(workersList);
+        }
+
+        function renderAssignWorkersLeaderWizard(workersList) {
+            const main = document.getElementById('mainContent');
+            if (!main) return;
+
+            const isViceStep = workersAssignStep === 'select_vice_leader';
+            const stepBadge = isViceStep ? 'Step 2 of 2: Select Vice Leader' : 'Step 1 of 2: Select Workers Leader';
+            const stepDesc = isViceStep
+                ? 'Choose who will serve as the Vice Leader under the Workers Leader, then click Save.'
+                : 'Click any worker name below and choose "Assign Workers Leader" from the dropdown.';
+
+            const selectedLeaderObj = workersList.find(w => w.id === pendingWorkersLeaderId);
+            const selectedViceObj = workersList.find(w => w.id === pendingViceLeaderId);
+
+            main.innerHTML = `
+                <div class="card-bg p-6 rounded-2xl border border-purple-500/35 space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h3 class="text-base font-bold text-purple-300">Assign Workers Leader</h3>
+                                <span class="text-[11px] bg-purple-500/20 text-purple-300 px-2.5 py-0.5 rounded-full font-semibold">${stepBadge}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">${stepDesc}</p>
+                        </div>
+                        <button onclick="renderAdminDepartmentsView()" class="text-xs text-gray-400 hover:text-white shrink-0">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Back to Departments
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="bg-black/30 p-3 rounded-xl border border-purple-500/25">
+                            <span class="text-gray-400 block">Selected Workers Leader:</span>
+                            <span class="font-bold text-purple-300 text-sm">${selectedLeaderObj ? selectedLeaderObj.full_name + ' (' + selectedLeaderObj.department + ')' : 'None selected'}</span>
+                        </div>
+                        <div class="bg-black/30 p-3 rounded-xl border border-indigo-500/25">
+                            <span class="text-gray-400 block">Selected Vice Leader:</span>
+                            <span class="font-bold text-indigo-300 text-sm">${selectedViceObj ? selectedViceObj.full_name + ' (' + selectedViceObj.department + ')' : 'None selected'}</span>
+                        </div>
+                    </div>
+
+                    ${workersList.length === 0 ? `
+                        <p class="py-8 text-center text-gray-400 text-xs">No workers found in Departments yet. Members must select a department during registration.</p>
+                    ` : `
+                        <div class="divide-y divide-white/5">
+                            ${workersList.map(w => {
+                                const isDropdownOpen = openWorkerDropdownId === w.id;
+                                const isCurrentLeader = pendingWorkersLeaderId === w.id;
+                                const isCurrentVice = pendingViceLeaderId === w.id;
+                                const safeName = (w.full_name || '').replace(/'/g, "\\'");
+
+                                return `
+                                    <div class="py-3 px-2 relative">
+                                        <div onclick="toggleWorkerAssignDropdown('${w.id}')" class="flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-white/5 cursor-pointer transition">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center space-x-2">
+                                                    <h4 class="text-sm font-semibold text-white truncate">${w.full_name}</h4>
+                                                    ${isCurrentLeader ? '<span class="text-[10px] bg-purple-600/30 text-purple-300 border border-purple-400/40 px-2 py-0.5 rounded-full font-bold">Workers Leader</span>' : ''}
+                                                    ${isCurrentVice ? '<span class="text-[10px] bg-indigo-600/30 text-indigo-300 border border-indigo-400/40 px-2 py-0.5 rounded-full font-bold">Vice Leader</span>' : ''}
+                                                </div>
+                                                <p class="text-[11px] text-amber-300 font-medium">Department: ${w.department}</p>
+                                            </div>
+                                            <span class="text-xs text-gray-400 shrink-0"><i class="fa-solid ${isDropdownOpen ? 'fa-chevron-up' : 'fa-chevron-down'}"></i></span>
+                                        </div>
+
+                                        <div id="workerDrop-${w.id}" class="${isDropdownOpen ? '' : 'hidden'} mt-1.5 ml-2 mr-2 p-2.5 rounded-xl bg-black/40 border border-white/10">
+                                            ${!isViceStep ? `
+                                                <button type="button" onclick="selectPendingWorkersLeader('${w.id}', '${safeName}')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-purple-600/25 text-purple-300 font-semibold text-xs flex items-center justify-between">
+                                                    <span><i class="fa-solid fa-helmet-safety mr-2"></i>Assign Workers Leader</span>
+                                                    <span class="text-[10px] text-gray-400">Next: Select Vice Leader</span>
+                                                </button>
+                                            ` : `
+                                                ${isCurrentLeader ? `
+                                                    <p class="px-3 py-2 text-[11px] text-amber-300">Already selected as Workers Leader. Pick another worker as Vice Leader.</p>
+                                                ` : `
+                                                    <button type="button" onclick="selectPendingViceLeader('${w.id}', '${safeName}')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-600/25 text-indigo-300 font-semibold text-xs flex items-center justify-between">
+                                                        <span><i class="fa-solid fa-user-tie mr-2"></i>Assign Vice Leader</span>
+                                                        <span class="text-[10px] text-gray-400">Select</span>
+                                                    </button>
+                                                `}
+                                            `}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `}
+
+                    ${isViceStep ? `
+                        <div class="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
+                            <button type="button" onclick="backToSelectWorkersLeaderStep()" class="card-bg hover:bg-white/5 text-gray-300 font-semibold px-4 py-2.5 rounded-lg text-xs transition">
+                                <i class="fa-solid fa-arrow-left mr-1"></i> Change Workers Leader
+                            </button>
+                            <button type="button" onclick="saveAssignedWorkersAndViceLeader()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-lg text-xs transition shadow-lg">
+                                Save
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        async function toggleWorkerAssignDropdown(workerId) {
+            openWorkerDropdownId = openWorkerDropdownId === workerId ? null : workerId;
+            const workersList = await fetchDepartmentMembersList();
+            renderAssignWorkersLeaderWizard(workersList);
+        }
+
+        async function selectPendingWorkersLeader(workerId, workerName) {
+            pendingWorkersLeaderId = workerId;
+            if (pendingViceLeaderId === workerId) {
+                pendingViceLeaderId = null;
+            }
+            workersAssignStep = 'select_vice_leader';
+            openWorkerDropdownId = null;
+            const workersList = await fetchDepartmentMembersList();
+            renderAssignWorkersLeaderWizard(workersList);
+        }
+
+        async function backToSelectWorkersLeaderStep() {
+            workersAssignStep = 'select_workers_leader';
+            openWorkerDropdownId = null;
+            const workersList = await fetchDepartmentMembersList();
+            renderAssignWorkersLeaderWizard(workersList);
+        }
+
+        async function selectPendingViceLeader(workerId, workerName) {
+            pendingViceLeaderId = workerId;
+            openWorkerDropdownId = null;
+            const workersList = await fetchDepartmentMembersList();
+            renderAssignWorkersLeaderWizard(workersList);
+        }
+
+        async function saveAssignedWorkersAndViceLeader() {
+            if (!pendingWorkersLeaderId) {
+                showModal('Selection Required', 'Please select a Workers Leader first.', null, false);
+                return;
+            }
+            const workersList = await fetchDepartmentMembersList();
+            const leaderObj = workersList.find(w => w.id === pendingWorkersLeaderId);
+            const viceObj = workersList.find(w => w.id === pendingViceLeaderId);
+
+            await saveWorkersLeadershipPair(pendingWorkersLeaderId, pendingViceLeaderId);
+
+            if (activeMemberSession) {
+                activeMemberSession.is_workers_leader = activeMemberSession.id === pendingWorkersLeaderId;
+                activeMemberSession.is_vice_leader = activeMemberSession.id === pendingViceLeaderId;
+                localStorage.setItem('ocm_member_session', JSON.stringify(activeMemberSession));
+            }
+
+            const summaryMsg = `Workers Leader: ${leaderObj ? leaderObj.full_name : 'Assigned'}\nVice Leader: ${viceObj ? viceObj.full_name : 'Not assigned'}\n\nTheir respective dashboards are now active in their member accounts.`;
+            showModal('Workers Leadership Saved', summaryMsg, () => {
+                renderAdminDepartmentsView();
+            });
+        }
+
+        // --- ADMIN BANK ACCOUNTS VIEW + INCOMING TREASURER RECEIPTS ---
+        function renderAdminBankAccountsView() {
+            const main = document.getElementById('mainContent');
+            if (!main) return;
+            const accounts = getAdminBankAccounts();
+            const allTransfers = getTreasurerTransfers();
+            const approvedByLeaders = allTransfers.filter(t => t.status === 'leader_approved');
+            const receivedHistory = allTransfers.filter(t => t.status === 'admin_received');
+
+            main.innerHTML = `
+                <div class="space-y-6">
+                    <div class="card-bg p-6 rounded-2xl border border-emerald-500/35 space-y-4">
+                        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                            <div>
+                                <h3 class="text-base font-bold text-emerald-400">Incoming Group Remittances (${approvedByLeaders.length})</h3>
+                                <p class="text-xs text-gray-400">Transfers approved by Group Leaders. Click <strong>Received</strong> to confirm receipt and notify the Treasurer.</p>
+                            </div>
+                        </div>
+                        <div class="divide-y divide-white/5 text-xs">
+                            ${approvedByLeaders.length > 0 ? approvedByLeaders.map(tx => `
+                                <div class="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div class="space-y-1">
+                                        <p class="text-sm font-bold text-white">${tx.fellowshipName} — <span class="text-emerald-400">${formatNaira(tx.amount)}</span></p>
+                                        <p class="text-gray-300">Destination: ${tx.accountName} (${tx.bankName} • ${tx.accountNumber})</p>
+                                        <p class="text-gray-400">Sent by Treasurer: <strong class="text-white">${tx.treasurerName}</strong> • Approved by Leader: <strong class="text-amber-300">${tx.leaderApprovedBy || 'Group Leader'}</strong></p>
+                                        <p class="text-gray-400">Details: ${tx.details || 'N/A'}</p>
+                                        ${tx.proofDataUrl ? `<img src="${tx.proofDataUrl}" alt="Proof" class="max-h-32 rounded-lg border border-white/10 mt-1">` : ''}
+                                    </div>
+                                    <button type="button" onclick="confirmAdminReceivedTransfer('${tx.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg text-xs transition shadow-lg shrink-0">
+                                        Received
+                                    </button>
+                                </div>
+                            `).join('') : '<p class="py-4 text-gray-400">No pending incoming remittances from groups.</p>'}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="card-bg p-6 rounded-2xl border border-amber-500/30 space-y-4">
+                            <div>
+                                <h3 class="text-base font-bold text-amber-400">Add Bank Account</h3>
+                                <p class="text-xs text-gray-400">Manage official ministry bank accounts (also selectable by Group Treasurers).</p>
+                            </div>
+                            <form onsubmit="handleAddAdminBankAccount(event)" class="space-y-4 text-sm">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Bank Name</label>
+                                    <input type="text" id="bankNameInput" required placeholder="e.g. Zenith Bank, GTBank, Access Bank" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Account Name</label>
+                                    <input type="text" id="accountNameInput" required placeholder="e.g. Omega City of Mercy Glorious Ministry" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-300 mb-1">Account Number</label>
+                                    <input type="text" id="accountNumberInput" required maxlength="15" placeholder="e.g. 1012345678" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono tracking-wider focus:outline-none focus:border-amber-500">
+                                </div>
+                                <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-black font-bold py-2.5 rounded-lg text-xs transition shadow-lg">
+                                    <i class="fa-solid fa-plus mr-1"></i> Save Bank Account
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4">
+                            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                                <h3 class="text-base font-bold text-white">Saved Ministry Bank Accounts (${accounts.length})</h3>
+                            </div>
+                            ${accounts.length === 0 ? `
+                                <p class="text-xs text-gray-400 py-8 text-center">No bank accounts added yet. Use the form to add a bank account.</p>
+                            ` : `
+                                <div class="space-y-3">
+                                    ${accounts.map((acc, index) => `
+                                        <div class="bg-black/30 p-4 rounded-xl border border-white/10 flex items-center justify-between gap-3">
+                                            <div>
+                                                <p class="text-xs text-amber-400 font-bold uppercase tracking-wider">${acc.bankName}</p>
+                                                <p class="text-sm font-bold text-white mt-0.5">${acc.accountName}</p>
+                                                <p class="text-xs font-mono text-gray-300 mt-0.5">${acc.accountNumber}</p>
+                                            </div>
+                                            <button onclick="deleteAdminBankAccount(${index})" class="text-red-400 hover:text-red-300 text-xs px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+
+                    ${receivedHistory.length > 0 ? `
+                    <div class="card-bg p-6 rounded-2xl border border-emerald-500/25 space-y-3">
+                        <h4 class="text-sm font-bold text-emerald-400">Confirmed Received Group Transfers (${receivedHistory.length})</h4>
+                        <div class="divide-y divide-white/5 text-xs">
+                            ${receivedHistory.map(rx => `
+                                <div class="py-2.5 flex items-center justify-between">
+                                    <span class="text-white font-semibold">${rx.fellowshipName} — ${formatNaira(rx.amount)} (${rx.treasurerName})</span>
+                                    <span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-double mr-1"></i>Received</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function confirmAdminReceivedTransfer(txId) {
+            const transfers = getTreasurerTransfers();
+            const tx = transfers.find(t => t.id === txId);
+            if (!tx) return;
+
+            tx.status = 'admin_received';
+            tx.adminReceivedAt = new Date().toISOString();
+            saveTreasurerTransfers(transfers);
+
+            pushMemberInboxNotification(
+                tx.treasurerId,
+                'Admin Confirmed Receipt of Transfer',
+                `Main Admin has confirmed receipt of ${formatNaira(tx.amount)} sent from ${tx.fellowshipName} purse to ${tx.accountName}.`
+            );
+
+            showModal(
+                'Receipt Confirmed',
+                `Confirmed receipt of ${formatNaira(tx.amount)} from ${tx.fellowshipName}. The Treasurer has been notified and their transaction row is now marked green.`,
+                () => {
+                    renderAdminBankAccountsView();
+                }
+            );
+        }
+
+        function handleAddAdminBankAccount(e) {
+            e.preventDefault();
+            const bankName = document.getElementById('bankNameInput').value.trim();
+            const accountName = document.getElementById('accountNameInput').value.trim();
+            const accountNumber = document.getElementById('accountNumberInput').value.trim();
+            if (!bankName || !accountName || !accountNumber) return;
+
+            const accounts = getAdminBankAccounts();
+            accounts.push({ bankName, accountName, accountNumber });
+            saveAdminBankAccounts(accounts);
+            showModal('Bank Account Added', `${bankName} — ${accountName} (${accountNumber}) has been saved.`, () => {
+                renderAdminBankAccountsView();
+            });
+        }
+
+        function deleteAdminBankAccount(index) {
+            const accounts = getAdminBankAccounts();
+            accounts.splice(index, 1);
+            saveAdminBankAccounts(accounts);
+            renderAdminBankAccountsView();
+        }
+
+        // --- ADMIN PROFILE VIEW ---
+        function renderAdminProfileView() {
+            const main = document.getElementById('mainContent');
+            if (!main) return;
+            const adminName = activeAdminSession?.full_name || 'Chuks James';
+            const adminEmail = activeAdminSession?.email || 'chuksjames1980@gmail.com';
+            const savedAvatar = localStorage.getItem('ocm_admin_avatar') || '';
+            const displayAvatar = pendingProfileAvatarDataUrl !== null ? pendingProfileAvatarDataUrl : savedAvatar;
+
+            const previewHtml = displayAvatar
+                ? `<img src="${displayAvatar}" alt="Admin Profile" class="w-24 h-24 rounded-full object-cover border-2 border-amber-400 shadow-lg mx-auto">`
+                : `<div class="w-24 h-24 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-300 font-extrabold text-3xl mx-auto">${adminName.charAt(0)}</div>`;
+
+            main.innerHTML = `
+                <div class="max-w-lg mx-auto card-bg p-6 sm:p-8 rounded-2xl border border-amber-500/30 space-y-6">
+                    <div class="text-center space-y-3">
+                        <div id="adminProfilePhotoPreview">${previewHtml}</div>
+                        <div>
+                            <input type="file" id="adminAvatarInput" accept="image/*" onchange="handleAdminAvatarSelect(event)" class="hidden">
+                            <button type="button" onclick="document.getElementById('adminAvatarInput').click()" class="bg-white/10 hover:bg-white/15 text-amber-300 border border-amber-400/30 px-4 py-1.5 rounded-lg text-xs font-semibold transition">
+                                <i class="fa-solid fa-camera mr-1.5"></i> Add Profile Picture
+                            </button>
+                        </div>
+                    </div>
+
+                    <form onsubmit="saveAdminProfileChanges(event)" class="space-y-4 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Full Name</label>
+                            <input type="text" id="adminProfileNameInput" required value="${adminName}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1">Admin Email</label>
+                            <input type="email" id="adminProfileEmailInput" required value="${adminEmail}" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1">New Password (leave blank to keep current)</label>
+                            <input type="password" id="adminProfilePasswordInput" placeholder="Enter new password" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                        <button type="submit" id="saveAdminProfileBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-lg">
+                            Save
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+
+        function handleAdminAvatarSelect(event) {
+            const file = event?.target?.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                pendingProfileAvatarDataUrl = e.target.result;
+                renderAdminProfileView();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function saveAdminProfileChanges(e) {
+            e.preventDefault();
+            const newName = document.getElementById('adminProfileNameInput').value.trim();
+            const newEmail = document.getElementById('adminProfileEmailInput').value.trim();
+            const newPassword = document.getElementById('adminProfilePasswordInput').value;
+            const btn = document.getElementById('saveAdminProfileBtn');
+
+            if (!newName || !newEmail) return;
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+
+            try {
+                const updates = { full_name: newName, email: newEmail };
+                if (newPassword && newPassword.trim().length > 0) {
+                    updates.password = newPassword.trim();
+                }
+
+                if (activeAdminSession?.id) {
+                    const { data: updatedRow, error } = await supabaseClient
+                        .from('admin_users')
+                        .update(updates)
+                        .eq('id', activeAdminSession.id)
+                        .select()
+                        .maybeSingle();
+
+                    if (error) throw error;
+                    activeAdminSession = updatedRow || { ...activeAdminSession, ...updates };
+                } else {
+                    activeAdminSession = { ...(activeAdminSession || {}), ...updates };
+                }
+
+                localStorage.setItem('ocm_admin_session', JSON.stringify(activeAdminSession));
+                if (pendingProfileAvatarDataUrl !== null) {
+                    localStorage.setItem('ocm_admin_avatar', pendingProfileAvatarDataUrl);
+                    pendingProfileAvatarDataUrl = null;
+                }
+
+                showModal('Profile Updated', 'Admin profile picture, name, email, and credentials have been saved.', () => {
+                    renderFullAdminDashboard();
+                });
+            } catch (err) {
+                showModal('Save Failed', err.message || 'Unable to update admin profile.', null, false);
+                btn.disabled = false;
+                btn.innerText = 'Save';
+            }
+        }
+
+        // --- MEMBERS DIRECTORY (SEARCHABLE + INLINE DETAILS + 3-DOT MENU) ---
         async function renderAllMembersDirectoryView() {
             const main = document.getElementById('mainContent');
             if (!main) return;
 
-            expandedDirectoryMemberId = null;
-            openDirectoryDropdownId = null;
-
             main.innerHTML = `
                 <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-5">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
                         <div>
-                            <h3 class="text-base font-bold text-amber-400">All Registered Members Directory</h3>
-                            <p class="text-xs text-gray-400 mt-0.5">Click any member name to view details, edit, or delete from the database.</p>
+                            <h3 class="text-base font-bold text-amber-400">All Registered Members</h3>
+                            <p id="membersDirectoryCountText" class="text-xs text-gray-400 mt-0.5">Loading registered members...</p>
                         </div>
-                        <div class="relative w-full sm:w-72">
-                            <i class="fa-solid fa-magnifying-glass text-xs text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                            <input type="text" id="memberDirectorySearch" oninput="filterAdminMembersDirectory()" placeholder="Search member by name or ID..." class="w-full bg-black/30 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <div class="relative flex-1 sm:w-72">
+                                <i class="fa-solid fa-magnifying-glass text-xs text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                                <input type="text" id="memberDirectorySearchInput" oninput="filterMembersDirectoryList()" placeholder="Search member by name..." class="w-full bg-black/30 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                            </div>
                         </div>
                     </div>
-
-                    <div id="adminMembersDirectoryList" class="divide-y divide-white/5">
-                        <div class="py-8 text-center text-gray-400 text-xs">
-                            <i class="fa-solid fa-spinner animate-spin mr-1"></i> Loading registered members...
-                        </div>
+                    <div id="membersDirectoryListContainer" class="divide-y divide-white/5">
+                        <p class="py-8 text-center text-gray-400 text-xs">Loading members from Supabase...</p>
                     </div>
                 </div>
             `;
 
-            const { data: members, error } = await supabaseClient
-                .from('members')
-                .select(`*, member_fellowships(fellowships(id, name)), member_departments(departments(id, name))`)
-                .order('created_at', { ascending: false });
+            const [{ data: members, error }, { data: mdRows }, { data: deptRows }] = await Promise.all([
+                supabaseClient
+                    .from('members')
+                    .select('*, member_fellowships(fellowships(name)), member_departments(departments(name))')
+                    .order('full_name', { ascending: true }),
+                supabaseClient.from('member_departments').select('member_id, department_id'),
+                supabaseClient.from('departments').select('id, name')
+            ]);
 
             if (error) {
-                document.getElementById('adminMembersDirectoryList').innerHTML = `
-                    <p class="py-6 text-center text-red-400 text-xs">Failed to load members: ${error.message}</p>
-                `;
+                const listEl = document.getElementById('membersDirectoryListContainer');
+                if (listEl) listEl.innerHTML = `<p class="py-8 text-center text-red-400 text-xs">Error loading members: ${error.message}</p>`;
                 return;
             }
 
-            allAdminDirectoryMembers = members || [];
-            renderAdminMembersDirectoryRows(allAdminDirectoryMembers);
+            const deptMap = new Map((deptRows || []).map(d => [String(d.id), d.name]));
+            const memberDeptMap = new Map();
+            (mdRows || []).forEach(r => {
+                const name = deptMap.get(String(r.department_id));
+                if (name) memberDeptMap.set(String(r.member_id), name);
+            });
+
+            allAdminDirectoryMembers = (members || []).map(m => {
+                const joinedDept = m?.member_departments?.[0]?.departments?.name;
+                const mappedDept = memberDeptMap.get(String(m.id));
+                const resolvedDept = (joinedDept && joinedDept !== 'None')
+                    ? joinedDept
+                    : (mappedDept || (m.assigned_department && m.assigned_department !== 'None' ? m.assigned_department : 'None'));
+                return { ...m, resolved_department: resolvedDept };
+            });
+
+            renderFilteredMembersDirectoryRows(allAdminDirectoryMembers);
         }
 
-        function filterAdminMembersDirectory() {
-            const query = (document.getElementById('memberDirectorySearch')?.value || '').trim().toLowerCase();
-            if (!query) {
-                renderAdminMembersDirectoryRows(allAdminDirectoryMembers);
-                return;
-            }
-            const filtered = allAdminDirectoryMembers.filter(m =>
-                (m.full_name || '').toLowerCase().includes(query) ||
-                (m.member_id || '').toLowerCase().includes(query) ||
-                (m.phone || '').toLowerCase().includes(query)
-            );
-            renderAdminMembersDirectoryRows(filtered);
+        function filterMembersDirectoryList() {
+            const input = document.getElementById('memberDirectorySearchInput');
+            const query = (input ? input.value : '').trim().toLowerCase();
+            const filtered = query
+                ? allAdminDirectoryMembers.filter(m => (m.full_name || '').toLowerCase().includes(query))
+                : allAdminDirectoryMembers;
+            renderFilteredMembersDirectoryRows(filtered);
         }
 
-        function renderAdminMembersDirectoryRows(members) {
-            const listContainer = document.getElementById('adminMembersDirectoryList');
-            if (!listContainer) return;
+        function renderFilteredMembersDirectoryRows(members) {
+            const listEl = document.getElementById('membersDirectoryListContainer');
+            const countEl = document.getElementById('membersDirectoryCountText');
+            if (!listEl) return;
 
-            if (!members || members.length === 0) {
-                listContainer.innerHTML = `<p class="py-8 text-center text-gray-400 text-xs">No members found in the database.</p>`;
+            if (countEl) {
+                countEl.innerText = `Showing ${members.length} of ${allAdminDirectoryMembers.length} registered member(s). Click any name to view details.`;
+            }
+
+            if (members.length === 0) {
+                listEl.innerHTML = `<p class="py-8 text-center text-gray-400 text-xs">No matching member found.</p>`;
                 return;
             }
 
-            listContainer.innerHTML = members.map(m => {
+            listEl.innerHTML = members.map(m => {
+                const fellowshipName = m?.member_fellowships?.[0]?.fellowships?.name || inferFellowshipFromMember(m);
+                const deptName = m.resolved_department || 'None';
                 const isExpanded = expandedDirectoryMemberId === m.id;
-                const isDropdownOpen = openDirectoryDropdownId === m.id;
-                const fellowshipName = m.member_fellowships?.[0]?.fellowships?.name || inferFellowshipFromMember(m);
-                const deptName = m.member_departments?.[0]?.departments?.name || (m.assigned_department && m.assigned_department !== 'None' ? m.assigned_department : 'None');
+                const isMenuOpen = openDirectoryDropdownId === m.id;
                 const safeName = (m.full_name || '').replace(/'/g, "\\'");
 
                 return `
-                    <div class="py-3 px-2">
-                        <div class="flex items-center justify-between gap-3">
-                            <button type="button" onclick="toggleDirectoryMemberDetails('${m.id}')" class="text-left flex-1 py-1.5 px-2 rounded-lg hover:bg-white/5 transition flex items-center justify-between">
-                                <div>
-                                    <span class="text-sm font-semibold text-white hover:text-blue-400 transition">${m.full_name}</span>
-                                    <span class="ml-2 text-[11px] text-gray-400 font-mono">${m.member_id || ''}</span>
-                                </div>
-                                <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-xs text-gray-400"></i>
+                    <div class="py-3 px-2 relative">
+                        <div class="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-white/5 transition">
+                            <button type="button" onclick="toggleDirectoryMemberDetails('${m.id}')" class="flex-1 text-left flex items-center justify-between gap-2 min-w-0">
+                                <span class="text-sm font-semibold text-white hover:text-blue-300 transition truncate">${m.full_name}</span>
+                                <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-xs text-gray-400 shrink-0"></i>
                             </button>
 
-                            <div class="relative">
-                                <button type="button" onclick="toggleDirectoryActionDropdown(event, '${m.id}')" class="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5">
-                                    <span>Actions</span>
-                                    <i class="fa-solid fa-caret-down text-[11px]"></i>
+                            <div class="relative shrink-0">
+                                <button type="button" onclick="toggleDirectoryThreeDotMenu('${m.id}', event)" class="w-8 h-8 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white flex items-center justify-center transition" title="Member Options">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
                                 </button>
-                                <div id="dirActionMenu-${m.id}" class="${isDropdownOpen ? '' : 'hidden'} absolute right-0 mt-1.5 w-36 card-bg border border-white/15 rounded-xl shadow-2xl py-1 z-30 text-xs">
-                                    <button type="button" onclick="editDirectoryMemberFromMenu('${m.id}', '${safeName}')" class="w-full text-left px-3.5 py-2 text-blue-300 hover:bg-white/10 flex items-center space-x-2">
-                                        <i class="fa-solid fa-pen-to-square w-3.5"></i><span>Edit</span>
-                                    </button>
-                                    <button type="button" onclick="promptDeleteMemberConfirmation('${m.id}', '${safeName}')" class="w-full text-left px-3.5 py-2 text-red-400 hover:bg-red-500/10 flex items-center space-x-2">
-                                        <i class="fa-solid fa-trash w-3.5"></i><span>Delete</span>
+                                <div id="dirMenu-${m.id}" class="${isMenuOpen ? '' : 'hidden'} absolute right-0 mt-1 w-36 card-bg border border-white/15 rounded-xl shadow-2xl z-30 py-1 text-xs">
+                                    <button type="button" onclick="promptDeleteMemberConfirmation('${m.id}', '${safeName}')" class="w-full text-left px-3.5 py-2 text-red-400 hover:bg-red-500/15 flex items-center space-x-2 font-semibold">
+                                        <i class="fa-solid fa-trash-can"></i><span>Delete</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div id="dirMemberDetails-${m.id}" class="${isExpanded ? '' : 'hidden'} mt-2 ml-2 mr-2 p-4 rounded-xl bg-black/30 border border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs text-gray-300">
-                            <p><span class="text-gray-400">Full Name:</span> <strong class="text-white">${m.full_name}</strong></p>
-                            <p><span class="text-gray-400">Member ID:</span> <span class="font-mono text-blue-300">${m.member_id || 'N/A'}</span></p>
-                            <p><span class="text-gray-400">Phone:</span> ${m.phone || 'N/A'}</p>
-                            <p><span class="text-gray-400">WhatsApp:</span> ${m.whatsapp || 'N/A'}</p>
-                            <p><span class="text-gray-400">Email:</span> ${m.email || 'N/A'}</p>
-                            <p><span class="text-gray-400">Gender:</span> ${m.gender || 'N/A'}</p>
-                            <p><span class="text-gray-400">Date of Birth:</span> ${m.date_of_birth || 'N/A'}</p>
-                            <p><span class="text-gray-400">Married:</span> ${m.is_married ? 'Yes' : 'No'}</p>
-                            <p><span class="text-gray-400">Fellowship:</span> <span class="text-blue-300">${fellowshipName}</span></p>
-                            <p><span class="text-gray-400">Worker / Dept:</span> <span class="text-amber-300">${deptName}</span></p>
-                            <p><span class="text-gray-400">Date Joined:</span> ${m.date_joined || 'N/A'}</p>
-                            <p><span class="text-gray-400">Status:</span> <span class="text-emerald-400 font-semibold">${m.membership_status || 'Active'}</span></p>
-                            <p class="sm:col-span-2 lg:col-span-3"><span class="text-gray-400">Address:</span> ${m.address || 'N/A'} (${m.state || ''}, ${m.nationality || ''})</p>
+                        <div id="dirDetails-${m.id}" class="${isExpanded ? '' : 'hidden'} mt-2 ml-2 mr-2 p-4 rounded-xl bg-black/35 border border-blue-500/20 text-xs">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-gray-300">
+                                <p><span class="text-gray-400">Member ID:</span> <span class="font-mono text-blue-300">${m.member_id || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Phone:</span> <span class="text-white">${m.phone || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">WhatsApp:</span> <span class="text-white">${m.whatsapp || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Email:</span> <span class="text-white">${m.email || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Gender:</span> <span class="text-white">${m.gender || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Marital Status:</span> <span class="text-white">${m.is_married ? 'Married' : 'Single'}</span></p>
+                                <p><span class="text-gray-400">Date of Birth:</span> <span class="text-white">${m.date_of_birth || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Fellowship:</span> <span class="text-amber-300 font-semibold">${fellowshipName}</span></p>
+                                <p><span class="text-gray-400">Department:</span> <span class="text-amber-300 font-semibold">${deptName}</span></p>
+                                <p><span class="text-gray-400">State of Origin:</span> <span class="text-white">${m.state || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">State of Residence:</span> <span class="text-white">${m.residence_state || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Nationality:</span> <span class="text-white">${m.nationality || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Date Joined:</span> <span class="text-white">${m.date_joined || 'N/A'}</span></p>
+                                <p><span class="text-gray-400">Status:</span> <span class="text-emerald-400 font-semibold">${m.membership_status || 'Active'}</span></p>
+                                <p class="sm:col-span-2 lg:col-span-3"><span class="text-gray-400">Address:</span> <span class="text-white">${m.address || 'N/A'}</span></p>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -4762,161 +5132,121 @@
 
         function toggleDirectoryMemberDetails(memberId) {
             expandedDirectoryMemberId = expandedDirectoryMemberId === memberId ? null : memberId;
-            filterAdminMembersDirectory();
-        }
-
-        function toggleDirectoryActionDropdown(event, memberId) {
-            event.stopPropagation();
-            openDirectoryDropdownId = openDirectoryDropdownId === memberId ? null : memberId;
-            document.querySelectorAll('[id^="dirActionMenu-"]').forEach(menu => {
-                if (menu.id === `dirActionMenu-${memberId}`) {
-                    menu.classList.toggle('hidden');
-                } else {
-                    menu.classList.add('hidden');
-                }
-            });
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('[id^="dirActionMenu-"]') && !e.target.closest('button[onclick*="toggleDirectoryActionDropdown"]')) {
-                openDirectoryDropdownId = null;
-                document.querySelectorAll('[id^="dirActionMenu-"]').forEach(menu => menu.classList.add('hidden'));
-            }
-        });
-
-        function editDirectoryMemberFromMenu(memberId, currentName) {
             openDirectoryDropdownId = null;
-            document.querySelectorAll('[id^="dirActionMenu-"]').forEach(menu => menu.classList.add('hidden'));
-            openEditMemberModal(memberId, currentName);
+            filterMembersDirectoryList();
         }
 
-        // =========================================================================
-        // FELLOWSHIPS MODULE (ADMIN)
-        // =========================================================================
-        function renderFellowshipsModule() {
+        function toggleDirectoryThreeDotMenu(memberId, event) {
+            if (event) event.stopPropagation();
+            openDirectoryDropdownId = openDirectoryDropdownId === memberId ? null : memberId;
+            filterMembersDirectoryList();
+        }
+
+        // --- FELLOWSHIP GROUPS & GROUP LEADER ASSIGNMENT ---
+        function renderFellowshipGroupsCards() {
             const main = document.getElementById('mainContent');
             if (!main) return;
+            const groups = [
+                { name: 'Men Fellowship', icon: 'fa-user-tie', color: 'text-blue-400', desc: 'Married Men Ministry Group' },
+                { name: 'Women Fellowship', icon: 'fa-person-dress', color: 'text-pink-400', desc: 'Married Women Ministry Group' },
+                { name: 'Youth Fellowship', icon: 'fa-bolt', color: 'text-amber-400', desc: 'Unmarried Youth & Singles Ministry Group' }
+            ];
             main.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div onclick="openFellowshipGroupView('Men Fellowship')" class="card-bg p-6 rounded-2xl border border-blue-500/20 hover:border-blue-500 cursor-pointer transition">
-                        <div class="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-xl mb-4"><i class="fa-solid fa-user-tie"></i></div>
-                        <h3 class="text-lg font-bold text-blue-400 mb-1">Men Fellowship</h3>
-                        <p class="text-xs text-gray-400 mb-4">Married Male Members</p>
-                        <div class="flex items-center justify-between text-xs pt-3 border-t border-white/10">
-                            <span class="text-gray-400">Click to view group</span>
-                            <span class="text-blue-400 font-semibold">Open <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                    ${groups.map(g => `
+                        <div class="card-bg p-6 rounded-2xl border border-white/10 hover:border-blue-500/40 transition shadow-xl space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center ${g.color} text-xl">
+                                    <i class="fa-solid ${g.icon}"></i>
+                                </div>
+                                <span class="text-[11px] bg-blue-600/20 text-blue-300 px-3 py-1 rounded-full font-semibold">Active Group</span>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-white">${g.name}</h3>
+                                <p class="text-xs text-gray-400 mt-1">${g.desc}</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 pt-2">
+                                <button onclick="openFellowshipGroupDetail('${g.name}')" class="bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-xs font-semibold transition">
+                                    Open Group
+                                </button>
+                                <button onclick="openAssignLeaderView('${g.name}')" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 py-2.5 rounded-xl text-xs font-semibold transition">
+                                    Assign Leader
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div onclick="openFellowshipGroupView('Women Fellowship')" class="card-bg p-6 rounded-2xl border border-pink-500/20 hover:border-pink-500 cursor-pointer transition">
-                        <div class="w-12 h-12 rounded-xl bg-pink-600/20 text-pink-400 flex items-center justify-center text-xl mb-4"><i class="fa-solid fa-person-dress"></i></div>
-                        <h3 class="text-lg font-bold text-pink-400 mb-1">Women Fellowship</h3>
-                        <p class="text-xs text-gray-400 mb-4">Married Female Members</p>
-                        <div class="flex items-center justify-between text-xs pt-3 border-t border-white/10">
-                            <span class="text-gray-400">Click to view group</span>
-                            <span class="text-pink-400 font-semibold">Open <i class="fa-solid fa-arrow-right ml-1"></i></span>
-                        </div>
-                    </div>
-                    <div onclick="openFellowshipGroupView('Youth Fellowship')" class="card-bg p-6 rounded-2xl border border-emerald-500/20 hover:border-emerald-500 cursor-pointer transition">
-                        <div class="w-12 h-12 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-xl mb-4"><i class="fa-solid fa-users"></i></div>
-                        <h3 class="text-lg font-bold text-emerald-400 mb-1">Youth Fellowship</h3>
-                        <p class="text-xs text-gray-400 mb-4">Unmarried Members</p>
-                        <div class="flex items-center justify-between text-xs pt-3 border-t border-white/10">
-                            <span class="text-gray-400">Click to view group</span>
-                            <span class="text-emerald-400 font-semibold">Open <i class="fa-solid fa-arrow-right ml-1"></i></span>
-                        </div>
-                    </div>
+                    `).join('')}
                 </div>
-                <div id="fellowshipDynamicView" class="mt-6"></div>
             `;
         }
 
-        async function openFellowshipGroupView(fellowshipName) {
+        async function openFellowshipGroupDetail(fellowshipName) {
             activeFellowshipContext = fellowshipName;
-            document.getElementById('pageTitle').innerText = `${fellowshipName} – Group View`;
-            const dyn = document.getElementById('fellowshipDynamicView');
-            dyn.innerHTML = `
-                <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+            const title = document.getElementById('pageTitle');
+            const main = document.getElementById('mainContent');
+            title.innerText = fellowshipName;
+            main.innerHTML = `
+                <div class="card-bg p-6 rounded-2xl border border-white/10 space-y-4">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-4">
                         <div>
-                            <h3 class="text-lg font-bold text-amber-400">${fellowshipName}</h3>
-                            <p class="text-xs text-gray-400">Fellowship Group Management & Leadership</p>
+                            <h3 class="text-base font-bold text-amber-400">${fellowshipName} — Registered Members</h3>
+                            <p class="text-xs text-gray-400">Manage member names, edit, or delete records directly</p>
                         </div>
-                        <div class="flex flex-wrap gap-2">
-                            <button onclick="openAssignLeaderView('${fellowshipName}')" class="bg-amber-600 hover:bg-amber-700 text-black font-bold px-4 py-2 rounded-lg text-xs transition">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="openAssignLeaderView('${fellowshipName}')" class="bg-amber-600 hover:bg-amber-700 text-black font-bold px-3.5 py-2 rounded-lg text-xs">
                                 <i class="fa-solid fa-crown mr-1"></i> Assign Leader
                             </button>
-                            <button onclick="renderFellowshipsModule()" class="card-bg hover:bg-white/5 text-gray-300 px-3 py-2 rounded-lg text-xs">
-                                <i class="fa-solid fa-arrow-left mr-1"></i> All Fellowships
+                            <button onclick="renderFellowshipGroupsCards()" class="text-xs text-gray-400 hover:text-white px-2">
+                                <i class="fa-solid fa-arrow-left mr-1"></i> Back
                             </button>
                         </div>
                     </div>
-                    <div id="activeLeaderBanner" class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs">
-                        <span class="text-gray-400">Checking assigned leader...</span>
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-bold mb-3 text-white">Fellowship Members</h4>
-                        <div id="fellowshipMembersList" class="divide-y divide-white/5 text-xs">
-                            <p class="py-4 text-gray-400">Loading members...</p>
-                        </div>
+                    <div id="fellowshipMembersList" class="divide-y divide-white/5">
+                        <p class="py-6 text-center text-gray-400 text-xs">Loading group members...</p>
                     </div>
                 </div>
             `;
-            await loadFellowshipLeaderBanner(fellowshipName);
             await loadFellowshipGroupMembers(fellowshipName);
-        }
-
-        async function loadFellowshipLeaderBanner(fellowshipName) {
-            const banner = document.getElementById('activeLeaderBanner');
-            if (!banner) return;
-            const { data: fellowshipRow } = await ensureFellowshipRecord(fellowshipName);
-            if (!fellowshipRow) {
-                banner.innerHTML = `<span class="text-gray-400">No leader assigned yet.</span>`;
-                return;
-            }
-            const { data: leaders } = await supabaseClient
-                .from('group_leaders')
-                .select('id, member_id, is_active, members(id, full_name, phone, member_id)')
-                .eq('fellowship_id', fellowshipRow.id)
-                .eq('is_active', true);
-
-            if (leaders && leaders.length > 0) {
-                const l = leaders[0];
-                banner.innerHTML = `
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div>
-                            <span class="text-amber-400 font-bold"><i class="fa-solid fa-crown mr-1"></i> Active Group Leader:</span>
-                            <span class="text-white font-semibold ml-1">${l.members?.full_name || 'Member'}</span>
-                            <span class="text-gray-400 ml-2">(${l.members?.phone || ''})</span>
-                        </div>
-                        <button onclick="removeGroupLeader('${l.id}', '${fellowshipName}')" class="text-red-400 hover:underline text-xs self-start sm:self-center">
-                            Remove Leader
-                        </button>
-                    </div>
-                `;
-            } else {
-                banner.innerHTML = `<span class="text-gray-400"><i class="fa-solid fa-circle-info mr-1 text-amber-400"></i> No leader assigned to ${fellowshipName} yet. Click <strong>Assign Leader</strong> above.</span>`;
-            }
         }
 
         async function loadFellowshipGroupMembers(fellowshipName) {
             const listEl = document.getElementById('fellowshipMembersList');
-            if (!listEl) return;
-            const members = await fetchFellowshipGroupMembersList(fellowshipName);
-            if (!members || members.length === 0) {
-                listEl.innerHTML = `<p class="py-4 text-gray-400">No members registered in ${fellowshipName} yet.</p>`;
+            const { row: fellowshipRow } = await ensureFellowshipRecord(fellowshipName);
+            const membersFromJoin = await fetchFellowshipGroupMembersList(fellowshipName);
+
+            const { data: activeLeaders } = fellowshipRow?.id
+                ? await supabaseClient
+                    .from('group_leaders')
+                    .select('member_id')
+                    .eq('fellowship_id', fellowshipRow.id)
+                    .eq('is_active', true)
+                : { data: [] };
+
+            const activeLeaderIds = new Set((activeLeaders || []).map(l => l.member_id));
+
+            if (membersFromJoin.length === 0) {
+                listEl.innerHTML = `<p class="py-6 text-center text-gray-400 text-xs">No members assigned to ${fellowshipName} yet.</p>`;
                 return;
             }
-            listEl.innerHTML = members.map(m => {
+
+            listEl.innerHTML = membersFromJoin.map(m => {
+                const isLeader = activeLeaderIds.has(m.id);
                 const safeName = (m.full_name || '').replace(/'/g, "\\'");
                 return `
-                    <div class="py-3 flex items-center justify-between gap-3">
+                    <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-white/5 px-3 rounded-lg transition">
                         <div>
-                            <p class="font-semibold text-white">${m.full_name}</p>
-                            <p class="text-gray-400 text-[11px]">${m.phone || ''} • ${m.member_id || ''}</p>
+                            <div class="flex items-center space-x-2">
+                                <h4 class="text-sm font-semibold text-white">${m.full_name}</h4>
+                                ${isLeader ? '<span class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">Group Leader</span>' : ''}
+                            </div>
+                            <p class="text-[11px] text-gray-400">${m.phone || ''}</p>
                         </div>
-                        <div class="flex items-center space-x-3">
-                            <button onclick="openEditMemberModal('${m.id}', '${safeName}')" class="text-blue-400 hover:underline text-xs">Edit</button>
-                            <button onclick="deleteFellowshipMember('${m.id}', '${safeName}')" class="text-red-400 hover:underline text-xs">Delete</button>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="openEditMemberModal('${m.id}', '${safeName}')" class="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i> Edit Name
+                            </button>
+                            <button onclick="deleteFellowshipMember('${m.id}', '${safeName}')" class="bg-red-600/20 hover:bg-red-600/40 text-red-300 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fa-solid fa-trash mr-1"></i> Delete
+                            </button>
                         </div>
                     </div>
                 `;
@@ -4927,387 +5257,209 @@
             activeAssignLeaderFellowship = fellowshipName;
             selectedLeaderActionByMember = {};
             expandedLeaderMemberId = null;
-            document.getElementById('pageTitle').innerText = `Assign Leader – ${fellowshipName}`;
-            const dyn = document.getElementById('fellowshipDynamicView');
-            dyn.innerHTML = `
-                <div class="card-bg p-6 rounded-2xl border border-amber-500/30 space-y-5">
+            const title = document.getElementById('pageTitle');
+            const main = document.getElementById('mainContent');
+            title.innerText = `Assign Leader — ${fellowshipName}`;
+
+            main.innerHTML = `
+                <div class="card-bg p-6 rounded-2xl border border-amber-500/25 space-y-4">
                     <div class="flex items-center justify-between border-b border-white/10 pb-4">
                         <div>
-                            <h3 class="text-base font-bold text-amber-400">Assign Group Leader – ${fellowshipName}</h3>
-                            <p class="text-xs text-gray-400">Click a member's name to reveal options, select "Assign as Group Leader", and click Save.</p>
+                            <h3 class="text-base font-bold text-amber-400">Assign Leader for ${fellowshipName}</h3>
+                            <p class="text-xs text-gray-400">Click any member name below to assign or remove their Group Leader role.</p>
                         </div>
-                        <button onclick="openFellowshipGroupView('${fellowshipName}')" class="card-bg hover:bg-white/5 text-gray-300 px-3 py-2 rounded-lg text-xs">
-                            <i class="fa-solid fa-arrow-left mr-1"></i> Back to Group
+                        <button onclick="renderFellowshipGroupsCards()" class="text-xs text-gray-400 hover:text-white">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Back to Groups
                         </button>
                     </div>
-                    <div id="assignLeaderMemberList" class="divide-y divide-white/5">
-                        <p class="py-4 text-gray-400 text-xs">Loading ${fellowshipName} members...</p>
+                    <div id="assignLeaderMembersList" class="divide-y divide-white/5">
+                        <p class="py-6 text-center text-gray-400 text-xs">Loading members in ${fellowshipName}...</p>
                     </div>
                 </div>
             `;
 
-            const members = await fetchFellowshipGroupMembersList(fellowshipName);
-            const listEl = document.getElementById('assignLeaderMemberList');
-            if (!members || members.length === 0) {
-                listEl.innerHTML = `<p class="py-4 text-gray-400 text-xs">No members found in ${fellowshipName}.</p>`;
+            const { row: fellowshipRow } = await ensureFellowshipRecord(fellowshipName);
+            const membersFromJoin = await fetchFellowshipGroupMembersList(fellowshipName);
+
+            const { data: activeLeaders } = fellowshipRow?.id
+                ? await supabaseClient
+                    .from('group_leaders')
+                    .select('member_id')
+                    .eq('fellowship_id', fellowshipRow.id)
+                    .eq('is_active', true)
+                : { data: [] };
+
+            const activeLeaderIds = new Set((activeLeaders || []).map(l => l.member_id));
+
+            const listEl = document.getElementById('assignLeaderMembersList');
+            if (membersFromJoin.length === 0) {
+                listEl.innerHTML = `<p class="py-6 text-center text-gray-400 text-xs">No members found in ${fellowshipName}. Register members into this group first.</p>`;
                 return;
             }
 
-            listEl.innerHTML = members.map(m => {
+            listEl.innerHTML = membersFromJoin.map(m => {
+                const isCurrentlyLeader = activeLeaderIds.has(m.id);
                 const safeName = (m.full_name || '').replace(/'/g, "\\'");
-                const currentChoice = selectedLeaderActionByMember[m.id] || '';
-                const isExpanded = expandedLeaderMemberId === m.id;
                 return `
                     <div class="py-3 px-2">
-                        <div class="flex items-center justify-between gap-3">
-                            <button type="button" onclick="toggleLeaderMemberOptions('${m.id}')" class="text-left flex-1 py-1 px-2 rounded-lg hover:bg-white/5 transition flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm font-semibold text-white hover:text-amber-300 transition">${m.full_name}</p>
-                                    <p class="text-[11px] text-gray-400">${m.phone || ''} • ${m.member_id || ''}</p>
-                                </div>
-                                <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-xs text-gray-400"></i>
-                            </button>
+                        <div onclick="toggleLeaderDropdown('${m.id}')" class="flex items-center justify-between cursor-pointer hover:bg-white/5 p-2.5 rounded-xl transition">
+                            <div class="flex items-center space-x-2">
+                                <h4 class="text-sm font-semibold text-white">${m.full_name}</h4>
+                                ${isCurrentlyLeader ? '<span class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">Current Group Leader</span>' : ''}
+                            </div>
+                            <span class="text-xs text-gray-400"><i class="fa-solid fa-chevron-down"></i></span>
                         </div>
-                        <div id="leaderOptionsPanel-${m.id}" class="${isExpanded ? '' : 'hidden'} mt-2.5 ml-2 p-3.5 rounded-xl bg-black/30 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <select onchange="onLeaderActionSelect('${m.id}', this.value)" class="bg-black/40 border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-                                <option value="">-- Select Action --</option>
-                                <option value="assign_leader" ${currentChoice === 'assign_leader' ? 'selected' : ''}>Assign as Group Leader</option>
-                            </select>
-                            <button type="button" onclick="saveAssignedGroupLeader('${m.id}', '${safeName}', '${fellowshipName}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg text-xs transition">
-                                Save
-                            </button>
+
+                        <div id="leaderDropdown-${m.id}" class="hidden mt-2 ml-4 p-3 rounded-xl bg-black/30 border border-white/10 space-y-2.5">
+                            <p class="text-[11px] text-gray-400">Select action for <strong class="text-white">${m.full_name}</strong>:</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" onclick="selectLeaderOption('${m.id}', 'assign')" id="optAssign-${m.id}" class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-500/40 text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/25 transition">
+                                    Assign Group Leader
+                                </button>
+                                <button type="button" onclick="selectLeaderOption('${m.id}', 'remove')" id="optRemove-${m.id}" class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-500/40 text-red-300 bg-red-500/10 hover:bg-red-500/25 transition">
+                                    Remove Group Leader
+                                </button>
+                                <button type="button" onclick="saveGroupLeaderAssignment('${m.id}', '${safeName}', '${fellowshipName}')" class="ml-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition shadow">
+                                    Save
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        function toggleLeaderMemberOptions(memberId) {
-            expandedLeaderMemberId = expandedLeaderMemberId === memberId ? null : memberId;
-            document.querySelectorAll('[id^="leaderOptionsPanel-"]').forEach(panel => {
-                if (panel.id === `leaderOptionsPanel-${memberId}`) {
-                    panel.classList.toggle('hidden');
+        function toggleLeaderDropdown(memberId) {
+            if (expandedLeaderMemberId && expandedLeaderMemberId !== memberId) {
+                const prev = document.getElementById(`leaderDropdown-${expandedLeaderMemberId}`);
+                if (prev) prev.classList.add('hidden');
+            }
+            const current = document.getElementById(`leaderDropdown-${memberId}`);
+            if (current) {
+                current.classList.toggle('hidden');
+                expandedLeaderMemberId = current.classList.contains('hidden') ? null : memberId;
+            }
+        }
+
+        function selectLeaderOption(memberId, action) {
+            selectedLeaderActionByMember[memberId] = action;
+            const assignBtn = document.getElementById(`optAssign-${memberId}`);
+            const removeBtn = document.getElementById(`optRemove-${memberId}`);
+            if (assignBtn && removeBtn) {
+                if (action === 'assign') {
+                    assignBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-emerald-400 text-black bg-emerald-400 transition";
+                    removeBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-500/40 text-red-300 bg-red-500/10 hover:bg-red-500/25 transition";
                 } else {
-                    panel.classList.add('hidden');
+                    removeBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-red-400 text-white bg-red-600 transition";
+                    assignBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-500/40 text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/25 transition";
                 }
-            });
+            }
         }
 
-        function onLeaderActionSelect(memberId, value) {
-            selectedLeaderActionByMember[memberId] = value;
-        }
-
-        async function saveAssignedGroupLeader(memberId, memberName, fellowshipName) {
+        async function saveGroupLeaderAssignment(memberId, memberName, fellowshipName) {
             const action = selectedLeaderActionByMember[memberId];
-            if (action !== 'assign_leader') {
-                showModal('Select Action', 'Please choose "Assign as Group Leader" from the dropdown before clicking Save.', null, false);
+            if (!action) {
+                showModal('Select an Option', 'Please click either "Assign Group Leader" or "Remove Group Leader" before clicking Save.', null, false);
                 return;
             }
+
             const { row: fellowshipRow, error: fErr } = await ensureFellowshipRecord(fellowshipName);
             if (fErr || !fellowshipRow) {
-                showModal('Error', fErr?.message || 'Could not resolve fellowship.', null, false);
+                showModal('Fellowship Lookup Error', fErr?.message || 'Unable to verify fellowship record.', null, false);
                 return;
             }
 
-            await supabaseClient.from('group_leaders').update({ is_active: false }).eq('fellowship_id', fellowshipRow.id);
+            if (action === 'assign') {
+                await supabaseClient
+                    .from('group_leaders')
+                    .update({ is_active: false })
+                    .eq('fellowship_id', fellowshipRow.id);
 
-            const { data: existingLeader } = await supabaseClient
-                .from('group_leaders')
-                .select('id')
-                .eq('fellowship_id', fellowshipRow.id)
-                .eq('member_id', memberId)
-                .maybeSingle();
+                const { data: existingRow } = await supabaseClient
+                    .from('group_leaders')
+                    .select('id')
+                    .eq('member_id', memberId)
+                    .eq('fellowship_id', fellowshipRow.id)
+                    .maybeSingle();
 
-            let saveError = null;
-            if (existingLeader?.id) {
-                const { error } = await supabaseClient.from('group_leaders').update({ is_active: true }).eq('id', existingLeader.id);
-                saveError = error;
-            } else {
-                const { error } = await supabaseClient.from('group_leaders').insert([{ fellowship_id: fellowshipRow.id, member_id: memberId, is_active: true }]);
-                saveError = error;
-            }
-
-            if (saveError) {
-                showModal('Assignment Failed', saveError.message, null, false);
-                return;
-            }
-
-            if (activeMemberSession && activeMemberSession.id === memberId) {
-                await refreshMemberSession(memberId);
-            }
-
-            showModal(
-                'Group Leader Assigned',
-                `${memberName} is now the assigned Group Leader for ${fellowshipName}. When ${memberName} logs into their Member Dashboard, the Group Leader Dashboard button will appear automatically.`,
-                () => { openFellowshipGroupView(fellowshipName); }
-            );
-        }
-
-        async function removeGroupLeader(leaderRowId, fellowshipName) {
-            const { error } = await supabaseClient.from('group_leaders').update({ is_active: false }).eq('id', leaderRowId);
-            if (error) {
-                showModal('Error', error.message, null, false);
-                return;
-            }
-            if (activeMemberSession?.id) {
-                await refreshMemberSession(activeMemberSession.id);
-            }
-            showModal('Leader Removed', `Active group leader removed for ${fellowshipName}.`, () => {
-                openFellowshipGroupView(fellowshipName);
-            });
-        }
-
-        // =========================================================================
-        // DEPARTMENTS MODULE (ADMIN)
-        // =========================================================================
-        function renderDepartmentsModule() {
-            const main = document.getElementById('mainContent');
-            if (!main) return;
-            main.innerHTML = `
-                <div class="card-bg p-6 rounded-2xl border border-amber-500/25 space-y-5">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
-                        <div>
-                            <h3 class="text-lg font-bold text-amber-400">Ministry Workers & Leadership</h3>
-                            <p class="text-xs text-gray-400">Assign the Workers Leader and Vice Leader from all registered workers across all departments.</p>
-                        </div>
-                        <button type="button" onclick="openAssignWorkersLeaderView()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs transition shadow-lg">
-                            <i class="fa-solid fa-user-shield mr-1.5"></i> Assign Workers Leader
-                        </button>
-                    </div>
-                    <div id="workersLeadershipBanner" class="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs">
-                        <span class="text-gray-400">Loading workers leadership...</span>
-                    </div>
-                    <div id="departmentsDynamicView"></div>
-                </div>
-            `;
-            loadWorkersLeadershipBanner();
-        }
-
-        async function loadWorkersLeadershipBanner() {
-            const banner = document.getElementById('workersLeadershipBanner');
-            if (!banner) return;
-            const wState = await fetchWorkersLeadershipState();
-            const workersList = await fetchDepartmentMembersList();
-            const leaderMember = workersList.find(w => w.id === wState.workersLeaderId);
-            const viceMember = workersList.find(w => w.id === wState.viceLeaderId);
-
-            banner.innerHTML = `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="space-y-1">
-                        <div>
-                            <span class="text-purple-300 font-bold"><i class="fa-solid fa-helmet-safety mr-1"></i> Workers Leader:</span>
-                            <span class="text-white font-semibold ml-1">${leaderMember ? `${leaderMember.full_name} (${leaderMember.department})` : 'Not assigned yet'}</span>
-                        </div>
-                        <div>
-                            <span class="text-indigo-300 font-bold"><i class="fa-solid fa-user-tie mr-1"></i> Vice Leader:</span>
-                            <span class="text-white font-semibold ml-1">${viceMember ? `${viceMember.full_name} (${viceMember.department})` : 'Not assigned yet'}</span>
-                        </div>
-                    </div>
-                    ${(leaderMember || viceMember) ? `
-                        <button type="button" onclick="clearWorkersLeadershipPair()" class="text-red-400 hover:underline text-xs self-start sm:self-center">
-                            Clear Assignment
-                        </button>
-                    ` : ''}
-                </div>
-            `;
-        }
-
-        async function openAssignWorkersLeaderView() {
-            const dyn = document.getElementById('departmentsDynamicView');
-            if (!dyn) return;
-
-            const currentState = await fetchWorkersLeadershipState();
-            pendingWorkersLeaderId = currentState.workersLeaderId || null;
-            pendingViceLeaderId = currentState.viceLeaderId || null;
-            workersAssignStep = 'select_workers_leader';
-            openWorkerDropdownId = null;
-
-            const workersList = await fetchDepartmentMembersList();
-            renderWorkersLeaderWizard(workersList);
-        }
-
-        function renderWorkersLeaderWizard(workersList) {
-            const dyn = document.getElementById('departmentsDynamicView');
-            if (!dyn) return;
-
-            const isSelectingVice = workersAssignStep === 'select_vice_leader';
-            const stepTitle = isSelectingVice
-                ? 'Step 2: Select Vice Leader'
-                : 'Step 1: Select Workers Leader';
-            const stepSubtitle = isSelectingVice
-                ? 'Click a worker name, choose "Assign as Vice Leader" from the dropdown, and click Save.'
-                : 'Click a worker name, choose "Assign as Workers Leader" from the dropdown, and click Save.';
-
-            const selectedLeaderObj = workersList.find(w => w.id === pendingWorkersLeaderId);
-
-            dyn.innerHTML = `
-                <div class="p-5 rounded-2xl bg-black/30 border border-purple-500/30 space-y-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
-                        <div>
-                            <h4 class="text-sm font-bold text-purple-300">${stepTitle}</h4>
-                            <p class="text-xs text-gray-400">${stepSubtitle}</p>
-                        </div>
-                        <button type="button" onclick="document.getElementById('departmentsDynamicView').innerHTML = ''" class="text-xs text-gray-400 hover:text-white self-start">
-                            Close
-                        </button>
-                    </div>
-
-                    ${selectedLeaderObj ? `
-                        <div class="p-3 rounded-xl bg-purple-500/15 border border-purple-500/30 text-xs flex items-center justify-between">
-                            <div>
-                                <span class="text-purple-300 font-bold">Workers Leader Selected:</span>
-                                <span class="text-white font-semibold ml-1">${selectedLeaderObj.full_name} (${selectedLeaderObj.department})</span>
-                            </div>
-                            ${isSelectingVice ? `
-                                <button type="button" onclick="workersAssignStep = 'select_workers_leader'; openWorkerDropdownId = null; renderWorkersLeaderWizard(window.__cachedWorkersList || [])" class="text-xs text-amber-300 hover:underline">
-                                    Change Workers Leader
-                                </button>
-                            ` : ''}
-                        </div>
-                    ` : ''}
-
-                    <div class="divide-y divide-white/5">
-                        ${workersList.length > 0 ? workersList.map(w => {
-                            const isOpen = openWorkerDropdownId === w.id;
-                            const safeName = (w.full_name || '').replace(/'/g, "\\'");
-                            return `
-                                <div class="py-3 px-2">
-                                    <button type="button" onclick="toggleWorkerRowDropdown('${w.id}')" class="w-full text-left py-1.5 px-2.5 rounded-lg hover:bg-white/5 transition flex items-center justify-between">
-                                        <div>
-                                            <p class="text-sm font-semibold text-white hover:text-purple-300 transition">${w.full_name}</p>
-                                            <p class="text-[11px] text-amber-300">${w.department} ${w.phone ? '• ' + w.phone : ''}</p>
-                                        </div>
-                                        <i class="fa-solid ${isOpen ? 'fa-chevron-up' : 'fa-chevron-down'} text-xs text-gray-400"></i>
-                                    </button>
-
-                                    <div id="workerDropdownPanel-${w.id}" class="${isOpen ? '' : 'hidden'} mt-2 ml-2 p-3.5 rounded-xl bg-black/45 border border-purple-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                        <select id="workerRoleSelect-${w.id}" class="bg-black/60 border border-white/15 rounded-lg px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
-                                            <option value="">-- Select Option --</option>
-                                            ${!isSelectingVice ? `
-                                                <option value="assign_workers_leader">Assign as Workers Leader</option>
-                                            ` : `
-                                                <option value="assign_vice_leader">Assign as Vice Leader</option>
-                                            `}
-                                        </select>
-                                        <button type="button" onclick="saveWorkerWizardSelection('${w.id}', '${safeName}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-lg text-xs transition shadow-md">
-                                            Save
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('') : '<p class="py-4 text-center text-gray-400 text-xs">No workers found in any department yet.</p>'}
-                    </div>
-                </div>
-            `;
-            window.__cachedWorkersList = workersList;
-        }
-
-        function toggleWorkerRowDropdown(workerId) {
-            openWorkerDropdownId = openWorkerDropdownId === workerId ? null : workerId;
-            document.querySelectorAll('[id^="workerDropdownPanel-"]').forEach(panel => {
-                if (panel.id === `workerDropdownPanel-${workerId}`) {
-                    panel.classList.toggle('hidden');
+                let saveErr = null;
+                if (existingRow?.id) {
+                    const { error } = await supabaseClient
+                        .from('group_leaders')
+                        .update({ is_active: true })
+                        .eq('id', existingRow.id);
+                    saveErr = error;
                 } else {
-                    panel.classList.add('hidden');
+                    const { error } = await supabaseClient
+                        .from('group_leaders')
+                        .insert([{ member_id: memberId, fellowship_id: fellowshipRow.id, is_active: true }]);
+                    saveErr = error;
                 }
-            });
-        }
 
-        async function saveWorkerWizardSelection(workerId, workerName) {
-            const selectEl = document.getElementById(`workerRoleSelect-${workerId}`);
-            const chosenOption = selectEl ? selectEl.value : '';
-            const workersList = window.__cachedWorkersList || await fetchDepartmentMembersList();
-
-            if (workersAssignStep === 'select_workers_leader') {
-                if (chosenOption !== 'assign_workers_leader') {
-                    showModal('Select Option', 'Please choose "Assign as Workers Leader" from the dropdown before clicking Save.', null, false);
+                if (saveErr) {
+                    showModal('Assignment Failed', saveErr.message, null, false);
                     return;
                 }
-                pendingWorkersLeaderId = workerId;
-                workersAssignStep = 'select_vice_leader';
-                openWorkerDropdownId = null;
+
+                if (activeMemberSession && activeMemberSession.id === memberId) {
+                    await refreshMemberSession(memberId);
+                }
 
                 showModal(
-                    'Workers Leader Selected',
-                    `${workerName} has been selected as Workers Leader. Now choose who will be Vice Leader.`,
-                    () => { renderWorkersLeaderWizard(workersList); }
+                    'Group Leader Assigned',
+                    `${memberName} is now the active Group Leader for ${fellowshipName}. Their Group Leader Dashboard is now unlocked when they log in.`,
+                    () => { openAssignLeaderView(fellowshipName); }
                 );
             } else {
-                if (chosenOption !== 'assign_vice_leader') {
-                    showModal('Select Option', 'Please choose "Assign as Vice Leader" from the dropdown before clicking Save.', null, false);
+                const { error } = await supabaseClient
+                    .from('group_leaders')
+                    .update({ is_active: false })
+                    .eq('member_id', memberId)
+                    .eq('fellowship_id', fellowshipRow.id);
+
+                if (error) {
+                    showModal('Removal Failed', error.message, null, false);
                     return;
                 }
-                if (workerId === pendingWorkersLeaderId) {
-                    showModal('Different Member Required', 'Please select a different worker for Vice Leader.', null, false);
-                    return;
+
+                if (activeMemberSession && activeMemberSession.id === memberId) {
+                    await refreshMemberSession(memberId);
                 }
-                pendingViceLeaderId = workerId;
-                await saveWorkersLeadershipPair(pendingWorkersLeaderId, pendingViceLeaderId);
-
-                if (activeMemberSession?.id) {
-                    await refreshMemberSession(activeMemberSession.id);
-                }
-
-                const leaderObj = workersList.find(w => w.id === pendingWorkersLeaderId);
-                const viceObj = workersList.find(w => w.id === pendingViceLeaderId);
-
-                document.getElementById('departmentsDynamicView').innerHTML = '';
-                await loadWorkersLeadershipBanner();
 
                 showModal(
-                    'Workers Leadership Saved',
-                    `Workers Leader: ${leaderObj?.full_name || 'Assigned'}\nVice Leader: ${viceObj?.full_name || workerName}\n\nTheir respective dashboards will appear automatically when they log in.`
+                    'Group Leader Removed',
+                    `${memberName} has been removed as Group Leader for ${fellowshipName}.`,
+                    () => { openAssignLeaderView(fellowshipName); }
                 );
             }
         }
 
-        async function clearWorkersLeadershipPair() {
-            await saveWorkersLeadershipPair(null, null);
-            if (activeMemberSession?.id) {
-                await refreshMemberSession(activeMemberSession.id);
-            }
-            document.getElementById('departmentsDynamicView').innerHTML = '';
-            await loadWorkersLeadershipBanner();
-            showModal('Leadership Cleared', 'Workers Leader and Vice Leader assignments have been cleared.');
-        }
-
-        // =========================================================================
-        // ADMIN STATS & ANALYTICS CHART
-        // =========================================================================
-        async function loadAdminMemberCount() {
-            const el = document.getElementById('statTotalMembers');
-            if (!el) return;
-            const { count, error } = await supabaseClient.from('members').select('*', { count: 'exact', head: true });
-            el.innerText = error ? '0' : (count || 0);
-        }
-
-        function initFinanceChart() {
-            const ctx = document.getElementById('financeChart');
-            if (!ctx) return;
+        function initDashboardChart() {
+            const canvas = document.getElementById('financeChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
                     datasets: [
                         { label: 'Inflow (₦)', data: [240000, 290000, 310000, 280000, 330000], backgroundColor: '#10b981', borderRadius: 6 },
-                        { label: 'Expenses (₦)', data: [40000, 52000, 45000, 38000, 40000], backgroundColor: '#ef4444', borderRadius: 6 }
+                        { label: 'Expenses (₦)', data: [42000, 38000, 51000, 39000, 45000], backgroundColor: '#ef4444', borderRadius: 6 }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#9ca3af', font: { size: 11 } } } },
+                    plugins: { legend: { labels: { color: '#9ca3af' } } },
                     scales: {
-                        x: { ticks: { color: '#9ca3af' }, grid: { display: false } },
-                        y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
                     }
                 }
             });
         }
 
-        // =========================================================================
-        // INITIALIZATION (PERSISTENT SESSIONS ACROSS REFRESH)
-        // =========================================================================
+        // --- PERSISTENT STARTUP ENTRY POINT (KEEPS DASHBOARD ON MANUAL REFRESH) ---
         window.addEventListener('DOMContentLoaded', () => {
             if (activeAdminSession) {
                 renderFullAdminDashboard();
