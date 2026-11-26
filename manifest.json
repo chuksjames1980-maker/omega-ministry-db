@@ -1,26 +1,19 @@
 {
-  "name": "OMEGA MINISTRY DB",
-  "short_name": "OMEGA MINISTRY DB",
-  "description": "Omega City of Mercy Glorious Ministry Database",
+  "name": "OMEGA MINISTRY DB — Omega City of Mercy Glorious Ministry Database",
+  "short_name": "OMEGA MINISTRY DN",
+  "description": "Keeping your detail safe and financial transparency.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "background_color": "#060a17",
   "theme_color": "#060a17",
   "icons": [
-    {
-      "src": "/icon-512.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "id": "Omega ministry"
+  ]
 }
